@@ -13,7 +13,7 @@ function skillGemHtml(id, small, vaal) {
 function evolveHintHtml(id) {
   const ev = EVOLUTIONS[id];
   if (!ev) return '';
-  return `<div class="card-note evo-hint">✦ วิวัฒน์เป็น <b>${ev.name}</b>: Lv ${evolveLevel()}+ และลิงก์ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}</div>`;
+  return `<div class="card-note evo-hint">✦ วิวัฒน์เป็น <b>${ev.name}</b>: Lv ${evolveLevel()}+ และใส่ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}</div>`;
 }
 function supportGemHtml(gem, small) {
   return `<img class="gem-img${small ? ' gem-sm' : ''}" src="${supportIconURL(gem)}" alt="Support">`;
@@ -21,14 +21,13 @@ function supportGemHtml(gem, small) {
 function tagsHtml(tags) {
   return '<div class="tags">' + [...tags].filter((t) => t !== 'Damage').map((t) => `<span class="tag tag-${t.toLowerCase()}">${t}</span>`).join('') + '</div>';
 }
-// a skill's support sockets: colour from its host item (white = any), filled when powered
+// Neutral slots belong to the skill itself; gem color never restricts insertion.
 function socketsHtml(inst) {
   const act = activeSupports(inst);
   let h = '<span class="sockets">';
-  act.so.colors.forEach((c, i) => {
-    const sup = act.active[i];
-    h += sup ? `<span class="sock sock-${SUPPORTS[sup].gem} sring-${c}${inst.awakened.includes(sup) ? ' sock-awk' : ''}" title="${supportDisplayName(inst, sup)}"></span>`
-      : `<span class="sock sock-empty sring-${c}" title="ว่าง (${c === 'W' ? 'สีใดก็ได้' : 'สี ' + c})"></span>`;
+  act.slots.forEach((sup, i) => {
+    h += sup ? `<span class="sock skill-slot filled${inst.awakened.includes(sup) ? ' sock-awk' : ''}" title="ช่อง ${i + 1}: ${supportDisplayName(inst, sup)}"></span>`
+      : `<span class="sock skill-slot" title="ช่อง ${i + 1}: ว่าง · ไม่จำกัดสี"></span>`;
   });
   return h + '</span>';
 }
@@ -116,10 +115,9 @@ function milestoneChoices(n) {
   const fits = (k) => !KS_NEED[k] || KS_NEED[k].some((t) => tags.has(t));
   if (Object.keys(P.keystones).length < MAX_KEYSTONES) for (const id of weightedSample(Object.keys(KEYSTONES).filter((k) => !P.keystones[k] && fits(k)), 2, () => 1)) pool.push({ type: 'keystone', id });
   const aw = [];
-  for (const inst of P.skills) for (const sid of inst.supports) if (!inst.awakened.includes(sid)) aw.push({ type: 'awaken', inst, id: sid });
+  for (const inst of P.skills) for (const sid of activeSupports(inst).active) if (!inst.awakened.includes(sid)) aw.push({ type: 'awaken', inst, id: sid });
   for (const a of weightedSample(aw, Math.min(2, aw.length), () => 1)) pool.push(a);
   for (const inst of P.skills.slice().sort((a, b) => b.dmgDealt - a.dmgDealt).slice(0, 2)) if (inst.level < MAX_GEM_LEVEL) pool.push({ type: 'empower', inst });
-  if (P.skills.some((s) => s.sockets < MAX_SOCKETS)) pool.push({ type: 'fusing' });
   const out = weightedSample(pool, Math.min(n, pool.length), (c) => (c.type === 'keystone' ? 2 : 1));
   const evo = P.skills.find(evolveRecipeMet);
   if (evo) { if (out.length >= n) out.pop(); out.unshift({ type: 'evolve', inst: evo }); }
@@ -127,21 +125,18 @@ function milestoneChoices(n) {
 }
 function regularChoices(n) {
   const P = G.player, owned = new Set(P.skills.map((s) => s.id));
-  const cats = { skill: [], level: [], support: [], passive: [], keystone: [], fusing: [] };
+  const cats = { skill: [], level: [], support: [], passive: [], keystone: [] };
   if (P.skills.length < MAX_SKILLS + P.mods.skillSlots) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id)) cats.skill.push({ type: 'skill', id });
   for (const inst of P.skills) if (inst.level < MAX_GEM_LEVEL) cats.level.push({ type: 'level', inst });
   for (const id in SUPPORTS) {
-    const fits = P.skills.filter((inst) => !supportBlockReason(id, inst, true));
-    const free = fits.some((inst) => inst.supports.length < inst.sockets);
-    if (fits.length && free) cats.support.push({ type: 'support', id });
+    if (P.skills.some((inst) => canSocketSupport(id, inst))) cats.support.push({ type: 'support', id });
   }
   for (const id in PASSIVES) if ((P.passives[id] || 0) < PASSIVES[id].max) cats.passive.push({ type: 'passive', id });
   // Keystones and Awakens are milestone cards now
-  if (P.skills.some((s) => s.sockets < MAX_SOCKETS)) cats.fusing.push({ type: 'fusing' });
 
   const cw = {
     skill: P.skills.length <= 2 ? 3.2 : 1.6, level: 3.2, support: 3.0,
-    passive: 2.0, keystone: 0.45, fusing: 0.45, awaken: 0.5,
+    passive: 2.0, keystone: 0.45, awaken: 0.5,
   };
   const out = [];
   for (let i = 0; i < n; i++) {
@@ -152,7 +147,7 @@ function regularChoices(n) {
     out.push(cats[cat][idx]); cats[cat].splice(idx, 1);
   }
   // guarantee a support if a skill has a free socket and none rolled
-  if (!out.some((c) => c.type === 'support') && cats.support.length && P.skills.some((s) => s.supports.length < s.sockets) && Math.random() < 0.5) {
+  if (!out.some((c) => c.type === 'support') && cats.support.length && Math.random() < 0.5) {
     out[out.length - 1] = pick(cats.support);
   }
   // an evolution is always offered once its recipe is met
@@ -236,7 +231,7 @@ function cardHtml(c, idx) {
   }
   if (c.type === 'support') {
     const d = SUPPORTS[c.id];
-    const fits = P.skills.filter((inst) => !supportBlockReason(c.id, inst));
+    const fits = P.skills.filter((inst) => canSocketSupport(c.id, inst));
     return `<div class="card card-support" title="${d.desc}">${key}
       <div class="card-head">${supportGemHtml(d.gem)}<div><div class="card-name">${d.name}</div><div class="card-th">Support · ใส่กับ ${fits.map((i) => skillDisplayName(i)).join(', ') || '—'}</div></div></div>
       ${star}<div class="card-desc clamp">${d.desc}</div>${evoUseHtml(c.id)}</div>`;
@@ -253,11 +248,6 @@ function cardHtml(c, idx) {
     return `<div class="card card-keystone card-ms">${key}
       <div class="card-head"><span class="node node-key">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Keystone</div></div><div class="badge badge-key">KEYSTONE</div></div>
       <div class="card-desc">${d.desc}</div><div class="card-note">Keystone ${Object.keys(P.keystones).length + 1}/${MAX_KEYSTONES} ของรอบนี้ — เลือกให้ดี!</div></div>`;
-  }
-  if (c.type === 'fusing') {
-    return `<div class="card card-currency">${key}
-      <div class="card-head"><span class="node node-cur">◈</span><div><div class="card-name">Orb of Fusing</div><div class="card-th">Currency</div></div></div>
-      <div class="card-desc">เพิ่มซ็อกเก็ต Support +1 ให้สกิลที่เลือก (สูงสุด ${MAX_SOCKETS} = 6-Link)</div></div>`;
   }
   return `<div class="card card-passive">${key}<div class="card-head"><span class="node">❤</span><div><div class="card-name">Life Potion</div><div class="card-th">ฟื้นฟู</div></div></div><div class="card-desc">ฟื้นชีวิต 50%</div></div>`;
 }
@@ -277,7 +267,7 @@ function openChestInstant(x, y) {
   if (r < 0.45 && ok.length) { const s = pick(ok); s.level++; recomputePlayer(); txt = `${skillDisplayName(s)} +1 เลเวล`; }
   else if (r < 0.7) { const k = randomCraftOrb(); P.currency[k] = (P.currency[k] || 0) + 1; txt = CRAFT_ORBS[k].name; col = CRAFT_ORBS[k].color; }
   else if (r < 0.85) { P.currency.chaos += 2; txt = 'Chaos Orb ×2'; col = PICKUPS.chaos.color; }
-  else { P.currency.fusing++; txt = 'Orb of Fusing'; col = PICKUPS.fusing.color; }
+  else { const k = randomJeweller(); P.currency[k] = (P.currency[k] || 0) + 1; txt = JEWELLERS[k].name; col = JEWELLERS[k].color; }
   addText(x, y - 34, '▣ ' + txt, col, 1.15);
   lootLog('หีบ: ' + txt, col);
 }
@@ -352,7 +342,7 @@ function grantAscNode(id) {
     else { const inst = newSkillInstance(n.grant); inst.level = 3; P.skills.push(inst); }
   }
   if (n.instant === 'gems2') for (const s of P.skills) s.level = Math.min(MAX_GEM_LEVEL, s.level + 2);
-  if (n.instant === 'fusing2') P.currency.fusing += 2;
+  if (n.instant === 'jeweller3x2') P.currency.jeweller3 += 2;
   if (n.instant === 'chaos3') P.currency.chaos += 3;
   if (n.id === 'divine_aegis') P.aegis = 1;
   recomputePlayer();
@@ -385,7 +375,6 @@ function chooseCard(i) {
   }
   else if (c.type === 'ascnode') { grantAscNode(c.id); finishChoice(); }
   else if (c.type === 'support') openSocketPicker('support', c.id);
-  else if (c.type === 'fusing') openSocketPicker('fusing');
   else { P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.5); finishChoice(); }
 }
 
@@ -394,45 +383,47 @@ function finishChoice() {
   if (G.choiceKind === 'asc') G.pendingAscend--;
   else if (G.levelIsChest) G.pendingChests--; else G.pendingLevels--;
   G.state = 'play';
-  G.lastTs = performance.now();
+  resetGameClock();
 }
 
 // ---------------- Socket picker ----------------
-// mode 'support': socket support `supId` into a skill
-// mode 'fusing' : add a socket (from a level-up card)
-// mode 'fusingItem': add a socket using an Orb of Fusing from inventory (from build panel)
+function supportReplacementReason(supId, inst, index) {
+  if (inst.supports.includes(supId)) return 'ใส่ไว้แล้ว';
+  if (!Number.isInteger(index) || index < 0 || index >= inst.supports.length) return 'ไม่พบเจมที่จะแทนที่';
+  if (inst.supports.length > MAX_SOCKETS) return 'เกินเพดาน 6 Support';
+  const trial = { ...inst, supports: inst.supports.filter((_, i) => i !== index) };
+  return supportBlockReason(supId, trial, true);
+}
+function canSocketSupport(supId, inst) {
+  return !supportBlockReason(supId, inst) || inst.supports.some((_, i) => !supportReplacementReason(supId, inst, i));
+}
+function skillSocketLabel(inst) {
+  const a = activeSupports(inst), so = a.so;
+  return `Support ${a.active.length}/${so.cap} ช่อง · สูงสุด ${MAX_SOCKETS} · ไม่จำกัดสี`;
+}
+// Support choices fill existing skill slots; Jewellers upgrade slots in the inventory.
 function openSocketPicker(mode, supId) {
+  if (mode !== 'support' || !SUPPORTS[supId]) return false;
   const P = G.player;
   G.socketCtx = { mode, supId };
   hide('levelup');
   const list = $('socket-list');
   list.innerHTML = '';
-  if (mode === 'support') {
-    const d = SUPPORTS[supId];
-    $('socket-title').innerHTML = `${supportGemHtml(d.gem, true)} ${d.name}`;
-    $('socket-sub').textContent = 'เลือกสกิลที่จะใส่ Support Gem นี้ (ถ้าซ็อกเก็ตเต็ม คลิกเจมเดิมเพื่อแทนที่)';
-  } else {
-    $('socket-title').textContent = '◈ Orb of Fusing';
-    $('socket-sub').textContent = 'เลือกสกิลที่จะเพิ่มซ็อกเก็ต +1';
-  }
+  const support = SUPPORTS[supId];
+  $('socket-title').innerHTML = `${supportGemHtml(support.gem, true)} ${support.name}`;
+  $('socket-sub').textContent = 'ทุกสกิลเริ่ม 2 ช่อง · ไม่จำกัดสี · เพิ่มได้ถึง 6 ช่องด้วย Jeweller ที่ I → ช่อง Support · เต็มแล้วคลิกเจมเดิมเพื่อแทนที่';
   for (const inst of P.skills) {
     const d = SKILLS[inst.id];
     const row = document.createElement('div');
     row.className = 'socket-row';
     let status = '', ok = false, replace = false;
-    if (mode === 'support') {
-      const r = supportBlockReason(supId, inst);
-      const rFull = supportBlockReason(supId, inst, true);
-      ok = !r;
-      replace = !ok && !rFull; // only blocked by full sockets
-      status = ok ? '<span class="ok">ใส่ได้</span>' : replace ? '<span class="warn">เต็ม — คลิกเจมเพื่อแทนที่' + (P.currency.fusing ? ' หรือใช้ Fusing' : '') + '</span>' : `<span class="bad">${r}</span>`;
-    } else {
-      ok = inst.sockets < MAX_SOCKETS;
-      status = ok ? `<span class="ok">${inst.sockets + 1}-Link → ${inst.sockets + 2}-Link</span>` : '<span class="bad">ซ็อกเก็ตเต็มแล้ว</span>';
-    }
+    const act = activeSupports(inst), r = supportBlockReason(supId, inst);
+    ok = !r;
+    replace = !ok && inst.supports.some((_, i) => !supportReplacementReason(supId, inst, i));
+    status = ok ? '<span class="ok">ใส่ได้</span>' : replace ? '<span class="warn">คลิกเจมที่มีกรอบเพื่อแทนที่</span>' : `<span class="bad">${r}</span>`;
     row.innerHTML = `${skillGemHtml(d.id, false, inst.evo)}<div class="socket-info"><div class="card-name">${skillDisplayName(inst)} <small>Lv ${inst.level}</small></div>
-      <div class="sup-chips">${inst.supports.map((s, i) => `<span class="chip chip-${SUPPORTS[s].gem}${inst.awakened.includes(s) ? ' chip-awk' : ''}${replace ? ' chip-rep' : ''}" data-i="${i}">${supportDisplayName(inst, s)}</span>`).join('') || '<span class="muted">ยังไม่มี Support</span>'}</div>
-      <div>${socketsHtml(inst)} ${status}</div></div>`;
+      <div class="sup-chips">${inst.supports.map((s, i) => `<span class="chip chip-${SUPPORTS[s].gem}${inst.awakened.includes(s) ? ' chip-awk' : ''}${act.inactive.includes(s) ? ' chip-off' : ''}${replace && !supportReplacementReason(supId, inst, i) ? ' chip-rep' : ''}" data-i="${i}" title="${act.reasons[s] || 'ทำงาน'}">${supportDisplayName(inst, s)}</span>`).join('') || '<span class="muted">ยังไม่มี Support</span>'}</div>
+      <div>${socketsHtml(inst)} ${status}</div><small>${skillSocketLabel(inst)}</small></div>`;
     if (!ok && !replace) row.classList.add('disabled');
     if (ok) row.onclick = () => applySocket(inst);
     if (replace) {
@@ -440,33 +431,35 @@ function openSocketPicker(mode, supId) {
       row.querySelectorAll('.chip-rep').forEach((ch) => {
         ch.onclick = (ev) => {
           ev.stopPropagation();
-          const old = inst.supports.splice(+ch.dataset.i, 1, supId)[0];
-          inst.awakened = inst.awakened.filter((a) => a !== old);
-          recomputePlayer(); finishChoice();
+          applySocket(inst, +ch.dataset.i);
         };
       });
-      if (P.currency.fusing > 0) {
-        const b = document.createElement('button');
-        b.className = 'btn btn-small'; b.textContent = '◈ ใช้ Fusing แล้วใส่';
-        b.onclick = (ev) => { ev.stopPropagation(); P.currency.fusing--; inst.sockets++; applySocket(inst); };
-        row.querySelector('.socket-info').appendChild(b);
-      }
     }
     list.appendChild(row);
   }
   show('socket');
+  G.state = 'socket';
+  return true;
 }
-function applySocket(inst) {
+function applySocket(inst, replaceIndex) {
   const ctx = G.socketCtx, P = G.player;
-  if (ctx.mode === 'support') inst.supports.push(ctx.supId);
-  else if (ctx.mode === 'fusing') inst.sockets++;
-  else if (ctx.mode === 'fusingItem') { inst.sockets++; P.currency.fusing--; recomputePlayer(); hide('socket'); openPause(); return; }
+  if (!ctx || ctx.mode !== 'support' || G.state !== 'socket' || !P.skills.includes(inst)) return false;
+  const replacing = replaceIndex !== undefined;
+  const reason = replacing ? supportReplacementReason(ctx.supId, inst, replaceIndex) : supportBlockReason(ctx.supId, inst);
+  if (reason) { $('socket-sub').textContent = reason; return false; }
+  if (replacing) {
+    const old = inst.supports.splice(replaceIndex, 1, ctx.supId)[0];
+    inst.awakened = inst.awakened.filter((a) => a !== old);
+  } else inst.supports.push(ctx.supId);
+  G.socketCtx = null;
   recomputePlayer();
   finishChoice();
+  return true;
 }
 function socketBack() {
   hide('socket');
-  if (G.socketCtx && G.socketCtx.mode === 'fusingItem') { openPause(); return; }
+  G.socketCtx = null;
+  G.state = 'levelup';
   show('levelup');
 }
 
@@ -479,8 +472,8 @@ function buildViewHtml(final) {
     const d = SKILLS[inst.id], s = inst.st;
     h += `<div class="bv-skill">
       <div class="bv-head">${skillGemHtml(d.id, false, inst.evo)}<div><div class="card-name">${skillDisplayName(inst)} <small>Lv ${inst.level}/${MAX_GEM_LEVEL}${m.gemLevel ? ` (+${m.gemLevel})` : ''}</small></div>${tagsHtml(s.tags)}</div></div>
-      <div>${socketsHtml(inst)} <span class="muted">${activeSupports(inst).so.link}-Link${activeSupports(inst).so.item ? ' · ' + SLOT_NAME[activeSupports(inst).so.host] : ''}</span>
-      ${!final && P.currency.fusing > 0 && inst.sockets < MAX_SOCKETS ? `<button class="btn btn-small" data-fuse="${inst.uid}">◈ ใช้ Fusing</button>` : ''}</div>
+      <div>${socketsHtml(inst)} <span class="muted">${skillSocketLabel(inst)}</span></div>
+      ${!final ? `<small class="muted">Jeweller · เพิ่มช่อง Support</small><div class="inv-actions jeweller-actions">${jewellerButtonsHtml(inst)}</div>` : ''}
       <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
       <div class="bv-stats">${describeStats(s).join(' · ')}</div>
       ${inst.evo ? `<div class="bv-vaal">Vaal: วิญญาณ ${inst.souls}/${vaalSouls()}${inst.souls >= vaalSouls() ? ' — <b>พร้อม! กด V</b>' : ''}</div>` : evolveHintHtml(inst.id)}
@@ -497,7 +490,7 @@ function buildViewHtml(final) {
     ☯ ต้านทาน: ${resLineHtml(P)}${G.map.tier > 1 ? ` <span class="muted">(Tier ${G.map.tier}: -${Math.round(resPenalty(G.map.tier) * 100)}%)</span>` : ''}<br>
     <span class="muted">Hit ใหญ่สุดที่รับได้: ${maxHitHtml(P)}</span><br>
     ⚔ อาวุธ: ${P.weapon ? WEAPON_TYPE[P.weapon.wtype] + ' ×' + weaponPower(P.weapon).toFixed(2) + ' (สกิล Attack)' : 'มือเปล่า ×0.60'}<br>
-    ✪ Chaos ${P.currency.chaos} · ◈ Fusing ${P.currency.fusing}${m.ks.rage ? '<br>✊ Rage ' + Math.floor(P.rage) + '/30' : ''}</div>`;
+    ✪ Chaos ${P.currency.chaos} · ⬡ Jeweller ${Object.keys(JEWELLERS).reduce((n, k) => n + (P.currency[k] || 0), 0)}${m.ks.rage ? '<br>✊ Rage ' + Math.floor(P.rage) + '/30' : ''}</div>`;
   const ps = Object.keys(P.passives);
   h += '<div class="bv-box"><div class="bv-title">Passive</div>' + (ps.length ? ps.map((id) => `${PASSIVES[id].icon} ${PASSIVES[id].name} <b>${P.passives[id]}</b>/${PASSIVES[id].max}`).join('<br>') : '<span class="muted">ยังไม่มี</span>') + '</div>';
   h += `<div class="bv-box"><div class="bv-title" style="color:${BIOMES[G.map.biome].color}">🗺 ${mapLabel(G.map)}</div>` +
@@ -570,19 +563,14 @@ function openPause() {
   G.state = 'paused';
   $('pause-title').textContent = 'หยุดเกม — บิวของคุณ';
   $('build-view').innerHTML = buildViewHtml(false);
-  $('build-view').querySelectorAll('[data-fuse]').forEach((b) => {
-    b.onclick = () => {
-      const inst = G.player.skills.find((s) => s.uid === +b.dataset.fuse);
-      if (inst && G.player.currency.fusing > 0) { G.player.currency.fusing--; inst.sockets++; recomputePlayer(); openPause(); }
-    };
-  });
+  bindJewellerButtons($('build-view'), openPause);
   show('pause');
 }
 function resume() {
   if (G.state !== 'paused') return;
   hide('pause');
   G.state = 'play';
-  G.lastTs = performance.now();
+  resetGameClock();
 }
 
 function showGameOver(win) {
@@ -744,21 +732,12 @@ function closeAltar() { hide('altar'); buildMenu(); show('menu'); }
 let invSel = null, invDrag = null, invMsg = '';
 const invCell = () => (window.innerWidth < 700 ? 26 : 34);
 const DOLL_LAYOUT = ['weapon', 'helm', 'amulet', 'offhand', 'ring', 'body', 'ring2', 'gloves', 'belt', 'boots'];
-const CURRENCY_ORDER = ['chaos', 'fusing', 'regal', 'exalt', 'divine', 'annul', 'jeweller', 'chroma', 'whetstone', 'scrap', 'vaal'];
+const CURRENCY_ORDER = ['chaos', ...Object.keys(JEWELLERS), 'regal', 'exalt', 'divine', 'annul', 'whetstone', 'scrap', 'vaal'];
 function itemIconURL(it) { return spriteURL(itemSpriteId(it), 3); }
 
-function socketsVisualHtml(it, small) {
-  if (!it.sockets || !it.sockets.length) return '';
-  let h = `<div class="pt-sockets${small ? ' small' : ''}">`, i = 0;
-  for (const n of it.links) {
-    h += '<span class="sock-grp">' + it.sockets.slice(i, i + n).map((c) => `<span class="psock psock-${c}"></span>`).join('<span class="plink"></span>') + '</span>';
-    i += n;
-  }
-  return h + '</div>';
-}
 const tierTag = (a) => (a.crafted ? ' <span class="pt-tier">(crafted)</span>' : G.showTiers && !a.flask && !a.jewel && AFFIXES[a.id].type ? ` <span class="pt-tier">${AFFIXES[a.id].type === 'P' ? 'Prefix' : 'Suffix'} T${a.tier}</span>` : '');
 
-// PoE-style item box: header, properties, item level, sockets, implicit, mods
+// Item box: header, properties, item level, implicit and mods.
 function itemCardHtml(it, label) {
   const u = it.unique && UNIQUES[it.unique], baseId = it.base || (u && u.base), base = BASES[baseId];
   const view = Object.assign({ ilvl: 60, affixes: [], quality: 0 }, it, { base: baseId });
@@ -785,7 +764,6 @@ function itemCardHtml(it, label) {
   if (it.quality) props.push(`Quality: <span class="pt-val">+${it.quality}%</span>`);
   h += props.map((p) => `<div class="pt-prop">${p}</div>`).join('');
   if (it.ilvl) h += `<div class="pt-sep"></div><div class="pt-prop">Item Level: <span class="pt-val">${it.ilvl}</span></div>`;
-  if (it.sockets && it.sockets.length) h += socketsVisualHtml(it);
   if (it.implicit) h += `<div class="pt-sep"></div><div class="pt-imp">${affixText(it.implicit)}</div>`;
   if (it.corruptMod !== undefined) h += `<div class="pt-corrupt-imp">${CORRUPT_MODS[it.corruptMod].t}</div>`;
   const lines = u ? u.lines.map((l) => ({ t: l })) : it.affixes.map((a) => ({ t: affixText(a), a }));
@@ -798,6 +776,7 @@ function itemCardHtml(it, label) {
 
 function openInventory() {
   if (G.state !== 'play' && G.state !== 'paused' && G.state !== 'inventory') return;
+  hide('tip');
   hide('pause');
   G.state = 'inventory';
   const P = G.player, cell = invCell();
@@ -812,7 +791,7 @@ function openInventory() {
     const lock = k === 'offhand' && !it && P.equip.weapon && BASES[P.equip.weapon.base].w.hands === 2 && BASES[P.equip.weapon.base].w.type !== 'bow';
     const better = !it && P.backpack.some((b) => { const c = invCmp.get(b); return c && c.key === k && c.empty; });
     return `<div class="doll-slot ds-${k}${it ? ' r-' + it.rarity : ''}${invSel && invSel === it ? ' sel' : ''}${lock ? ' locked' : ''}${better ? ' can-fill' : ''}" data-eq="${k}">
-      ${it ? `<img src="${itemIconURL(it)}" alt="" draggable="false">${socketsVisualHtml(it, true)}` : `<span class="muted">${lock ? 'สองมือ' : SLOT_NAME[k]}</span>`}</div>`;
+      ${it ? `<img src="${itemIconURL(it)}" alt="" draggable="false">` : `<span class="muted">${lock ? 'สองมือ' : SLOT_NAME[k]}</span>`}</div>`;
   }).join('');
   $('inv-flasks').innerHTML = P.flasks.map((f, i) => `<div class="flask-slot${f ? ' r-' + f.rarity : ''}${invSel && invSel === f ? ' sel' : ''}" data-fl="${i}">
     ${f ? `<img src="${itemIconURL(f)}" alt="" draggable="false">` : ''}<span class="fk">${i + 1}</span></div>`).join('');
@@ -838,9 +817,9 @@ function openInventory() {
   ba.onclick = () => { if (invConfirm !== 'all') { invConfirm = 'all'; openInventory(); } else { invConfirm = ''; salvageMany(all); } };
   $('inv-currency').innerHTML = CURRENCY_ORDER.map((k) => {
     const d = CRAFT_ORBS[k] || PICKUPS[k];
-    return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}">${d.icon} ${P.currency[k] || 0}</span>`;
+    return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}">${d.icon} ${JEWELLERS[k] ? 'J' + d.sockets + ' ×' : ''}${P.currency[k] || 0}</span>`;
   }).join('') + Object.keys(P.essences).filter((k) => P.essences[k] > 0).map((k) => `<span class="cur" style="color:${ESSENCES[k].color}" title="${ESSENCES[k].name}: การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')}">◆ ${P.essences[k]}</span>`).join('');
-  $('inv-links').innerHTML = linksPanelHtml();
+  $('inv-links').innerHTML = skillSocketsPanelHtml();
   $('inv-links-n').textContent = `(${P.skills.length} สกิล${P.skills.some((s) => activeSupports(s).inactive.length) ? ' · ⚠ มี Support ไม่ทำงาน' : ''})`;
   $('inv-msg').textContent = invMsg; invMsg = '';
   // drag sources + hover preview (mouse only)
@@ -849,8 +828,9 @@ function openInventory() {
   root.querySelectorAll('[data-bi]').forEach((el) => { const it = P.backpack[+el.dataset.bi]; el.onpointerdown = (ev) => invPointerDown(ev, { item: it, from: 'bag' }, el); bindHover(el, it); });
   root.querySelectorAll('[data-eq]').forEach((el) => { const it = P.equip[el.dataset.eq]; if (it) { el.onpointerdown = (ev) => invPointerDown(ev, { item: it, from: 'eq', key: el.dataset.eq }, el); bindHover(el, it); } });
   root.querySelectorAll('[data-fl]').forEach((el) => { const f = P.flasks[+el.dataset.fl]; if (f) { el.onpointerdown = (ev) => invPointerDown(ev, { item: f, from: 'fl', i: +el.dataset.fl }, el); bindHover(el, f); } });
-  root.querySelectorAll('[data-host]').forEach((sel) => {
-    sel.onchange = () => { const inst = P.skills.find((s) => s.uid === +sel.dataset.host); if (inst) { setHost(inst, sel.value || null); openInventory(); } };
+  bindJewellerButtons(root, (inst, before) => {
+    invMsg = skillDisplayName(inst) + ': ' + before + ' → ' + skillSockets(inst).cap + ' ช่อง Support';
+    openInventory();
   });
   $('inv-tiers').checked = G.showTiers;
   $('inv-tiers').onchange = () => { G.showTiers = $('inv-tiers').checked; renderInvDetail(); };
@@ -903,17 +883,37 @@ function verdictHtml(it) {
     <div class="diff">${c.lines.map(([l, t, good]) => `<span class="${good ? 'pos' : 'neg'}">${l} ${t}</span>`).join('') || '<span class="muted">ไม่เปลี่ยนค่าหลัก</span>'}</div></div>`;
 }
 
-// which gear piece each skill gem sits in, and which supports are powered
-function linksPanelHtml() {
+// Skill sockets and the Jewellers that upgrade them.
+function jewellerButtonsHtml(inst) {
+  const cap = skillSockets(inst).cap;
+  return Object.entries(JEWELLERS).map(([id, d]) => {
+    const reason = jewellerBlockReason(inst, id), n = G.player.currency[id] || 0;
+    return '<button class="btn btn-small jeweller-btn" data-jeweller="' + id + '" data-skill="' + inst.uid +
+      '" ' + (reason ? 'disabled' : '') + ' title="' + (reason || (cap + ' → ' + d.sockets + ' ช่อง · ใช้ 1 ลูก · ' + d.rarity)) +
+      '" style="--oc:' + d.color + '">⬡ ' + d.sockets + ' ช่อง ×' + n + '</button>';
+  }).join('');
+}
+function bindJewellerButtons(root, refresh) {
+  root.querySelectorAll('[data-jeweller]').forEach((b) => {
+    b.onclick = () => {
+      const inst = G.player.skills.find((s) => s.uid === +b.dataset.skill), before = inst && skillSockets(inst).cap;
+      if (!useSkillJeweller(inst, b.dataset.jeweller)) return;
+      Sfx.play('currency'); emit('gold', G.player.x, G.player.y, 10, { color: JEWELLERS[b.dataset.jeweller].color });
+      refresh(inst, before);
+    };
+  });
+}
+function skillSocketsPanelHtml() {
   const P = G.player;
   return P.skills.map((inst) => {
-    const act = activeSupports(inst), so = act.so, host = so.host;
-    const opts = ['<option value="">ลิงก์พื้นฐาน (' + (inst.sockets + 1) + 'L)</option>'].concat(SOCKET_SLOTS.filter((k) => P.equip[k] && bestGroup(P.equip[k]).length >= 2)
-      .map((k) => `<option value="${k}"${host === k ? ' selected' : ''}>${SLOT_NAME[k]} (${bestGroup(P.equip[k]).length}L)${P.hosts[k] && P.hosts[k] !== inst.uid ? ' · สลับ' : ''}</option>`)).join('');
-    const socks = so.colors.map((c, i) => { const sid = act.active[i]; return `<span class="psock psock-${c}${sid ? ' filled f-' + SUPPORTS[sid].gem : ''}" title="${sid ? SUPPORTS[sid].name : 'ว่าง'}"></span>`; }).join('');
-    return `<div class="link-row">${skillGemHtml(inst.id, true, inst.evo)}<div class="link-info"><b>${skillDisplayName(inst)}</b>
-      <select data-host="${inst.uid}">${opts}</select><div class="link-socks">${socks} <span class="muted">${so.link}-Link${so.item ? '' : ' (พื้นฐาน)'}</span></div>
-      ${act.inactive.length ? `<div class="bad">ไม่ทำงาน (สี/ลิงก์ไม่พอ): ${act.inactive.map((s) => SUPPORTS[s].name).join(', ')}</div>` : ''}</div></div>`;
+    const act = activeSupports(inst);
+    return '<div class="link-row">' + skillGemHtml(inst.id, true, inst.evo) + '<div class="link-info"><b>' + skillDisplayName(inst) +
+      '</b><div class="link-socks">' + socketsHtml(inst) + '</div><small>' + skillSocketLabel(inst) + '</small>' +
+      '<div class="inv-actions jeweller-actions">' + jewellerButtonsHtml(inst) + '</div>' +
+      '<div class="sup-chips">' + inst.supports.map(sid => '<span class="chip chip-' + SUPPORTS[sid].gem + (act.inactive.includes(sid) ? ' chip-off' : '') +
+        '" title="' + (act.reasons[sid] || 'ทำงาน') + '">' + (act.inactive.includes(sid) ? 'พัก: ' : '✓ ') + supportDisplayName(inst, sid) + '</span>').join('') + '</div>' +
+      (act.inactive.length ? '<div class="bad">เก็บเจมไว้แล้ว แต่ยังไม่ทำงาน: ' + [...new Set(act.inactive.map(s => act.reasons[s]))].join(' · ') + '</div>' : '') +
+      '</div></div>';
   }).join('') || '<span class="muted">ยังไม่มีสกิล</span>';
 }
 
@@ -1064,7 +1064,7 @@ function closeInventory() {
   if (G.state !== 'inventory') return;
   hide('inventory');
   G.state = 'play';
-  G.lastTs = performance.now();
+  resetGameClock();
 }
 
 // ---------------- Map Device (Atlas) ----------------

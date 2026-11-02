@@ -4,7 +4,7 @@
 // ============================================================
 const G = {
   state: 'menu', canvas: null, ctx: null, W: 0, H: 0, dpr: 1, zoom: 1,
-  time: 0, lastTs: 0, player: null, cam: { x: 0, y: 0 }, shake: 0,
+  time: 0, lastTs: 0, simDebt: 0, player: null, cam: { x: 0, y: 0 }, shake: 0,
   enemies: [], projectiles: [], eproj: [], novas: [], meteors: [], grounds: [], minions: [],
   orbs: [], pickups: [], effects: [], texts: [], hazards: [], shrines: [], delayed: [], items: [], lootLog: [], epools: [], breach: null,
   map: { biome: 'graveyard', tier: 1, mods: [] }, mapFx: null,
@@ -16,6 +16,82 @@ const G = {
   input: { up: false, down: false, left: false, right: false, dash: false, flask0: false, flask1: false, flask2: false, flask3: false, flask4: false, vaal: false, joy: null, joyOrigin: null },
   showTiers: false,
 };
+
+const SIM_STEP = 1 / 60;
+const _backgroundClock = { worker: null, timer: null, running: null };
+
+function gameInBackground() {
+  return !!document.hidden || (typeof document.hasFocus === 'function' && !document.hasFocus());
+}
+function resetGameClock() {
+  G.lastTs = performance.now(); G.simDebt = 0;
+}
+function clearGameInput() {
+  for (const k in G.input) G.input[k] = typeof G.input[k] === 'boolean' ? false : null;
+  if (G.releaseTouch) G.releaseTouch();
+  cancelFlicker();
+}
+
+// RAF and the background timer share one monotonic clock, so time is never counted twice.
+function advanceGame(ts) {
+  if (!Number.isFinite(ts)) return;
+  const elapsed = Math.max(0, (ts - G.lastTs) / 1000);
+  G.lastTs = Math.max(G.lastTs, ts);
+  if (G.state !== 'play') { G.simDebt = 0; return; }
+  G.simDebt += elapsed;
+  const started = performance.now();
+  // Keep delayed ticks as debt; replay small physics steps without blocking the page.
+  for (let n = 0; G.simDebt + 1e-9 >= SIM_STEP && G.state === 'play' && n < 240; n++) {
+    G.simDebt = Math.max(0, G.simDebt - SIM_STEP);
+    const stopped = Math.min(SIM_STEP, Math.max(0, G.hitStop));
+    G.hitStop = Math.max(0, G.hitStop - SIM_STEP);
+    update(SIM_STEP - stopped * 0.85);
+    if (performance.now() - started > 12) break;
+  }
+  if (G.state !== 'play') G.simDebt = 0;
+}
+function backgroundPulse() {
+  if (!gameInBackground()) return;
+  Music.update();
+  advanceGame(performance.now());
+}
+function startBackgroundFallback() {
+  if (_backgroundClock.timer === null) _backgroundClock.timer = setInterval(backgroundPulse, 100);
+}
+function syncBackgroundClock() {
+  const running = gameInBackground();
+  if (_backgroundClock.worker && running !== _backgroundClock.running) _backgroundClock.worker.postMessage(running);
+  _backgroundClock.running = running;
+}
+function startBackgroundClock() {
+  if (_backgroundClock.worker || _backgroundClock.timer !== null) return;
+  try {
+    const blob = new Blob([`let timer = null;
+      self.onmessage = ({ data: running }) => {
+        if (running && timer === null) timer = setInterval(() => self.postMessage(0), 50);
+        else if (!running && timer !== null) { clearInterval(timer); timer = null; }
+      };`], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    try { _backgroundClock.worker = new Worker(url); }
+    finally { URL.revokeObjectURL(url); }
+    _backgroundClock.worker.onmessage = backgroundPulse;
+    _backgroundClock.worker.onerror = (event) => {
+      event.preventDefault();
+      _backgroundClock.worker.terminate(); _backgroundClock.worker = null;
+      startBackgroundFallback();
+    };
+  } catch (_) { startBackgroundFallback(); }
+  syncBackgroundClock();
+}
+function onGameBlur() {
+  clearGameInput();
+  syncBackgroundClock();
+}
+function onGameVisibilityChange() {
+  if (gameInBackground()) clearGameInput();
+  syncBackgroundClock();
+  advanceGame(performance.now());
+}
 
 function resize() {
   G.dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -54,7 +130,7 @@ function startGame(cls, map) {
   // Scion's random start must be a skill that deals damage on its own (not a Herald)
   const startId = cls.start || pick(Object.keys(SKILLS).filter((id) => !isLocked('gem', id) && SKILLS[id].behavior !== 'herald'));
   P.skills.push(newSkillInstance(startId));
-  if (cls.id === 'scion') P.currency.fusing++;
+  if (cls.id === 'scion') P.currency.jeweller3++;
   giveStartingGear(P);
   applyMetaStart(P);
   if (map && map.loadout) for (const it of map.loadout) giveLoadoutItem(P, it);
@@ -63,7 +139,7 @@ function startGame(cls, map) {
   P.life = P.maxLife;
   G.cam.x = P.x; G.cam.y = P.y;
   G.state = 'play';
-  G.lastTs = performance.now();
+  resetGameClock();
   announce('ดินแดนต้องสาป', 'เอาชีวิตรอด 15 นาที และโค่นบอสสุดท้าย', '#e8c870');
   showTip('start');
 }
@@ -121,6 +197,8 @@ function update(dt) {
   if (G.victoryT > 0) { G.victoryT -= dt; if (G.victoryT <= 0) { openVictory(); return; } }
 
   // level-ups can wait (setting): during boss fights, or until the player presses U
+  // Defer automatic choices while away, including while delayed simulation catches up.
+  if (gameInBackground() || G.simDebt > SIM_STEP * 2) { G.input.levelUp = false; return; }
   const mode = G.settings.levelMode || 'auto';
   const bank = mode === 'manual' || (mode === 'boss' && G.bossRef && !G.bossRef.dead);
   const want = G.input.levelUp; G.input.levelUp = false;
@@ -135,20 +213,8 @@ function frame(ts) {
   requestAnimationFrame(frame);
   const t0 = performance.now();
   Music.update();
-  if (G.state === 'play') {
-    let dt = (ts - G.lastTs) / 1000;
-    G.lastTs = ts;
-    if (dt > 0.1) dt = 0.1;
-    if (G.hitStop > 0) { G.hitStop -= dt; dt *= 0.15; }
-    if (dt > 0) {
-      // sub-step when frames are long so fast projectiles don't tunnel
-      const steps = dt > 0.034 ? 2 : 1;
-      for (let i = 0; i < steps && G.state === 'play'; i++) update(dt / steps);
-    }
-  } else {
-    G.lastTs = ts;
-  }
-  render();
+  advanceGame(ts);
+  if (!document.hidden) render();
   if (G.state === 'play') perfSample(performance.now() - t0, 1 / 60);
 }
 
@@ -157,10 +223,13 @@ const KEYMAP = {
   KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
 };
 function onKey(e, down) {
+  // Leave browser/window shortcuts (Ctrl+Tab, Alt+Tab, Ctrl+T, etc.) to the browser.
+  if (down && (e.ctrlKey || e.metaKey || e.altKey) && e.code !== 'AltLeft' && e.code !== 'AltRight') return;
   const k = KEYMAP[e.code];
-  if (k) { G.input[k] = down; e.preventDefault(); return; }
+  if (k) { G.input[k] = down; if (down) cancelFlicker(); e.preventDefault(); return; }
   if (!down) return;
-  if (e.code === 'Space') { G.input.dash = true; e.preventDefault(); }
+  if (e.code === 'Space') { G.input.dash = true; cancelFlicker(); e.preventDefault(); }
+  else if (e.code === 'KeyT' && !e.repeat) toggleFlicker();
   else if (e.code === 'KeyQ') G.input.flask0 = true;
   else if (e.code === 'KeyE') G.input.flask1 = true;
   else if (G.state === 'play' && /^Digit[1-5]$/.test(e.code)) G.input['flask' + (+e.code.slice(5) - 1)] = true;
@@ -192,6 +261,7 @@ function onKey(e, down) {
 function setupTouch() {
   const c = G.canvas, inp = G.input;
   let id = null, lastTap = 0;
+  G.releaseTouch = () => { id = null; lastTap = 0; inp.joy = null; inp.joyOrigin = null; };
   c.addEventListener('touchstart', (e) => {
     Sfx.init();
     const t = e.changedTouches[0];
@@ -233,10 +303,14 @@ function init() {
   window.addEventListener('resize', resize);
   window.addEventListener('keydown', (e) => onKey(e, true));
   window.addEventListener('keyup', (e) => onKey(e, false));
-  window.addEventListener('blur', () => { for (const k of ['up', 'down', 'left', 'right']) G.input[k] = false; if (G.state === 'play') openPause(); });
+  window.addEventListener('blur', onGameBlur);
+  window.addEventListener('focus', onGameVisibilityChange);
+  document.addEventListener('visibilitychange', onGameVisibilityChange);
+  startBackgroundClock();
   setupTouch();
 
   $('btn-reroll').onclick = reroll;
+  $('btn-flicker').onclick = () => { toggleFlicker(); $('btn-flicker').blur(); };
   $('btn-altar').onclick = () => { Sfx.init(); openAltar(); };
   $('btn-codex').onclick = () => { Sfx.init(); openCodex(); };
   $('btn-codex-close').onclick = closeCodex;
@@ -285,7 +359,8 @@ function openVictory() {
 }
 function startEndgame() {
   hide('victory');
-  Object.assign(G, { endless: true, endStart: G.time, nextEcho: G.time + 40, state: 'play', lastTs: performance.now() });
+  Object.assign(G, { endless: true, endStart: G.time, nextEcho: G.time + 40, state: 'play' });
+  resetGameClock();
   announce('ENDGAME ∞', 'มอนสเตอร์แข็งขึ้นไม่สิ้นสุด · Echo บอสทุก ' + ENDGAME_ECHO + ' วิ · ตายแล้วยังนับว่าชนะ', '#ff5a5a');
   Sfx.play('boss');
 }

@@ -132,7 +132,7 @@ function strongboxLoot(b) {
   } else if (b.kind === 'jeweller') {
     dropItem(x - 30, y, Math.random() < 0.12 ? 'unique' : 'rare', pick(['ring', 'amulet', 'belt']));
     dropJewel(x + 30, y);
-    spawnPickup(x, y + 30, 'jeweller'); spawnPickup(x + 20, y + 30, 'chroma');
+    spawnPickup(x, y + 30, 'jeweller3'); spawnPickup(x + 20, y + 30, randomJeweller());
   } else if (b.kind === 'cartographer') {
     dropMapItem(x, y, Math.min(MAX_MAP_TIER, G.map.tier + (Math.random() < 0.4 ? 1 : 0)));
     if (Math.random() < 0.5) dropMapItem(x + 30, y, G.map.tier);
@@ -204,7 +204,7 @@ function ritualOffers() {
     { kind: 'item', rarity: 'unique', cost: 170, label: 'ไอเทม Unique สุ่ม' },
     { kind: 'orbs', n: 3, cost: 45, label: 'Orb คราฟต์ ×3' },
     { kind: 'cur', cur: 'chaos', n: 3, cost: 30, label: 'Chaos Orb ×3' },
-    { kind: 'cur', cur: 'fusing', n: 2, cost: 40, label: 'Orb of Fusing ×2' },
+    { kind: 'cur', cur: 'jeweller3', n: 2, cost: 40, label: "Jeweller's Orb 3 ×2" },
     { kind: 'cur', cur: 'vaal', n: 1, cost: 35, label: 'Vaal Orb' },
     { kind: 'cur', cur: 'exalt', n: 1, cost: 50, label: 'Exalted Orb' },
     { kind: 'ess', cost: 40, label: 'Essence สุ่ม' },
@@ -380,5 +380,5 @@ function renderRitual() {
 function closeRitual() {
   hide('ritual');
   G.state = 'play';
-  G.lastTs = performance.now();
+  resetGameClock();
 }

@@ -16,6 +16,6 @@ const CLASSES = [
   { id: 'duelist', name: 'Duelist', th: 'นักดาบ', color: '#d88a3a', start: 'blade_vortex', life: 115,
     desc: 'นักดาบกลางเวที เริ่มด้วย Blade Vortex', bonus: '+15% ดาเมจกายภาพ, +5% ความเร็ว', apply(m) { m.incPhys += 0.15; m.speedInc += 0.05; } },
   { id: 'scion', name: 'Scion', th: 'ทายาท', color: '#e0e0e0', start: null, life: 110,
-    desc: 'เริ่มด้วยสกิลสุ่ม + ได้ Orb of Fusing 1 ลูก', bonus: '+8% ทุกอย่างนิดหน่อย', apply(m) {
+    desc: "เริ่มด้วยสกิลสุ่ม + ได้ Jeweller's Orb 3 ×1", bonus: '+8% ทุกอย่างนิดหน่อย', apply(m) {
       m.incSpell += 0.08; m.incAttack += 0.08; m.moveInc += 0.04; m.lifeInc += 0.08; } },
 ];

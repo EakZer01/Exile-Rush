@@ -9,20 +9,20 @@ const ELE = { fire: true, cold: true, lightning: true };
 const TYPE_COLOR = { physical: '#e6e0d0', fire: '#ff8a3d', cold: '#7fd8ff', lightning: '#fff27a', chaos: '#b56cff' };
 
 function newSkillInstance(id) {
-  const extra = G.player ? G.player.mods.startSockets : 0;
-  return { id, uid: uid(), level: 1, supports: [], sockets: Math.min(MAX_SOCKETS, START_SOCKETS + extra), timer: 0.3, dmgDealt: 0, kills: 0, st: null, rt: {},
+  return { id, uid: uid(), level: 1, supports: [], sockets: START_SOCKETS, timer: 0.3, dmgDealt: 0, kills: 0, st: null, rt: {},
     evo: false, awakened: [], souls: 0, vaalT: 0 };
 }
 
-function skillTags(inst) {
+function skillTags(inst, p = G.player) {
   const set = new Set(SKILLS[inst.id].tags);
-  for (const sid of activeSupports(inst).active) for (const t of SUPPORTS[sid].addTags) set.add(t);
+  for (const sid of activeSupports(inst, p).active) for (const t of SUPPORTS[sid].addTags) set.add(t);
   return set;
 }
 
 // Can support `supId` be socketed into skill `inst`? returns '' if ok, else a reason (Thai)
 function supportBlockReason(supId, inst, ignoreSockets) {
   const sup = SUPPORTS[supId];
+  if (!sup) return 'ไม่พบ Support นี้';
   if (inst.supports.includes(supId)) return 'ใส่ไว้แล้ว';
   for (const c of sup.conflicts) if (inst.supports.includes(c)) return 'ใช้ร่วมกับ ' + SUPPORTS[c].name + ' ไม่ได้';
   const tags = skillTags(inst);
@@ -30,16 +30,15 @@ function supportBlockReason(supId, inst, ignoreSockets) {
   if (sup.excl.some((t) => tags.has(t))) return 'ใช้กับสกิล ' + sup.excl.filter((t) => tags.has(t)).join('/') + ' ไม่ได้';
   if (!ignoreSockets) {
     const act = activeSupports(inst);
-    if (inst.supports.length >= act.so.cap) return 'ซ็อกเก็ตเต็ม (ใช้ Orb of Fusing หรือไอเทมที่ลิงก์มากกว่า)';
-    const c = GEM_SOCKET[sup.gem];
-    if (!act.free.includes(c) && !act.free.includes('W')) return `ไม่มี Socket สี${{ R: 'แดง', G: 'เขียว', B: 'น้ำเงิน' }[c]}ว่าง (ใช้ Chromatic Orb)`;
+    if (inst.supports.length >= MAX_SOCKETS) return 'เต็มเพดาน 6 Support แล้ว · เลือกแทนที่เจมเดิม';
+    if (act.active.length >= act.so.cap) return `เต็ม ${act.so.cap} ช่อง · ใช้ Jeweller ระดับสูงกว่าที่ I → ช่อง Support หรือเลือกแทนที่เจมเดิม`;
   }
   return '';
 }
 
 function buildSkillStats(inst, p) {
   const def = SKILLS[inst.id], b = def.base, m = p.mods;
-  const tags = skillTags(inst);
+  const tags = skillTags(inst, p);
   const s = {
     id: inst.id, uid: inst.uid, behavior: def.behavior, tags, color: def.color, core: def.core,
     dmg: b.dmg, types: Object.assign({}, b.types),
@@ -70,7 +69,7 @@ function buildSkillStats(inst, p) {
     if (p.weapon) s.crit = p.weapon.crit / 100;
     s.weaponMul = wm;
   }
-  for (const sid of activeSupports(inst).active) {
+  for (const sid of activeSupports(inst, p).active) {
     SUPPORTS[sid].apply(s);
     if (inst.awakened && inst.awakened.includes(sid)) {
       s.more *= 1.2;
@@ -98,6 +97,8 @@ function buildSkillStats(inst, p) {
   if (!inst.evo) s.more *= m.unevolvedMore;
   if (!tags.has('Minion')) s.more *= m.nonMinionMore;
   s.shockEff = 1 + m.shockEffInc;
+  // Redistribute the existing burst damage across exactly three controllable warps.
+  if (s.behavior === 'flicker') { s.more *= s.flickers / 3; s.flickers = 3; }
 
   let inc = 0;
   if (tags.has('Spell')) inc += m.incSpell;
@@ -162,7 +163,7 @@ function describeStats(s) {
   else if (s.behavior !== 'aura' && s.behavior !== 'herald') out.push('คูลดาวน์: ' + s.cdFinal.toFixed(2) + 's');
   if (s.brand) out.push('ตราสูงสุด: ' + s.maxCount + ' · ทำงานทุก ' + s.hitCd.toFixed(2) + 's');
   if (s.split) out.push('ลูกธนูย่อย: ' + s.split);
-  if (s.flickers) out.push('วาร์ปต่อเนื่อง: ' + s.flickers);
+  if (s.flickers) out.push('วาร์ปต่อชุด: 3 · พักอย่างน้อย 0.25s · เดินเพื่อหยุด · T เปิด/พัก');
   if (s.bolts) out.push('สายฟ้า: ' + s.bolts);
   if (s.blades) out.push('ใบมีด: ' + (s.blades + s.proj));
   if (s.cluster) out.push('ระเบิดย่อย: ' + s.cluster);
@@ -175,7 +176,7 @@ function describeStats(s) {
   if (s.count) out.push('อุกกาบาต: ' + s.count);
   if (s.duration) out.push('ระยะเวลา: ' + s.durFinal.toFixed(1) + 's');
   if (s.behavior !== 'aura') out.push('คริ: ' + pct(s.critChance) + ' ×' + s.critMulti.toFixed(2));
-  if (s.echo) out.push('ร่ายซ้ำ: +' + s.echo);
+  if (s.echo) out.push((s.behavior === 'flicker' ? 'ฟันซ้ำ ณ จุดวาร์ป: +' : 'ร่ายซ้ำ: +') + s.echo);
   return out;
 }
 

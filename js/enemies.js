@@ -181,7 +181,7 @@ function spawnBoss(def) {
 function bossDefeated(e) {
   spawnPickup(e.x, e.y, 'chest', { boss: true });
   spawnPickup(e.x + 30, e.y, 'chest');
-  spawnPickup(e.x - 30, e.y, 'fusing');
+  spawnPickup(e.x - 30, e.y, randomJeweller());
   spawnPickup(e.x, e.y + 30, 'chaos');
   spawnPickup(e.x, e.y - 30, 'life');
   for (let i = 0; i < 12; i++) spawnOrb(e.x + rand(-60, 60), e.y + rand(-60, 60), 8 + gameMin() * 2);

@@ -14,7 +14,7 @@ function defaultMods() {
     projAdd: 0, pierceAdd: 0, chainAdd: 0, igniteAdd: 0, shockAdd: 0, poisonAdd: 0, ailDurInc: 0, shockEffInc: 0,
     burnMore: 1, moreEle: 1, dotMore: 1, moreMinion: 1, moreAll: 1, moreVsRare: 1, vsIgnited: 1,
     minionCount: 0, minionLeech: 0, cullAdd: 0, dmgCap: 0, leechCap: 1, flaskRegen: 0, dashCdMul: 1,
-    lifeOnKill: 0, skillSlots: 0, startSockets: 0, extraChoices: 0,
+    lifeOnKill: 0, skillSlots: 0, extraChoices: 0,
     // legacy tree keystones
     evolveLevelAdd: 0, vaalSoulMul: 1, unevolvedMore: 1, nonMinionMore: 1,
     gemLevel: 0, flaskGainMore: 1,
@@ -35,13 +35,13 @@ const LIFE_PER_LEVEL = 7;
 function createPlayer(cls) {
   return {
     x: 0, y: 0, vx: 0, vy: 0, r: 14, cls, baseLife: cls.life, life: cls.life, maxLife: cls.life,
-    facing: 0, skills: [], passives: {}, keystones: {}, level: 1, xp: 0, xpNext: xpReq(1),
+    facing: 0, flickerPaused: false, flickerIdle: 0, skills: [], passives: {}, keystones: {}, level: 1, xp: 0, xpNext: xpReq(1),
     mods: defaultMods(), iframes: 0, dashCd: 0, dashT: 0, dashVx: 0, dashVy: 0, hurtFlash: 0, leechPool: 0,
     flasks: [null, null, null, null, null],
     flaskFx: { move: 0, speed: 0, armour: 0, armourMul: 1, evasion: 0, evMul: 1, dmgMore: 1, critMul: 1 },
-    armour: 0, evasion: 0, es: 0, maxES: 0, esDelay: 0, block: 0, weapon: null, hosts: {},
+    armour: 0, evasion: 0, es: 0, maxES: 0, esDelay: 0, block: 0, weapon: null,
     resRaw: { fire: 0, cold: 0, lightning: 0, chaos: 0 }, resCap: { fire: 0.75, cold: 0.75, lightning: 0.75, chaos: 0.75 },
-    currency: { chaos: 3, fusing: 0, regal: 0, exalt: 0, divine: 0, annul: 0, jeweller: 0, chroma: 0, whetstone: 0, scrap: 0, vaal: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
+    currency: { chaos: 3, jeweller3: 0, jeweller4: 0, jeweller5: 0, jeweller6: 0, regal: 0, exalt: 0, divine: 0, annul: 0, whetstone: 0, scrap: 0, vaal: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
     // ascendancy state
     asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
     critT: 0, frenzyT: 0, revives: 0,
@@ -67,7 +67,6 @@ function buildPlayerMods(equip) {
 function recomputePlayer() {
   const P = G.player;
   const ratio = P.maxLife > 0 ? P.life / P.maxLife : 1;
-  reassignHosts();
   const m = buildPlayerMods(P.equip), fx = G.mapFx;
   P.mods = m;
   P.weapon = P.equip.weapon ? itemProps(P.equip.weapon) : null;
@@ -92,6 +91,8 @@ function recomputePlayer() {
 function updatePlayer(dt) {
   const P = G.player;
   const inp = G.input;
+  if (flickerMovementIntent() || P.flickerPaused) cancelFlicker();
+  else P.flickerIdle = Math.min(0.3, P.flickerIdle + dt);
   let ix = 0, iy = 0;
   if (inp.left) ix -= 1; if (inp.right) ix += 1; if (inp.up) iy -= 1; if (inp.down) iy += 1;
   if (inp.joy) { ix = inp.joy.x; iy = inp.joy.y; }
@@ -193,9 +194,8 @@ function collectPickup(kind, x, y, it) {
   Sfx.play('currency');
   addText(x, y - 20, def.name, def.color, 1.1);
   emit('gold', x, y, 14, { color: def.color });
-  if (def.craft) { P.currency[kind] = (P.currency[kind] || 0) + 1; showTip('craft'); }
+  if (def.craft) { P.currency[kind] = (P.currency[kind] || 0) + 1; showTip(JEWELLERS[kind] ? 'jeweller' : 'craft'); }
   else if (kind === 'chaos') P.currency.chaos++;
-  else if (kind === 'fusing') P.currency.fusing++;
   else if (kind === 'life') P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3);
   else if (kind === 'magnet') for (const o of G.orbs) o.pull = true;
   else if (kind === 'chest') { if (it && it.boss) G.pendingChests++; else openChestInstant(x, y); }

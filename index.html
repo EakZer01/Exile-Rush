@@ -6,10 +6,11 @@
 <title>Exile Survivors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=26">
+<link rel="stylesheet" href="css/style.css?v=33">
 </head>
 <body>
 <canvas id="game"></canvas>
+<button id="btn-flicker" class="btn flicker-toggle" type="button" aria-pressed="true" hidden>Flicker: เปิด · T</button>
 
 <!-- Title / class select -->
 <div id="menu" class="overlay">
@@ -22,7 +23,7 @@
     <div id="best-run" class="best-run"></div>
     <div class="controls-help">
       <b>WASD / ลูกศร</b> เดิน · <b>Space</b> Flame Dash · <b>Q</b> Life Flask · <b>E</b> Quicksilver Flask ·
-      <b>V</b> ท่าไม้ตาย Vaal · <b>U</b> เลือกการ์ดที่เก็บไว้ · <b>I</b> กระเป๋า · <b>C / Tab</b> หน้าสถิติ · <b>Esc</b> หยุดเกม · <b>Z</b> มินิแมพ · <b>M</b> ปิดเสียง · <b>L</b> เปิด/ปิดแสงเงา · <b>F</b> เปิด/ปิดเอฟเฟกต์
+      <b>V</b> ท่าไม้ตาย Vaal · <b>T</b> เปิด/พัก Flicker · <b>U</b> เลือกการ์ดที่เก็บไว้ · <b>I</b> กระเป๋า · <b>C / Tab</b> หน้าสถิติ · <b>Esc</b> หยุดเกม · <b>Z</b> มินิแมพ · <b>M</b> ปิดเสียง · <b>L</b> เปิด/ปิดแสงเงา · <b>F</b> เปิด/ปิดเอฟเฟกต์
     </div>
   </div>
 </div>
@@ -141,8 +142,8 @@
         <div id="inv-doll" class="doll"></div>
         <div id="inv-flasks" class="flask-row"></div>
         <div id="inv-quick" class="inv-quick"></div>
-        <details class="links-box"><summary>ลิงก์สกิล <span class="muted" id="inv-links-n"></span></summary>
-          <div class="muted links-help">สกิลอยู่ใน Socket ของไอเทมไหน · Support ต้องตรงสี Socket</div>
+        <details class="links-box" open><summary>ช่อง Support ของสกิล <span class="muted" id="inv-links-n"></span></summary>
+          <div class="muted links-help">ทุกสกิลเริ่ม 2 ช่อง · ไม่มีสีหรือ Link บนอุปกรณ์ · Jeweller 3/4/5/6 เพิ่มเป็นจำนวนช่องตามระดับแน่นอน ใช้ข้ามขั้นได้ เช่น 2 → 6 · ระดับสูงดรอปยากกว่า</div>
           <div id="inv-links" class="links-panel"></div></details>
       </div>
       <div class="inv-right">
@@ -229,38 +230,38 @@
 <div id="tip" class="tip hidden"></div>
 <div id="tooltip" class="tooltip hidden"></div>
 
-<script src="js/util.js?v=26"></script>
-<script src="js/data/skills.js?v=26"></script>
-<script src="js/data/supports.js?v=26"></script>
-<script src="js/data/passives.js?v=26"></script>
-<script src="js/data/monsters.js?v=26"></script>
-<script src="js/data/classes.js?v=26"></script>
-<script src="js/data/ascendancy.js?v=26"></script>
-<script src="js/data/evolutions.js?v=26"></script>
-<script src="js/data/meta.js?v=26"></script>
-<script src="js/data/items.js?v=26"></script>
-<script src="js/data/maps.js?v=26"></script>
-<script src="js/data/sprite_art.js?v=26"></script>
-<script src="js/stats.js?v=26"></script>
-<script src="js/fx.js?v=26"></script>
-<script src="js/combat.js?v=26"></script>
-<script src="js/skills.js?v=26"></script>
-<script src="js/enemies.js?v=26"></script>
-<script src="js/player.js?v=26"></script>
-<script src="js/settings.js?v=26"></script>
-<script src="js/meta.js?v=26"></script>
-<script src="js/items.js?v=26"></script>
-<script src="js/breach.js?v=26"></script>
-<script src="js/lighting.js?v=26"></script>
-<script src="js/world.js?v=26"></script>
-<script src="js/icons.js?v=26"></script>
-<script src="js/sprites.js?v=26"></script>
-<script src="js/render.js?v=26"></script>
-<script src="js/ui.js?v=26"></script>
-<script src="js/compare.js?v=26"></script>
-<script src="js/leagues.js?v=26"></script>
-<script src="js/stash.js?v=26"></script>
-<script src="js/codex.js?v=26"></script>
-<script src="js/game.js?v=26"></script>
+<script src="js/util.js?v=33"></script>
+<script src="js/data/skills.js?v=33"></script>
+<script src="js/data/supports.js?v=33"></script>
+<script src="js/data/passives.js?v=33"></script>
+<script src="js/data/monsters.js?v=33"></script>
+<script src="js/data/classes.js?v=33"></script>
+<script src="js/data/ascendancy.js?v=33"></script>
+<script src="js/data/evolutions.js?v=33"></script>
+<script src="js/data/meta.js?v=33"></script>
+<script src="js/data/items.js?v=33"></script>
+<script src="js/data/maps.js?v=33"></script>
+<script src="js/data/sprite_art.js?v=33"></script>
+<script src="js/stats.js?v=33"></script>
+<script src="js/fx.js?v=33"></script>
+<script src="js/combat.js?v=33"></script>
+<script src="js/skills.js?v=33"></script>
+<script src="js/enemies.js?v=33"></script>
+<script src="js/player.js?v=33"></script>
+<script src="js/settings.js?v=33"></script>
+<script src="js/meta.js?v=33"></script>
+<script src="js/items.js?v=33"></script>
+<script src="js/breach.js?v=33"></script>
+<script src="js/lighting.js?v=33"></script>
+<script src="js/world.js?v=33"></script>
+<script src="js/icons.js?v=33"></script>
+<script src="js/sprites.js?v=33"></script>
+<script src="js/render.js?v=33"></script>
+<script src="js/ui.js?v=33"></script>
+<script src="js/compare.js?v=33"></script>
+<script src="js/leagues.js?v=33"></script>
+<script src="js/stash.js?v=33"></script>
+<script src="js/codex.js?v=33"></script>
+<script src="js/game.js?v=33"></script>
 </body>
 </html>

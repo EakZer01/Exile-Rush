@@ -36,6 +36,9 @@ function loadMeta() {
   }
   // drop nodes that no longer exist (tree changed between versions)
   for (const id in Meta.alloc) if (!TREE_NODES[id]) { Meta.shards += Meta.alloc[id]; delete Meta.alloc[id]; }
+  let migrated = false;
+  for (const it of Meta.stash || []) if (it && it.slot !== 'jewel' && ('sockets' in it || 'links' in it)) { stripEquipmentSockets(it); migrated = true; }
+  if (migrated) saveMeta();
   return Meta;
 }
 function saveMeta() {
@@ -112,7 +115,7 @@ const STASH_CAP = 48;
 function stashAdd(it) {
   const M = loadMeta();
   if (M.stash.length >= STASH_CAP) return false;
-  const c = JSON.parse(JSON.stringify(it));
+  const c = stripEquipmentSockets(JSON.parse(JSON.stringify(it)));
   delete c.gx; delete c.gy; delete c.active; delete c.wantUse;
   M.stash.push(c);
   return true;

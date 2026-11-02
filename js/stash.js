@@ -26,6 +26,7 @@ function collectMap(m) {
 
 // ---------------- loadout: stash items brought into a run ----------------
 function giveLoadoutItem(P, it) {
+  stripEquipmentSockets(it);
   it.uid = uid();
   if (it.slot === 'flask') { const i = P.flasks.findIndex((f) => !f); if (i >= 0) { it.charges = flaskStats(it).max * 0.5; it.active = 0; P.flasks[i] = it; return; } }
   else if (it.slot !== 'jewel') {

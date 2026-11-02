@@ -6,8 +6,8 @@
 // ============================================================
 const MAX_GEM_LEVEL = 20;
 const MAX_SKILLS = 6;
-const START_SOCKETS = 2;   // support sockets a new skill has (a "3-link")
-const MAX_SOCKETS = 5;     // a "6-link"
+const START_SOCKETS = 2;   // every skill starts with two neutral support slots
+const MAX_SOCKETS = 6;     // raised directly by tiered Jeweller's Orbs
 
 const SKILLS = {};
 function defSkill(d) { d.tags = d.tags.concat(['Damage']); SKILLS[d.id] = d; }
@@ -301,11 +301,11 @@ defSkill({
 defSkill({
   id: 'flicker_strike', name: 'Flicker Strike', th: 'ฟาดวาร์ป', gem: 'g', icon: '⚡',
   tags: ['Attack', 'Melee', 'AoE', 'Movement', 'Physical'],
-  desc: 'ส่งร่างเงาวาร์ปไปฟาดศัตรูเป็นวง (ชอบเล็ง Rare) แล้วหายไป — ตัวจริงเดินได้อิสระ · ระยะ 340',
+  desc: 'ตัวจริงวาร์ปฟาด 3 ครั้งต่อชุด · ยืนนิ่ง 0.3 วิจึงเริ่ม · กดเดินหรือ Dash หยุดทันที · T เปิด/พัก · วาร์ปครั้งละไม่เกิน 240 และไม่เกิน 340 จากจุดเริ่มชุด',
   behavior: 'flicker',
   base: { dmg: 17, types: { physical: 1 }, cd: 0.8, range: 340, area: 70, crit: 0.06, knock: 15, flickers: 1 },
   scale(s, l) { s.flickers += Math.floor(l / 7); s.area *= 1 + 0.015 * (l - 1); },
-  levelNote: 'ทุก 7 เลเวล: วาร์ปต่อเนื่อง +1 ครั้ง',
+  levelNote: 'ทุก 7 เลเวล: เพิ่มพลังชุดวาร์ปเทียบเท่าการฟาดอีก 1 ครั้ง (ยังวาร์ปชุดละ 3 ครั้ง)',
   color: '#d0f0ff', core: '#ffffff',
 });
 defSkill({

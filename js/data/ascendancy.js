@@ -128,10 +128,10 @@ defAsc({ id: 'paragon', cls: 'scion', name: 'Paragon', th: 'ผู้สมบ�
     { id: 'ascendant_path', name: 'Ascendant Path', icon: '❖', desc: 'ทุกสกิลทำดาเมจ 10% more · +10% ชีวิตสูงสุด · ทุกครั้งที่ได้แต้ม Ascendancy จะสุ่มโหนดจากคลาสอื่นมาให้เลือก', apply(m) { m.moreAll *= 1.1; m.lifeInc += 0.1; } },
   ] });
 defAsc({ id: 'wayfarer', cls: 'scion', name: 'Wayfarer', th: 'ผู้พเนจร', color: '#a8c8ff', icon: '✈',
-  desc: 'สายเจม สกิลเยอะ ลิงก์เยอะ',
+  desc: 'สายเจม สกิลเยอะ ช่วยเพิ่มช่อง Support',
   nodes: [
     { id: 'wanderlust', name: 'Wanderlust', icon: '✈', desc: 'ช่องสกิล +1 (มีได้ 7 สกิล) · +8% ความเร็วเคลื่อนที่', apply(m) { m.skillSlots += 1; m.moveInc += 0.08; } },
     { id: 'gem_prodigy', name: 'Gem Prodigy', icon: '◆', desc: 'เจมสกิลทุกอันเลเวล +2 ทันที', instant: 'gems2', apply() {} },
-    { id: 'linkmaster', name: 'Linkmaster', icon: '◈', desc: 'ได้ Orb of Fusing 2 ลูก · สกิลใหม่เริ่มด้วยซ็อกเก็ต +1', instant: 'fusing2', apply(m) { m.startSockets += 1; } },
+    { id: 'linkmaster', name: 'Gemsmith', icon: '⬡', desc: "ได้ Jeweller's Orb 3 ×2 · เลเวล Skill Gem ทุกอัน +1", instant: 'jeweller3x2', apply(m) { m.gemLevel += 1; } },
     { id: 'fortune', name: 'Fortune', icon: '✪', desc: 'ตัวเลือกตอนเลเวลอัพ +1 ใบ · ได้ Chaos Orb 3 ลูก', instant: 'chaos3', apply(m) { m.extraChoices += 1; } },
   ] });

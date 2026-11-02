@@ -118,8 +118,12 @@ canvas#game { display: block; position: fixed; inset: 0; touch-action: none; }
 .chip-rep { cursor: pointer; } .chip-rep:hover { background: #4a1a10; text-decoration: line-through; }
 .sockets { display: inline-flex; gap: 3px; align-items: center; vertical-align: middle; padding: 2px 4px; background: #0e0b08; border: 1px solid #3a2e1e; }
 .sock { width: 11px; height: 11px; border-radius: 50%; border: 1px solid #000; }
-.sock-r { background: var(--red); } .sock-g { background: var(--green); } .sock-b { background: var(--blue); }
-.sock-empty { background: #2a2218; border-color: #5a4a30; }
+.sock.skill-slot { background: #17120d; border: 1px solid #8e7950; }
+.sock.skill-slot.filled { background: #d8be82; border-color: #f0dba6; }
+.jeweller-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.jeweller-btn { border-color: var(--oc); color: var(--oc); min-height: 40px; min-width: 0; padding: 6px 4px; }
+@media (max-width: 699px) { .jeweller-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.link-info { min-width: 0; }
 .ok { color: #7aff8a; font-size: 12px; } .warn { color: #ffc84a; font-size: 12px; } .bad { color: #ff6a5a; font-size: 12px; }
 .muted { color: var(--muted); font-size: 12px; }
 
@@ -240,7 +244,6 @@ canvas#game { display: block; position: fixed; inset: 0; touch-action: none; }
 .ds-weapon { grid-area: weapon; } .ds-offhand { grid-area: offhand; } .ds-helm { grid-area: helm; } .ds-body { grid-area: body; }
 .ds-amulet { grid-area: amulet; } .ds-ring { grid-area: ring; } .ds-ring2 { grid-area: ring2; } .ds-gloves { grid-area: gloves; }
 .ds-belt { grid-area: belt; } .ds-boots { grid-area: boots; }
-.doll-slot .pt-sockets.small { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); margin: 0; }
 .flask-row { display: grid; grid-template-columns: repeat(5, 42px); gap: 6px; justify-content: center; margin-top: 8px; }
 .flask-slot { position: relative; height: 70px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.45); border: 1px solid #3a2e1c; cursor: grab; touch-action: none; }
 .flask-slot .fk { position: absolute; bottom: 1px; right: 4px; font-size: 11px; color: var(--muted); }
@@ -250,7 +253,6 @@ canvas#game { display: block; position: fixed; inset: 0; touch-action: none; }
 .links-panel { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
 .link-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px; background: #120e0a; border: 1px solid #2a2014; font-size: 13px; }
 .link-info { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-.link-info select { background: #0c0906; color: #e8e0d0; border: 1px solid var(--border); font: 12px Sarabun, sans-serif; padding: 2px; }
 .link-socks { display: flex; align-items: center; gap: 4px; }
 .inv-right { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .inv-detail { display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow-y: auto; }
@@ -267,15 +269,6 @@ canvas#game { display: block; position: fixed; inset: 0; touch-action: none; }
 .drag-ghost { position: fixed; z-index: 100; pointer-events: none; opacity: .85; image-rendering: pixelated; object-fit: contain; }
 .inv-currency { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 14px; font-weight: 700; }
 /* sockets */
-.pt-sockets { display: flex; gap: 6px; justify-content: center; margin: 6px 0 2px; }
-.sock-grp { display: inline-flex; align-items: center; }
-.psock { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 2px solid #222; box-sizing: border-box; }
-.pt-sockets.small .psock { width: 8px; height: 8px; border-width: 1px; }
-.plink { width: 6px; height: 3px; background: #d8c8a0; display: inline-block; }
-.pt-sockets.small .plink { width: 3px; height: 2px; }
-.psock-R { background: #c03028; } .psock-G { background: #3aa040; } .psock-B { background: #3a5cd0; } .psock-W { background: #e8e8e8; }
-.psock.filled { box-shadow: 0 0 0 2px #fff inset; }
-.sock.sring-R { box-shadow: 0 0 0 2px #c03028; } .sock.sring-G { box-shadow: 0 0 0 2px #3aa040; } .sock.sring-B { box-shadow: 0 0 0 2px #3a5cd0; }
 .chip-off { opacity: .4; text-decoration: line-through; }
 /* PoE-style tooltip */
 .poe-tip { background: rgba(4,3,2,.96); border: 1px solid #4a3c24; text-align: center; font-size: 14px; }
@@ -427,3 +420,10 @@ details.bench summary { cursor: pointer; color: #d8c8a0; }
 .card-ms { border: 1px solid #c8a040 !important; box-shadow: 0 0 14px rgba(255,200,80,.25), inset 0 0 20px rgba(255,200,80,.08); }
 #levelup.ms .panel { border-color: #ffd84a; box-shadow: 0 0 40px rgba(255,200,80,.25); }
 #levelup.ms .panel-title { color: #ffd84a; }
+
+/* A real button keeps Flicker usable with mouse, touch and keyboard. */
+.flicker-toggle { position: fixed; left: 12px; bottom: 166px; z-index: 5; min-height: 44px; padding: 8px 12px; font-size: 13px; }
+.flicker-toggle[aria-pressed="true"] { border-color: #a8def0; color: #d0f0ff; }
+.flicker-toggle[aria-pressed="false"] { border-color: #b89250; color: #e6c888; }
+.flicker-toggle[hidden] { display: none; }
+@media (max-width: 699px) { .flicker-toggle { top: 124px; bottom: auto; left: 8px; max-width: calc(100vw - 16px); } }

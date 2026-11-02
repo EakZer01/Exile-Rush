@@ -38,6 +38,7 @@ function updateSkills(dt) {
   for (const inst of P.skills) {
     const s = inst.st;
     if (inst.vaalT > 0) inst.vaalT -= dt;
+    if (s.behavior === 'flicker') { updateFlicker(inst, s, dt, speedMul); continue; }
     if (s.behavior === 'aura') { tickAura(inst, s, dt); continue; }
     if (s.behavior === 'herald') continue;          // works through on-kill only
     if (s.behavior === 'orbit') updateOrbit(inst, s, dt);
@@ -153,7 +154,7 @@ function spawnProjectile(inst, s, x, y, a, hitSet) {
   G.projectiles.push({
     x, y, ox: x, oy: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, a, t: 0, life: s.lifeFinal, r: s.size,
     pierce: s.pierce, chain: s.chain, forked: false, hit: hitSet ? new Set(hitSet) : new Set(),
-    inst, s, wt: 0, dead: false, zt: 0, child: false, returned: false,
+    inst, s, wt: 0, dead: false, zt: 0, child: false, splitDone: false, returned: false,
   });
 }
 
@@ -209,6 +210,7 @@ function pointBlankMult(p) {
 }
 
 function onProjectileHit(p, e) {
+  if (p.dead || e.dead || p.hit.has(e.id)) return;
   const s = p.s;
   p.hit.add(e.id);
   // Freezing Pulse fades with distance travelled
@@ -226,6 +228,9 @@ function onProjectileHit(p, e) {
       spawnProjectile(p.inst, s, p.x, p.y, p.a + da, p.hit);
       const np = G.projectiles[G.projectiles.length - 1];
       np.forked = true; np.pierce = 0; np.chain = p.chain; np.ox = p.ox; np.oy = p.oy;
+      // A fork is a continuation of this arrow, not a fresh Tornado Shot primary.
+      np.child = p.child; np.splitDone = p.splitDone; np.returned = p.returned;
+      np.life = p.life; np.t = p.t;
     }
     p.dead = true; p.noExplodeOnExpire = true;
     return;
@@ -482,10 +487,14 @@ function lightningStrikes(p, hitE) {
 
 // Tornado Shot: secondary arrows burst out in random directions
 function splitProjectile(p) {
+  if (p.child || p.splitDone || !p.s.split) return;
+  p.splitDone = true;
   for (let i = 0; i < p.s.split; i++) {
     spawnProjectile(p.inst, p.s, p.x, p.y, rand(0, TAU), p.hit);
     const np = G.projectiles[G.projectiles.length - 1];
     np.child = true; np.life = p.s.lifeFinal * 0.6; np.ox = p.ox; np.oy = p.oy;
+    np.splitDone = true; np.forked = p.forked; np.returned = p.returned;
+    np.chain = p.chain; np.pierce = p.pierce;
   }
 }
 
@@ -609,25 +618,87 @@ function castBeam(inst, s) {
   return true;
 }
 
-// Flicker Strike: a phantom of the player blinks to an enemy (Rares preferred),
-// strikes around it and vanishes — the player keeps walking where they want
+// Flicker owns its three-hit burst here, never through uncancellable delayed casts.
+function flickerMovementIntent() {
+  const i = G.input, P = G.player;
+  return i.up || i.down || i.left || i.right || i.dash ||
+    (i.joy && Math.hypot(i.joy.x, i.joy.y) > 0.1) || (P && P.dashT > 0);
+}
+function cancelFlicker() {
+  const P = G.player;
+  if (!P) return;
+  P.flickerIdle = 0;
+  for (const inst of P.skills) if (inst.st && inst.st.behavior === 'flicker') {
+    if (inst.rt.flickerRemaining > 0) inst.rt.flickerRest = 0.25;
+    inst.rt.flickerRemaining = 0;
+  }
+}
+function toggleFlicker() {
+  const P = G.player;
+  if (G.state !== 'play' || !P || !P.skills.some((i) => i.st && i.st.behavior === 'flicker')) return;
+  P.flickerPaused = !P.flickerPaused;
+  cancelFlicker();
+  syncFlickerButton();
+}
+function flickerReady() {
+  const P = G.player;
+  return G.state === 'play' && P && !P.dead && !P.flickerPaused &&
+    P.flickerIdle >= 0.3 && !flickerMovementIntent();
+}
+function updateFlicker(inst, s, dt, speedMul) {
+  const rt = inst.rt, rate = speedMul * (inst.vaalT > 0 ? 2.5 : 1);
+  inst.timer -= dt * rate;
+  rt.flickerRest = Math.max(0, (rt.flickerRest || 0) - dt);
+  if (!flickerReady()) { rt.flickerRemaining = 0; return; }
+  if (rt.flickerRemaining > 0) {
+    rt.flickerNext -= dt;
+    if (rt.flickerNext > 0) return;
+    if (!castFlicker(inst, s)) rt.flickerRemaining = 0;
+    else rt.flickerRemaining--;
+    rt.flickerNext = Math.max(0.045, 0.09 / rate);
+    if (!rt.flickerRemaining) rt.flickerRest = 0.25;
+    return;
+  }
+  if (inst.timer > 0 || rt.flickerRest > 0) return;
+  rt.flickerOrigin = { x: G.player.x, y: G.player.y };
+  rt.flickerFacing = G.player.facing;
+  if (s.ruthless && (rt.rc || 0) % 3 === 2) rt.ruthT = G.time + 0.3;
+  if (!castFlicker(inst, s)) { inst.timer = 0.12; rt.ruthT = 0; return; }
+  rt.rc = (rt.rc || 0) + 1;
+  rt.flickerRemaining = s.flickers - 1;
+  rt.flickerNext = Math.max(0.045, 0.09 / rate);
+  inst.timer = s.cdFinal;
+}
+
+// Real player teleport. Prefer nearby targets ahead and keep the entire burst local.
 function castFlicker(inst, s) {
   const P = G.player;
-  const go = () => {
-    const pool = enemiesInRadius(P.x, P.y, s.range, []).filter((e) => !e.dead && !e.encased);
-    if (!pool.length) return false;
-    const tgt = pool.find((e) => e.rarity >= 2 && Math.random() < 0.6) || pick(pool);
-    const a = Math.atan2(P.y - tgt.y, P.x - tgt.x), d = tgt.r + P.r + 4;
-    const nx = tgt.x + Math.cos(a) * d, ny = tgt.y + Math.sin(a) * d;
-    addEffect({ kind: 'bolt', pts: [[P.x, P.y], [(P.x + nx) / 2 + rand(-10, 10), (P.y + ny) / 2 + rand(-10, 10)], [nx, ny]], t: 0, dur: 0.12, color: s.color });
-    addEffect({ kind: 'phantom', x: nx, y: ny, flip: tgt.x < nx, t: 0, dur: 0.28, color: s.color });
-    for (const e of enemiesInRadius(tgt.x, tgt.y, s.radius, [])) hitEnemy(e, s, inst, 1, nx, ny);
-    addEffect({ kind: 'spin', x: tgt.x, y: tgt.y, r: s.radius, t: 0, dur: 0.2, color: s.color });
-    emit('phys', tgt.x, tgt.y, 8, { speed: 1.3 });
-    return true;
-  };
-  if (!go()) return false;
-  for (let k = 1; k < s.flickers; k++) G.delayed.push({ t: 0.09 * k, fn: go });
+  if (!flickerReady()) return false;
+  const origin = inst.rt.flickerOrigin || P, facing = inst.rt.flickerFacing ?? P.facing;
+  let tgt = null, landing = null, best = Infinity;
+  for (const e of enemiesInRadius(P.x, P.y, Math.min(240, s.range), [])) {
+    if (e.dead || e.encased) continue;
+    const dx = e.x - P.x, dy = e.y - P.y, distance = Math.hypot(dx, dy);
+    const a = Math.atan2(-dy, -dx), offset = e.r + P.r + 4;
+    const nx = clampArena(e.x + Math.cos(a) * offset, P.r), ny = clampArena(e.y + Math.sin(a) * offset, P.r);
+    if (dist2(P.x, P.y, nx, ny) > 240 * 240 || dist2(origin.x, origin.y, nx, ny) > s.range * s.range) continue;
+    const forward = distance > 0 ? (dx * Math.cos(facing) + dy * Math.sin(facing)) / distance : 1;
+    const score = distance * (1 + (1 - forward) * 0.7) * (e.rarity >= 2 ? 0.9 : 1);
+    if (score < best) { best = score; tgt = e; landing = { x: nx, y: ny }; }
+  }
+  if (!tgt) return false;
+  addEffect({ kind: 'afterimage', x: P.x, y: P.y, flip: P._faceLeft, t: 0, dur: 0.18, color: s.color });
+  addEffect({ kind: 'bolt', pts: [[P.x, P.y], [landing.x, landing.y]], t: 0, dur: 0.1, color: s.color });
+  P.x = landing.x; P.y = landing.y;
+  P.vx = 0; P.vy = 0;
+  P._faceLeft = tgt.x < P.x;
+  P.iframes = Math.max(P.iframes, 0.06);
+  // Supports repeat the strike at this landing instead of queuing extra teleports.
+  const hits = 1 + (s.echo || 0) + (G.buffs.echoing > 0 ? 1 : 0);
+  const list = enemiesInRadius(tgt.x, tgt.y, s.radius, []);
+  for (let k = 0; k < hits; k++) for (const e of list) if (!e.dead) hitEnemy(e, s, inst, 1, P.x, P.y);
+  addEffect({ kind: 'spin', x: tgt.x, y: tgt.y, r: s.radius, t: 0, dur: 0.2, color: s.color });
+  emit('phys', tgt.x, tgt.y, 8, { speed: 1.3 });
   return true;
 }
 

@@ -3,12 +3,22 @@
 //  ITEMS — equipment found during a run (reset every run)
 //  PoE-style: 10 equipment slots + 5 flask slots, base types with
 //  defences (Armour / Evasion / Energy Shield) or weapon stats,
-//  Prefix / Suffix affixes with tiers gated by item level, sockets
-//  and links, quality and corruption.
+//  Prefix / Suffix affixes with tiers gated by item level,
+//  quality and corruption. Support sockets belong to skills, not equipment.
 //  Items are plain data and become player mods through the tables.
 // ============================================================
 const ITEM_SLOTS = ['weapon', 'offhand', 'helm', 'body', 'gloves', 'boots', 'belt', 'amulet', 'ring', 'ring2'];
-const SOCKET_SLOTS = ['weapon', 'offhand', 'helm', 'body', 'gloves', 'boots'];
+const JEWELLERS = {
+  jeweller3: { sockets: 3, name: "Jeweller's Orb 3", th: 'เพิ่มช่อง Support ของสกิลเป็น 3 ช่อง', icon: '⬡', color: '#c8d0db', w: 6, rarity: 'พบบ่อย' },
+  jeweller4: { sockets: 4, name: "Jeweller's Orb 4", th: 'เพิ่มช่อง Support ของสกิลเป็น 4 ช่อง', icon: '⬡', color: '#8ab4ff', w: 1.8, rarity: 'พบน้อย' },
+  jeweller5: { sockets: 5, name: "Jeweller's Orb 5", th: 'เพิ่มช่อง Support ของสกิลเป็น 5 ช่อง', icon: '⬡', color: '#ffe28a', w: 0.35, rarity: 'หายาก' },
+  jeweller6: { sockets: 6, name: "Jeweller's Orb 6", th: 'เพิ่มช่อง Support ของสกิลเป็น 6 ช่อง', icon: '⬡', color: '#eea0ff', w: 0.04, rarity: 'หายากมาก' },
+};
+const randomJeweller = () => weightedSample(Object.keys(JEWELLERS), 1, (id) => JEWELLERS[id].w)[0];
+function stripEquipmentSockets(it) {
+  if (it && it.slot !== 'jewel') { delete it.sockets; delete it.links; }
+  return it;
+}
 const FLASK_SLOTS = 5;
 const SLOT_NAME = { jewel: 'Jewel', weapon: 'อาวุธ', offhand: 'มือรอง', helm: 'หมวก', body: 'เกราะ', gloves: 'ถุงมือ', boots: 'รองเท้า', belt: 'เข็มขัด',
   amulet: 'สร้อยคอ', ring: 'แหวน', ring2: 'แหวน', flask: 'ฟลาสก์' };
@@ -202,10 +212,10 @@ function makeJewel(rarity) {
 // ---------------- crafting bench: one fixed "crafted" mod per item ----------------
 const BENCH = [
   { id: 'lifeflat', v: 30, cost: { scrap: 2 } },
-  { id: 'fireres', v: 20, cost: { chroma: 1 } },
-  { id: 'coldres', v: 20, cost: { chroma: 1 } },
-  { id: 'lightres', v: 20, cost: { chroma: 1 } },
-  { id: 'chaosres', v: 13, cost: { jeweller: 1 } },
+  { id: 'fireres', v: 20, cost: { chaos: 1 } },
+  { id: 'coldres', v: 20, cost: { chaos: 1 } },
+  { id: 'lightres', v: 20, cost: { chaos: 1 } },
+  { id: 'chaosres', v: 13, cost: { regal: 1 } },
   { id: 'flates', v: 22, cost: { scrap: 2 } },
   { id: 'speed', v: 7, cost: { whetstone: 2 } },
   { id: 'move', v: 12, cost: { regal: 1 } },
@@ -388,40 +398,6 @@ function magicName(it) {
   return `${pre ? AFFIXES[pre.id].nm + ' ' : ''}${BASES[it.base].name}${suf ? ' ' + AFFIXES[suf.id].nm : ''}`;
 }
 
-// sockets: max per slot (two-handers 6), colours biased by the base's defence / weapon type
-function maxSockets(it) {
-  const b = BASES[it.base];
-  if (!SOCKET_SLOTS.includes(it.slot) || b.quiver) return 0;
-  if (it.slot === 'weapon') return b.w.hands === 2 ? 6 : 3;
-  return { offhand: 3, helm: 4, body: 6, gloves: 4, boots: 4 }[it.slot];
-}
-function socketColorFor(base) {
-  const d = base.def || {}, wt = base.w && base.w.type;
-  const w = { R: 1 + (d.ar ? 3 : 0) + (['axe', 'mace', 'sword'].includes(wt) ? 3 : 0),
-              G: 1 + (d.ev ? 3 : 0) + (['bow', 'dagger', 'sword'].includes(wt) ? 3 : 0),
-              B: 1 + (d.es ? 3 : 0) + (['wand', 'sceptre', 'staff', 'dagger'].includes(wt) ? 3 : 0) };
-  return weightedSample(['R', 'G', 'B'], 1, (c) => w[c])[0];
-}
-function rollSockets(it, forceCount) {
-  const mx = maxSockets(it);
-  if (!mx) { it.sockets = []; it.links = []; return; }
-  const n = forceCount || weightedSample([1, 2, 3, 4, 5, 6].filter((k) => k <= mx), 1, (k) => [0, 30, 30, 22, 12, 4, 1.2][k])[0];
-  it.sockets = Array.from({ length: n }, () => (Math.random() < 0.04 ? 'W' : socketColorFor(BASES[it.base])));
-  rollLinks(it);
-}
-// split sockets into linked groups — big links are rare
-function rollLinks(it) {
-  const n = it.sockets.length, groups = [];
-  let left = n;
-  while (left > 0) {
-    let g = 1;
-    while (g < left && Math.random() < (g < 3 ? 0.62 : 0.32)) g++;
-    groups.push(g); left -= g;
-  }
-  it.links = groups;
-}
-function rollSocketColors(it) { it.sockets = it.sockets.map(() => (Math.random() < 0.04 ? 'W' : socketColorFor(BASES[it.base]))); }
-
 function pickBase(slot) {
   const pool = Object.values(BASES).filter((b) => b.slot === slot);
   return weightedSample(pool, 1, (b) => (b.rare ? 0.3 : 1))[0];
@@ -451,7 +427,6 @@ function makeItem(rarity, slot, time, tier) {
     const pool = Object.keys(UNIQUES).filter((u) => !slot || UNIQUES[u].slot === slot);
     const id = pick(pool.length ? pool : Object.keys(UNIQUES)), u = UNIQUES[id];
     const it = { uid: uid(), rarity, slot: u.slot, base: u.base, unique: id, name: u.name, ilvl, affixes: [], quality: 0 };
-    rollSockets(it);
     return it;
   }
   const base = pickBase(slot), it = { uid: uid(), rarity, slot, base: base.id, ilvl, affixes: [], quality: 0 };
@@ -459,7 +434,6 @@ function makeItem(rarity, slot, time, tier) {
   const n = rarity === 'rare' ? 4 + (Math.random() < 0.4 ? 1 : 0) + (Math.random() < 0.15 ? 1 : 0) : rarity === 'magic' ? 1 + (Math.random() < 0.5 ? 1 : 0) : 0;
   for (let i = 0; i < n; i++) addRandomAffix(it);
   it.name = rarity === 'rare' ? itemRareName(slot) : rarity === 'magic' ? magicName(it) : base.name;
-  rollSockets(it);
   return it;
 }
 // a plain white item of a given base (starting gear)
@@ -468,7 +442,6 @@ function makeNormal(baseId) {
   if (b.flask) return makeFlask(baseId, 'normal', 1);
   const it = { uid: uid(), rarity: 'normal', slot: b.slot, base: baseId, ilvl: 1, affixes: [], quality: 0, name: b.name };
   if (b.imp) it.implicit = { id: b.imp[0], v: b.imp[1] };
-  rollSockets(it, Math.min(maxSockets(it), 2));
   return it;
 }
 
@@ -523,9 +496,7 @@ const CRAFT_ORBS = {
   divine:   { name: 'Divine Orb', th: 'สุ่มตัวเลขของ mod ใหม่ (ในช่วงของ Tier เดิม)', icon: '✧', color: '#ffc8ff', w: 1.8 },
   annul:    { name: 'Orb of Annulment', th: 'ลบ mod แบบสุ่ม 1 อัน', icon: '⊘', color: '#c0c0d8', w: 2 },
   chaos:    { name: 'Chaos Orb', th: 'สุ่ม mod ของ Rare ใหม่ทั้งหมด (ใช้ร่วมกับการสุ่มการ์ด)', icon: '✪', color: '#d4b45a', w: 2 },
-  jeweller: { name: "Jeweller's Orb", th: 'สุ่มจำนวน Socket ใหม่', icon: '⬡', color: '#b8d8ff', w: 2.5 },
-  fusing:   { name: 'Orb of Fusing', th: 'สุ่ม Link ของ Socket ใหม่ (ใช้ร่วมกับการเพิ่มลิงก์สกิล)', icon: '◈', color: '#c0a0ff', w: 2 },
-  chroma:   { name: 'Chromatic Orb', th: 'สุ่มสีของ Socket ใหม่', icon: '◐', color: '#ff9a9a', w: 3 },
+  ...JEWELLERS,
   whetstone:{ name: "Blacksmith's Whetstone", th: 'อาวุธ +5% Quality (สูงสุด 20%)', icon: '⚒', color: '#d8c8a8', w: 2 },
   scrap:    { name: "Armourer's Scrap", th: 'ชุดเกราะ/โล่ +5% Quality (สูงสุด 20%)', icon: '⛨', color: '#c8c0b0', w: 2.5 },
   vaal:     { name: 'Vaal Orb', th: 'Corrupt ไอเทม: ผลสุ่ม ดีมาก/ไม่เปลี่ยน/พัง · หลังจากนั้นแก้ไขไม่ได้อีก', icon: '◉', color: '#e04040', w: 0.9 },
@@ -541,14 +512,11 @@ const CRAFT = {
     use(it) { it.affixes = it.affixes.map((a) => { const d = AFFIXES[a.id], p = Math.pow(10, d.dec || 0); return d.fixed || a.crafted ? a : Object.assign({}, a, { v: Math.max(d.dec ? 1 / p : 1, Math.round((d.lo + Math.random() * (d.hi - d.lo)) * TIER_MULT[a.tier - 1] * p) / p) }); }); } },
   annul:  { can: (it) => notLocked(it) && !it.unique && it.affixes.length > 1, use(it) { it.affixes.splice(Math.floor(Math.random() * it.affixes.length), 1); } },
   chaos:  { can: (it) => notLocked(it) && it.rarity === 'rare', use(it) { it.affixes = []; const n = 4 + (Math.random() < 0.4 ? 1 : 0) + (Math.random() < 0.15 ? 1 : 0); for (let i = 0; i < n; i++) addRandomAffix(it); it.name = itemRareName(it.slot); } },
-  jeweller: { can: (it) => notLocked(it) && maxSockets(it) > 1, use(it) { rollSockets(it); } },
-  fusing: { can: (it) => notLocked(it) && it.sockets && it.sockets.length > 1, use(it) { rollLinks(it); } },
-  chroma: { can: (it) => notLocked(it) && it.sockets && it.sockets.length > 0, use(it) { rollSocketColors(it); } },
   whetstone: { can: (it) => notLocked(it) && it.slot === 'weapon' && (it.quality || 0) < 20, use(it) { it.quality = Math.min(20, (it.quality || 0) + 5); } },
   scrap:  { can: (it) => notLocked(it) && !!BASES[it.base].def && (it.quality || 0) < 20, use(it) { it.quality = Math.min(20, (it.quality || 0) + 5); } },
   vaal:   { can: (it) => notLocked(it), use(it) { return corruptItem(it); } },
 };
-// Vaal Orb outcomes: nothing / corrupted implicit / reroll mods / reroll sockets / lose a mod
+// Vaal Orb outcomes: nothing / corrupted implicit / reroll mods / lose a mod
 function corruptItem(it) {
   it.corrupted = true;
   const r = Math.random();
@@ -559,7 +527,6 @@ function corruptItem(it) {
     return 'ไม่มีอะไรเปลี่ยน';
   }
   if (r < 0.75 && !it.unique) { it.rarity = 'rare'; it.affixes = []; const n = 4 + (Math.random() < 0.5 ? 1 : 0); for (let i = 0; i < n; i++) addRandomAffix(it); it.name = itemRareName(it.slot); return 'mod ถูกสุ่มใหม่ทั้งหมด'; }
-  if (r < 0.9 && maxSockets(it) > 1) { rollSockets(it, maxSockets(it)); return 'Socket ถูกสุ่มใหม่ (จำนวนสูงสุด)'; }
   if (!it.unique && it.affixes.length) { it.affixes.splice(Math.floor(Math.random() * it.affixes.length), 1); return 'mod หายไป 1 อัน'; }
   return 'ไม่มีอะไรเปลี่ยน';
 }

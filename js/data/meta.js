@@ -69,7 +69,7 @@ const TREE_BRANCHES = [
     armA: [tSmall('+6% ดาเมจ DoT', (m) => { m.incDot += 0.06; }), tSmall('โอกาส Ignite +5% ทุกสกิล', (m) => { m.igniteAdd += 0.05; })],
     notA: tNotable('Kindling', 'เชื้อเพลิง', 'ดาเมจเผาไหม้ 15% more · +10% ดาเมจ DoT', (m) => { m.burnMore *= 1.15; m.incDot += 0.1; }),
     armB: [tSmall('+6% ค่าประสบการณ์', (m) => { m.xpInc += 0.06; }), tSmall('+12% ระยะดูดของ · เริ่มรอบด้วย Chaos Orb +1', (m) => { m.pickupInc += 0.12; }, (P) => { P.currency.chaos += 1; })],
-    notB: tNotable('Foresight', 'มองการณ์ไกล', 'ตัวเลือกตอนเลเวลอัพ +1 ใบ · เริ่มรอบด้วย Orb of Fusing +1', (m) => { m.extraChoices += 1; }, (P) => { P.currency.fusing += 1; }),
+    notB: tNotable('Foresight', 'มองการณ์ไกล', "ตัวเลือกตอนเลเวลอัพ +1 ใบ · เริ่มรอบด้วย Jeweller's Orb 3 ×1", (m) => { m.extraChoices += 1; }, (P) => { P.currency.jeweller3 += 1; }),
     key: tKey('Minion Lord', 'จ้าวแห่งวิญญาณ', 'มินเนียนสูงสุด +1 · มินเนียนทำดาเมจ 30% more · สกิลที่ไม่ใช่มินเนียนทำดาเมจ 20% less', (m) => { m.minionCount += 1; m.moreMinion *= 1.3; m.nonMinionMore *= 0.8; }) },
 ];
 

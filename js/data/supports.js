@@ -36,7 +36,7 @@ defSupport({
 });
 defSupport({
   id: 'fork', name: 'Fork', th: 'แตกแขนง', gem: 'g', req: ['Projectile'],
-  desc: 'กระสุนแตกออกเป็น 2 ลูกเมื่อโดนศัตรู · ดาเมจ 10% more',
+  desc: 'กระสุนแตกออกเป็น 2 ลูกเมื่อโดนศัตรู · ลูกที่แตกแล้วไม่แตกซ้ำ · ดาเมจ 10% more',
   apply(s) { s.fork = true; s.more *= 1.1; },
 });
 defSupport({

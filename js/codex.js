@@ -7,7 +7,7 @@ const COMBOS = [
   { name: 'Shatter Chain', parts: ['herald_of_ice', 'ice_nova', 'hypothermia', 'elemental_prolif'],
     desc: 'Ice Nova แช่แข็งฝูง → Herald of Ice ทำให้ศพแตกระเบิดต่อกันเป็นทอดๆ · Elemental Proliferation กระจาย Chill ให้ทั่ว' },
   { name: 'Flicker Frenzy', parts: ['flicker_strike', 'multistrike', 'close_combat', 'fortify'],
-    desc: 'วาร์ปเข้าฝูงแล้วฟันซ้ำ 3 ครั้ง · Close Combat แรงขึ้นตอนประชิด · Fortify ลดดาเมจที่รับ' },
+    desc: 'ตัวจริงวาร์ปชุดละ 3 ครั้ง · Multistrike ฟันซ้ำที่จุดวาร์ป · Close Combat แรงขึ้นตอนประชิด · Fortify ลดดาเมจที่รับ · เดินเพื่อหยุด หรือ T เปิด/พัก' },
   { name: 'Prismatic Smite', parts: ['smite', 'added_cold', 'trinity', 'elemental_prolif'],
     desc: 'Smite มีทั้งกายภาพ/สายฟ้า + Added Cold = 2 ธาตุ → Trinity 35% more · Prolif แพร่ Shock/Chill' },
   { name: 'Shard Storm', parts: ['frost_blades', 'gmp', 'pierce', 'herald_of_ice'],
@@ -69,7 +69,7 @@ function renderCodexBody() {
       h += `<div class="codex-card">${skillGemHtml(id)}<div class="codex-info">
         <div class="card-name">${d.name} <small class="muted">${d.th}</small>${lock ? ` <span class="bad">🔒 ${lock.req}</span>` : ''}</div>
         ${tagsHtml(d.tags)}<div class="card-desc">${d.desc}</div><div class="card-note">${d.levelNote}</div>
-        ${ev ? `<div class="card-note evo-hint">✦ ${ev.name} (Lv ${EVOLVE_LEVEL}+ ลิงก์ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}): ${ev.desc}</div>` : ''}</div></div>`;
+        ${ev ? `<div class="card-note evo-hint">✦ ${ev.name} (Lv ${EVOLVE_LEVEL}+ ใส่ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}): ${ev.desc}</div>` : ''}</div></div>`;
     }
   } else if (codexTab === 'monsters') {
     for (const id in MONSTERS) {

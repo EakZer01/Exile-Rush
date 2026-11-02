@@ -23,7 +23,7 @@ function statSnapshot(equip) {
   for (const inst of P.skills) {
     const s = buildSkillStats(inst, fake);
     if (s.behavior === 'aura') dps += s.auraDps;
-    else if (s.behavior !== 'herald') dps += (avgHit(s) / Math.max(0.1, s.cdFinal)) * Math.max(1, s.proj || 1) * (1 + (s.echo || 0));
+    else if (s.behavior !== 'herald') dps += (avgHit(s) / Math.max(0.1, s.cdFinal)) * Math.max(1, s.proj || 1) * (1 + (s.echo || 0)) * (s.behavior === 'flicker' ? s.flickers : 1);
   }
   return { life, es, armour: m.armour, evasion: m.evasion, block: Math.min(0.5, m.block), res, move: 200 * (1 + m.moveInc) * m.moveMore, dps };
 }

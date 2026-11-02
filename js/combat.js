@@ -172,7 +172,7 @@ function killEnemy(e, inst) {
   onLeagueKill(e);
   if (e.rarity === 2) {
     spawnPickup(e.x + 10, e.y, 'chest');
-    if (Math.random() < 0.35) spawnPickup(e.x - 12, e.y + 6, 'fusing');
+    if (Math.random() < 0.35) spawnPickup(e.x - 12, e.y + 6, randomJeweller());
     if (Math.random() < 0.22) spawnPickup(e.x, e.y - 12, 'chaos');
   } else if (e.rarity === 1) {
     if (Math.random() < 0.06) spawnPickup(e.x, e.y, 'chaos');
@@ -292,7 +292,6 @@ function spawnOrb(x, y, v) {
 }
 const PICKUPS = {
   chaos:  { name: 'Chaos Orb', th: 'สุ่มตัวเลือกเลเวลอัพใหม่ได้ 1 ครั้ง', color: '#d4b45a', icon: '✪' },
-  fusing: { name: 'Orb of Fusing', th: '+1 ซ็อกเก็ต (ลิงก์) ให้สกิล', color: '#c0a0ff', icon: '◈' },
   life:   { name: 'Life Orb', th: 'ฟื้นชีวิต 30%', color: '#ff3a3a', icon: '❤' },
   magnet: { name: 'Orb of Gathering', th: 'ดูดลูกแก้วประสบการณ์ทั้งหมด', color: '#4ad0ff', icon: '⊛' },
   chest:  { name: 'Treasure Chest', th: 'สมบัติจากมอนสเตอร์ Rare', color: '#ffcf4a', icon: '▣' },
@@ -300,12 +299,11 @@ const PICKUPS = {
   exalt:  { name: 'Exalted Orb', color: '#ffe8a0', icon: '✷', craft: true },
   divine: { name: 'Divine Orb', color: '#ffc8ff', icon: '✧', craft: true },
   annul:  { name: 'Orb of Annulment', color: '#c0c0d8', icon: '⊘', craft: true },
-  jeweller: { name: "Jeweller's Orb", color: '#b8d8ff', icon: '⬡', craft: true },
-  chroma: { name: 'Chromatic Orb', color: '#ff9a9a', icon: '◐', craft: true },
   whetstone: { name: "Blacksmith's Whetstone", color: '#d8c8a8', icon: '⚒', craft: true },
   scrap:  { name: "Armourer's Scrap", color: '#c8c0b0', icon: '⛨', craft: true },
   vaal:   { name: 'Vaal Orb', color: '#e04040', icon: '◉', craft: true },
 };
+for (const [id, def] of Object.entries(JEWELLERS)) PICKUPS[id] = { ...def, craft: true };
 function spawnPickup(x, y, kind, extra) { G.pickups.push(Object.assign({ x, y, kind, t: 0 }, extra)); }
 const pickupDef = (it) => (it.kind === 'essence' ? { name: ESSENCES[it.ess].name, color: ESSENCES[it.ess].color, icon: '◆' }
   : it.kind === 'map' ? { name: `แผนที่ T${it.map.tier}`, color: RARITY_COLOR[it.map.rarity], icon: '▦' } : PICKUPS[it.kind]);

@@ -91,7 +91,7 @@ const EVOLUTIONS = {
     desc: 'ระเบิดกว้างขึ้น 40% · ดาเมจ 40% more',
     apply(s) { s.area *= 1.4; s.more *= 1.4; } },
   flicker_strike: { name: 'Vaal Flicker Strike', req: ['multistrike', 'close_combat', 'melee_physical'],
-    desc: 'วาร์ปต่อเนื่อง +2 · วงฟันกว้างขึ้น 30%',
+    desc: 'เพิ่มพลังชุดวาร์ปเทียบเท่าการฟาดอีก 2 ครั้ง · วงฟันกว้างขึ้น 30% · ยังวาร์ปชุดละ 3 ครั้ง',
     apply(s) { s.flickers += 2; s.area *= 1.3; } },
   smite: { name: 'Vaal Smite', req: ['added_lightning', 'multistrike', 'fortify'],
     desc: 'สายฟ้า +3 · Shock แรงขึ้น · ดาเมจ 15% more',
@@ -135,7 +135,7 @@ const AWAKEN_BONUS = {
 
 function evolveRecipeMet(inst) {
   const ev = EVOLUTIONS[inst.id];
-  return !!ev && !inst.evo && inst.level >= evolveLevel() && ev.req.some((r) => inst.supports.includes(r));
+  return !!ev && !inst.evo && inst.level >= evolveLevel() && ev.req.some((r) => activeSupports(inst).active.includes(r));
 }
 // both can be lowered by the Gem Savant keystone on the Legacy Tree
 function evolveLevel() { return EVOLVE_LEVEL + (G.player ? G.player.mods.evolveLevelAdd : 0); }

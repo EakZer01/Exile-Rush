@@ -1,7 +1,7 @@
 'use strict';
 // ============================================================
 //  Item runtime: drops, ground loot, grid backpack, equip rules,
-//  skill gems hosted in item sockets, flasks
+//  skill support slots, tiered Jewellers and flasks
 // ============================================================
 
 // chance of an item drop and its rarity weights per monster rarity
@@ -13,17 +13,17 @@ const ITEM_DROP = {
 const DROP_SLOT_W = { weapon: 1.3, offhand: 0.7, helm: 1, body: 1, gloves: 1, boots: 1, belt: 0.8, amulet: 0.6, ring: 1.2, flask: 1.1 };
 
 // Loot filter: hidden drops are salvaged straight into shards.
-// 5+ links, uniques, jewels and maps always show.
+// Uniques, jewels and maps always show.
 const LOOT_FILTERS = [
   { name: 'แสดงทั้งหมด', desc: 'เห็นทุกไอเทม', show: () => true },
   { name: 'ซ่อน Normal', desc: 'ซ่อนไอเทมสีขาว', show: (it) => it.rarity !== 'normal' },
   { name: 'Rare ขึ้นไป', desc: 'ซ่อน Normal และ Magic (ยกเว้นฟลาสก์ Magic)', show: (it) => it.rarity === 'rare' || it.rarity === 'unique' || it.slot === 'flask' && it.rarity === 'magic' },
-  { name: 'เข้มงวด', desc: 'เฉพาะ Rare ที่มีค่าต้านทาน / ชีวิต หรือ 4 Socket ขึ้นไป', show: (it) => it.rarity === 'unique' || it.rarity === 'rare' && (hasResMod(it) || it.affixes.some((a) => a.id === 'lifeflat' || a.id === 'life') || (it.sockets || []).length >= 4) },
+  { name: 'เข้มงวด', desc: 'เฉพาะ Rare ที่มีค่าต้านทาน / ชีวิต', show: (it) => it.rarity === 'unique' || it.rarity === 'rare' && (hasResMod(it) || it.affixes.some((a) => a.id === 'lifeflat' || a.id === 'life')) },
 ];
 const RES_MODS = ['fireres', 'coldres', 'lightres', 'allres', 'chaosres'];
 const hasResMod = (it) => (it.affixes || []).some((a) => RES_MODS.includes(a.id)) || !!(it.implicit && RES_MODS.includes(it.implicit.id));
 function lootVisible(it) {
-  if (it.unique || it.slot === 'jewel' || (it.links && it.links.length && Math.max(...it.links) >= 5)) return true;
+  if (it.unique || it.slot === 'jewel') return true;
   return LOOT_FILTERS[G.settings.lootFilter || 0].show(it);
 }
 
@@ -205,8 +205,7 @@ function onItemPickup(it) {
   const P = G.player;
   Sfx.play('currency');
   emit('gold', P.x, P.y, 12, { color: RARITY_COLOR[it.rarity] });
-  const links = it.links && it.links.length ? Math.max(...it.links) : 0;
-  lootLog(it.name + (links >= 5 ? ` (${links}L!)` : ''), RARITY_COLOR[it.rarity]);
+  lootLog(it.name, RARITY_COLOR[it.rarity]);
   showTip('item');
   if (it.unique) {
     announce(it.name, 'Unique ' + SLOT_NAME[it.slot] + ' — ' + UNIQUES[it.unique].th, RARITY_COLOR.unique);
@@ -214,80 +213,54 @@ function onItemPickup(it) {
     if (!M.found) M.found = {};
     if (!M.found[it.unique]) { M.found[it.unique] = true; saveMeta(); lootLog('Unique ใหม่เข้าคลัง!', RARITY_COLOR.unique); }
   }
-  if (links >= 5) announce(`${links}-Link!`, it.name, '#ffe866');
 }
 
-// ---------------- sockets & links: skills live in item sockets ----------------
-// Each socketed gear slot can host one skill in its largest link group.
-// A hosted skill uses the item's sockets when they offer more support
-// sockets than the skill's own base links (Orb of Fusing cards); then
-// supports must match a socket colour (white = any) or they go inactive.
-function linkGroups(it) {
-  if (!it || !it.sockets || !it.sockets.length) return [];
-  const out = []; let i = 0;
-  for (const n of it.links) { out.push(it.sockets.slice(i, i + n)); i += n; }
-  return out;
-}
-function bestGroup(it) { return linkGroups(it).reduce((b, g) => (g.length > b.length ? g : b), []); }
-function hostOf(inst) {
-  const P = G.player;
-  if (!P || !P.hosts) return null;
-  for (const k in P.hosts) if (P.hosts[k] === inst.uid) return k;
-  return null;
-}
-// drop invalid hosts, then move each skill (unless placed by hand) to the
-// free slot whose link group beats both its current host and its base links
-function reassignHosts() {
-  const P = G.player;
-  if (!P.hosts) P.hosts = {};
-  if (!P.hostManual) P.hostManual = {};
-  for (const k in P.hosts) if (!P.equip[k] || bestGroup(P.equip[k]).length < 2 || !P.skills.some((s) => s.uid === P.hosts[k])) delete P.hosts[k];
-  for (const inst of P.skills) {
-    if (P.hostManual[inst.uid]) continue;
-    const cur = hostOf(inst);
-    let best = null, bs = Math.max(cur ? bestGroup(P.equip[cur]).length : 0, inst.sockets + 1);
-    for (const k of SOCKET_SLOTS) {
-      if ((P.hosts[k] && P.hosts[k] !== inst.uid) || !P.equip[k]) continue;
-      const n = bestGroup(P.equip[k]).length;
-      if (n > bs) { bs = n; best = k; }
-    }
-    if (best) { if (cur) delete P.hosts[cur]; P.hosts[best] = inst.uid; }
-  }
-}
-function setHost(inst, key) {
-  const P = G.player, cur = hostOf(inst);
-  if (cur) delete P.hosts[cur];
-  if (key) { const other = P.hosts[key]; P.hosts[key] = inst.uid; if (other && cur) P.hosts[cur] = other; }
-  if (!P.hostManual) P.hostManual = {};
-  P.hostManual[inst.uid] = true;
-  recomputePlayer();
-}
-const GEM_SOCKET = { r: 'R', g: 'G', b: 'B' };
+// ---------------- neutral support slots and tiered Jeweller's Orbs ----------------
 function skillSockets(inst) {
-  const bare = { cap: inst.sockets, colors: Array(inst.sockets).fill('W'), host: null, item: false, link: inst.sockets + 1 };
-  if (!G.player || !G.player.equip) return bare;
-  const host = hostOf(inst);
-  if (!host) return bare;
-  const grp = bestGroup(G.player.equip[host]).slice();
-  bare.host = host;
-  if (grp.length - 1 <= inst.sockets) return bare;
-  // one socket of the group holds the skill gem itself
-  const own = GEM_SOCKET[SKILLS[inst.id].gem];
-  let k = grp.indexOf(own); if (k < 0) k = grp.indexOf('W'); if (k < 0) k = 0;
-  grp.splice(k, 1);
-  return { cap: grp.length, colors: grp, host, item: true, link: grp.length + 1 };
+  const count = Number.isFinite(inst.sockets) ? Math.floor(inst.sockets) : START_SOCKETS;
+  return { cap: clamp(count, START_SOCKETS, MAX_SOCKETS) };
 }
-// which socketed supports actually work right now
+function jewellerBlockReason(inst, id) {
+  const P = G.player, def = JEWELLERS[id];
+  if (!P || !P.skills.includes(inst) || !def) return 'ไม่พบสกิลหรือ Jeweller ระดับนี้';
+  if (skillSockets(inst).cap >= def.sockets) return 'สกิลมีช่องเท่ากันหรือมากกว่าแล้ว';
+  if (!(P.currency[id] > 0)) return 'ยังไม่มี Jeweller ระดับนี้';
+  return '';
+}
+function useSkillJeweller(inst, id) {
+  if (!['inventory', 'paused'].includes(G.state) || jewellerBlockReason(inst, id)) return false;
+  G.player.currency[id]--;
+  inst.sockets = JEWELLERS[id].sockets;
+  recomputePlayer();
+  return true;
+}
 function activeSupports(inst) {
-  const so = skillSockets(inst), free = so.colors.slice(), active = [], inactive = [];
+  const so = skillSockets(inst), active = [], inactive = [], slots = Array(so.cap).fill(null), reasons = {};
+  const tags = new Set(SKILLS[inst.id].tags), candidates = [], seen = new Set(), enabled = new Set();
   for (const sid of inst.supports) {
-    if (active.length >= so.cap) { inactive.push(sid); continue; }
-    const c = GEM_SOCKET[SUPPORTS[sid].gem];
-    let k = free.indexOf(c); if (k < 0) k = free.indexOf('W');
-    if (k < 0) { inactive.push(sid); continue; }
-    free.splice(k, 1); active.push(sid);
+    if (!SUPPORTS[sid] || seen.has(sid)) { inactive.push(sid); reasons[sid] = 'เจมไม่ถูกต้องหรือใส่ซ้ำ'; continue; }
+    seen.add(sid); candidates.push(sid);
   }
-  return { active, inactive, free, so };
+  // Resolve granted tags before declaring dependents inactive, independent of slot order.
+  for (let pass = 0; pass < candidates.length && enabled.size < so.cap; pass++) {
+    let changed = false;
+    for (const sid of candidates) {
+      if (enabled.has(sid) || enabled.size >= so.cap) continue;
+      const sup = SUPPORTS[sid];
+      if ((sup.req.length && !sup.req.some((t) => tags.has(t))) || sup.excl.some((t) => tags.has(t)) || sup.conflicts.some((s) => enabled.has(s))) continue;
+      enabled.add(sid); changed = true;
+      for (const tag of sup.addTags) tags.add(tag);
+    }
+    if (!changed) break;
+  }
+  for (const sid of candidates) {
+    if (enabled.has(sid)) { slots[active.length] = sid; active.push(sid); }
+    else {
+      inactive.push(sid);
+      reasons[sid] = enabled.size >= so.cap ? 'ช่อง Support ไม่พอ · ใช้ Jeweller เพิ่มช่อง' : 'แท็กสกิลไม่ตรง หรือขัดกับ Support ที่ทำงานอยู่';
+    }
+  }
+  return { active, inactive, slots, so, reasons };
 }
 
 // ---------------- flasks ----------------
@@ -369,10 +342,9 @@ function drawGroundItems(ctx, inView) {
   for (const g of G.items) {
     if (!inView(g.x, g.y, 60)) continue;
     const it = g.item, col = RARITY_COLOR[it.rarity], bob = Math.sin(g.t * 3) * 2;
-    // loot beam for rare / unique / 5+ links
-    const big = it.links && it.links.length && Math.max(...it.links) >= 5;
-    if (it.rarity === 'rare' || it.rarity === 'unique' || big) {
-      const h = it.rarity === 'unique' || big ? 150 : 90, w = it.rarity === 'unique' || big ? 14 : 9, bc = big && it.rarity !== 'unique' ? '#ffffff' : col;
+    // loot beam for rare and unique equipment
+    if (it.rarity === 'rare' || it.rarity === 'unique') {
+      const h = it.rarity === 'unique' ? 150 : 90, w = it.rarity === 'unique' ? 14 : 9, bc = col;
       const grd = ctx.createLinearGradient(0, g.y - h, 0, g.y);
       grd.addColorStop(0, hexA(bc, 0)); grd.addColorStop(1, hexA(bc, 0.45 + Math.sin(g.t * 4) * 0.1));
       ctx.globalCompositeOperation = 'lighter';

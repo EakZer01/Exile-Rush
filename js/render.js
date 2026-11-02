@@ -97,6 +97,7 @@ function collectLights(P, inView) {
 
 function render() {
   const ctx = G.ctx, W = G.W, H = G.H, dpr = G.dpr, P = G.player;
+  syncFlickerButton();
   if (!_bgPattern) makeBackground(ctx);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = '#0d0b09';
@@ -602,8 +603,8 @@ function drawEffect(ctx, fx) {
   const p = fx.t / fx.dur, a = 1 - p;
   switch (fx.kind) {
     case 'hzfire': drawHazard(ctx, fx.h, p, true); break;
-    case 'phantom': {
-      // Flicker Strike's afterimage of the player
+    case 'afterimage': {
+      // The real player has left this position; only a brief trail remains.
       ctx.globalAlpha = 0.75 * a; ctx.imageSmoothingEnabled = false;
       drawSprite(ctx, 'cls_' + G.player.cls.id, 1, fx.flip, '', 'white', fx.x, fx.y + 14, 2);
       ctx.imageSmoothingEnabled = true; ctx.globalAlpha = 1;
@@ -710,6 +711,17 @@ function drawSkillExtras(ctx, P) {
 }
 
 // ---------------- HUD ----------------
+function syncFlickerButton() {
+  const b = $('btn-flicker'), P = G.player;
+  const visible = G.state === 'play' && P && P.skills.some((i) => i.st && i.st.behavior === 'flicker');
+  b.hidden = !visible;
+  if (!visible) return;
+  const state = P.flickerPaused ? 'พัก' : flickerMovementIntent() ? 'รอหยุดเดิน' : P.flickerIdle < 0.3 ? 'เตรียมวาร์ป' : 'เปิด';
+  const label = `Flicker: ${state} · T`;
+  if (b.textContent !== label) b.textContent = label;
+  b.setAttribute('aria-pressed', String(!P.flickerPaused));
+  b.title = P.flickerPaused ? 'เปิด Flicker (T)' : 'พัก Flicker (T) · กดเดินเพื่อหยุดวาร์ปทันที';
+}
 function drawHUD(ctx, W, H, P) {
   const mobile = W < 700;
   // XP bar
@@ -766,10 +778,10 @@ function drawHUD(ctx, W, H, P) {
   // currency
   ctx.textAlign = 'right'; ctx.font = '600 14px Sarabun, sans-serif';
   ctx.fillStyle = PICKUPS.chaos.color; ctx.fillText('✪ Chaos ×' + P.currency.chaos, W - 12, 32);
-  ctx.fillStyle = PICKUPS.fusing.color; ctx.fillText('◈ Fusing ×' + P.currency.fusing, W - 12, 50);
+  ctx.fillStyle = JEWELLERS.jeweller4.color; ctx.fillText('⬡ Jeweller ×' + Object.keys(JEWELLERS).reduce((n, k) => n + (P.currency[k] || 0), 0), W - 12, 50);
   ctx.fillStyle = P.newItems > 0 ? hexA('#ffe866', 0.7 + Math.sin(G.time * 6) * 0.3) : '#b8a888';
   ctx.fillText(`🎒 ${mobile ? 'แตะ' : 'I'} กระเป๋า (${P.backpack.length})`, W - 12, 68);
-  const orbs = ['regal', 'exalt', 'divine', 'annul', 'jeweller', 'chroma', 'whetstone', 'scrap', 'vaal'].reduce((a, k) => a + (P.currency[k] || 0), 0);
+  const orbs = ['regal', 'exalt', 'divine', 'annul', 'whetstone', 'scrap', 'vaal'].reduce((a, k) => a + (P.currency[k] || 0), 0);
   if (orbs > 0) { ctx.fillStyle = '#c8b8e8'; ctx.fillText(`Orb คราฟต์ ×${orbs}`, W - 12, 86); }
   const B = G.breach;
   let ly = G.bossRef && !G.bossRef.dead ? 134 : 96;
@@ -931,19 +943,17 @@ function drawHUD(ctx, W, H, P) {
     ctx.lineWidth = 3; ctx.strokeStyle = '#000';
     ctx.strokeText(inst.level, sx + sz, sy + sz); ctx.fillStyle = '#fff'; ctx.fillText(inst.level, sx + sz, sy + sz);
     // sockets
-    const ss = mobile ? 4 : 5, total = skillSockets(inst).cap;
-    const rowW = total * ss * 2 + (total - 1) * 3;
+    const ss = mobile ? 2.5 : 3.5, total = skillSockets(inst).cap;
+    const rowW = total * ss * 2 + (total - 1) * 2;
     let ox = sx + sz / 2 - rowW / 2 + ss;
     const oy = sy + sz + ss + 4;
-    ctx.strokeStyle = '#c8a860'; ctx.lineWidth = 2;
-    if (total > 1) { ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + (total - 1) * (ss * 2 + 3), oy); ctx.stroke(); }
     for (let i = 0; i < total; i++) {
-      const sup = activeSupports(inst).active[i];
-      ctx.fillStyle = sup ? GEM_COLOR[SUPPORTS[sup].gem] : '#1a1612';
+      const sup = activeSupports(inst).slots[i];
+      ctx.fillStyle = sup ? '#d8be82' : '#1a1612';
       const awk = sup && inst.awakened.includes(sup);
       ctx.strokeStyle = awk ? '#fff0a0' : '#6a5a3a'; ctx.lineWidth = awk ? 2 : 1;
       ctx.beginPath(); ctx.arc(ox, oy, ss, 0, TAU); ctx.fill(); ctx.stroke();
-      ox += ss * 2 + 3;
+      ox += ss * 2 + 2;
     }
     sx += sz + gap;
   }
