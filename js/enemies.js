@@ -45,9 +45,21 @@ function spawnEnemy(type, x, y, rarity) {
 }
 
 function viewRadius() { return Math.hypot(G.W, G.H) / 2 / G.zoom; }
+// ---- the arena: everything stays inside the square map ----
+const inArena = (x, y, m) => Math.abs(x) <= ARENA - (m || 0) && Math.abs(y) <= ARENA - (m || 0);
+const clampArena = (v, m) => clamp(v, -ARENA + (m || 0), ARENA - (m || 0));
+// a random point d0..d1 away from (cx, cy) that lies inside the arena
+function arenaPoint(cx, cy, d0, d1, margin) {
+  for (let i = 0; i < 14; i++) {
+    const a = rand(0, TAU), d = rand(d0, d1), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    if (inArena(x, y, margin)) return [x, y];
+  }
+  const a = rand(0, TAU), d = rand(d0, d1);
+  return [clampArena(cx + Math.cos(a) * d, margin), clampArena(cy + Math.sin(a) * d, margin)];
+}
 function spawnPoint(extra) {
-  const P = G.player, a = rand(0, TAU), d = viewRadius() + 40 + (extra || 0);
-  return [P.x + Math.cos(a) * d, P.y + Math.sin(a) * d];
+  const P = G.player, d = viewRadius() + 40 + (extra || 0);
+  return arenaPoint(P.x, P.y, d, d + 60, 30);
 }
 function waveType() {
   const min = gameMin(), B = BIOMES[G.map.biome];
@@ -114,8 +126,8 @@ function updateSpawner(dt) {
   S.shrineT -= dt;
   if (S.shrineT <= 0 && !fx.noShrine) {
     S.shrineT = rand(30, 42);
-    const P = G.player, a = rand(0, TAU), d = rand(350, 600);
-    G.shrines.push({ x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, kind: pick(Object.keys(SHRINES)), t: 0 });
+    const P = G.player, [sx, sy] = arenaPoint(P.x, P.y, 350, 600, 80);
+    G.shrines.push({ x: sx, y: sy, kind: pick(Object.keys(SHRINES)), t: 0 });
   }
   // bosses
   const nb = bossForSlot(S.bossIdx);
@@ -323,8 +335,8 @@ function updateEnemies(dt) {
     }
     if (e.def.flutter) { e.wob += dt * 8; mx += Math.cos(e.wob) * 0.5; my += Math.sin(e.wob) * 0.5; }
 
-    e.x += mx * spd * dt + e.kx * dt;
-    e.y += my * spd * dt + e.ky * dt;
+    e.x = clampArena(e.x + mx * spd * dt + e.kx * dt, e.r);
+    e.y = clampArena(e.y + my * spd * dt + e.ky * dt, e.r);
     const kd = Math.exp(-9 * dt); e.kx *= kd; e.ky *= kd;
 
     // separation (cheap, a handful of neighbours)

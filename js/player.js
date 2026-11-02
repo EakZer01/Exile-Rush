@@ -111,7 +111,7 @@ function updatePlayer(dt) {
   } else {
     P.vx = ix * spd; P.vy = iy * spd;
   }
-  P.x += P.vx * dt; P.y += P.vy * dt;
+  P.x = clampArena(P.x + P.vx * dt, P.r); P.y = clampArena(P.y + P.vy * dt, P.r);
 
   if (P.iframes > 0) P.iframes -= dt;
   if (P.dashCd > 0) P.dashCd -= dt;

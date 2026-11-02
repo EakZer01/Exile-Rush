@@ -168,6 +168,7 @@ function onKey(e, down) {
   else if (e.code === 'KeyV') G.input.vaal = true;
   else if (e.code === 'KeyI') { if (G.state === 'play' || G.state === 'paused') openInventory(); else if (G.state === 'inventory') closeInventory(); }
   else if (e.code === 'KeyU') G.input.levelUp = true;
+  else if (e.code === 'KeyZ') toggleSetting('minimap');
   else if (e.code === 'KeyC') { if (G.state === 'play') openPause(); else if (G.state === 'paused') resume(); }
   else if (e.code === 'KeyM') { Sfx.muted = !Sfx.muted; Music.setVolume(Sfx.muted ? 0 : G.settings.music); }
   else if (e.code === 'KeyN') toggleSetting('dmgNumbers');

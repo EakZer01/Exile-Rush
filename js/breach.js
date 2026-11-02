@@ -17,8 +17,8 @@ function updateBreach(dt) {
   if (B.state === 'wait') {
     B.t -= dt;
     if (B.t <= 0 && !bossUp) {
-      const a = rand(0, TAU), d = rand(380, 560);
-      Object.assign(B, { state: 'placed', x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, idle: 0 });
+      const [bx, by] = arenaPoint(P.x, P.y, 380, 560, 150);
+      Object.assign(B, { state: 'placed', x: bx, y: by, idle: 0 });
       announce('Breach ปรากฏตัว!', 'เดินเข้าไปในรอยแยกสีม่วงเพื่อเปิด', '#c070ff');
     }
   } else if (B.state === 'placed') {

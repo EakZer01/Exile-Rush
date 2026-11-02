@@ -64,7 +64,7 @@ function resetLeagues() {
     deli: { state: AF.deliOff ? 'none' : 'wait', at: rand(LEAGUE.deliWin[0], LEAGUE.deliWin[1]), x: 0, y: 0, t: 0, kills: 0, dur: LEAGUE.deliDur * (AF.deliDur || 1) },
   };
 }
-const leaguePos = (d0, d1) => { const P = G.player, a = rand(0, TAU), d = rand(d0, d1); return [P.x + Math.cos(a) * d, P.y + Math.sin(a) * d]; };
+const leaguePos = (d0, d1) => arenaPoint(G.player.x, G.player.y, d0, d1, 190);
 const bossUp = () => !!(G.bossRef && !G.bossRef.dead);
 
 function updateLeagues(dt) {

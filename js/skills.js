@@ -609,7 +609,8 @@ function castBeam(inst, s) {
   return true;
 }
 
-// Flicker Strike: teleport next to an enemy (Rares preferred) and strike around it
+// Flicker Strike: a phantom of the player blinks to an enemy (Rares preferred),
+// strikes around it and vanishes — the player keeps walking where they want
 function castFlicker(inst, s) {
   const P = G.player;
   const go = () => {
@@ -618,11 +619,9 @@ function castFlicker(inst, s) {
     const tgt = pool.find((e) => e.rarity >= 2 && Math.random() < 0.6) || pick(pool);
     const a = Math.atan2(P.y - tgt.y, P.x - tgt.x), d = tgt.r + P.r + 4;
     const nx = tgt.x + Math.cos(a) * d, ny = tgt.y + Math.sin(a) * d;
-    addEffect({ kind: 'trail', x: P.x, y: P.y, r: 14, t: 0, dur: 0.3, color: s.color });
-    addEffect({ kind: 'bolt', pts: [[P.x, P.y], [(P.x + nx) / 2 + rand(-10, 10), (P.y + ny) / 2 + rand(-10, 10)], [nx, ny]], t: 0, dur: 0.14, color: s.color });
-    P.x = nx; P.y = ny;
-    P.iframes = Math.max(P.iframes, 0.2);
-    for (const e of enemiesInRadius(tgt.x, tgt.y, s.radius, [])) hitEnemy(e, s, inst, 1, P.x, P.y);
+    addEffect({ kind: 'bolt', pts: [[P.x, P.y], [(P.x + nx) / 2 + rand(-10, 10), (P.y + ny) / 2 + rand(-10, 10)], [nx, ny]], t: 0, dur: 0.12, color: s.color });
+    addEffect({ kind: 'phantom', x: nx, y: ny, flip: tgt.x < nx, t: 0, dur: 0.28, color: s.color });
+    for (const e of enemiesInRadius(tgt.x, tgt.y, s.radius, [])) hitEnemy(e, s, inst, 1, nx, ny);
     addEffect({ kind: 'spin', x: tgt.x, y: tgt.y, r: s.radius, t: 0, dur: 0.2, color: s.color });
     emit('phys', tgt.x, tgt.y, 8, { speed: 1.3 });
     return true;

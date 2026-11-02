@@ -301,9 +301,9 @@ defSkill({
 defSkill({
   id: 'flicker_strike', name: 'Flicker Strike', th: 'ฟาดวาร์ป', gem: 'g', icon: '⚡',
   tags: ['Attack', 'Melee', 'AoE', 'Movement', 'Physical'],
-  desc: 'วาร์ปไปหาศัตรูแล้วฟาดเป็นวงทันที — ตัวละครจะถูกพาเข้ากลางฝูงเอง (ชอบเล็ง Rare) · อมตะชั่วครู่ทุกครั้งที่วาร์ป',
+  desc: 'ส่งร่างเงาวาร์ปไปฟาดศัตรูเป็นวง (ชอบเล็ง Rare) แล้วหายไป — ตัวจริงเดินได้อิสระ · ระยะ 340',
   behavior: 'flicker',
-  base: { dmg: 19, types: { physical: 1 }, cd: 0.8, range: 430, area: 70, crit: 0.06, knock: 15, flickers: 1 },
+  base: { dmg: 17, types: { physical: 1 }, cd: 0.8, range: 340, area: 70, crit: 0.06, knock: 15, flickers: 1 },
   scale(s, l) { s.flickers += Math.floor(l / 7); s.area *= 1 + 0.015 * (l - 1); },
   levelNote: 'ทุก 7 เลเวล: วาร์ปต่อเนื่อง +1 ครั้ง',
   color: '#d0f0ff', core: '#ffffff',

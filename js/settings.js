@@ -3,7 +3,7 @@
 //  Settings (saved), background music, adaptive quality, tips
 // ============================================================
 const SETTINGS_KEY = 'exile_settings';
-const SETTINGS_DEFAULT = { sfx: 0.7, music: 0.45, lighting: true, fx: true, dmgNumbers: true, shake: true, quality: 'auto', lootFilter: 0, hlRes: true, levelMode: 'boss' };
+const SETTINGS_DEFAULT = { sfx: 0.7, music: 0.45, lighting: true, fx: true, dmgNumbers: true, shake: true, quality: 'auto', lootFilter: 0, hlRes: true, levelMode: 'boss', minimap: true };
 
 function loadSettings() {
   let s = {};

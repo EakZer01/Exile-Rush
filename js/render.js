@@ -120,6 +120,7 @@ function render() {
   ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
   drawDecals(ctx, inView);
   drawProps(ctx, vx0, vy0, vx1, vy1);
+  drawArenaEdge(ctx, vx0, vy0, vx1, vy1);
 
   // caustic clouds
   for (const g of G.grounds) {
@@ -525,6 +526,57 @@ function drawPlayer(ctx, P) {
   }
 }
 
+// ---- minimap: the whole arena, bottom-right ----
+function drawMinimap(ctx, W, H, P) {
+  if (!G.settings.minimap) return;
+  const S = W < 700 ? 112 : 168, x0 = W - S - 12, y0 = H - S - 12, k = S / (ARENA * 2);
+  const mx = (x) => x0 + (x + ARENA) * k, my = (y) => y0 + (y + ARENA) * k;
+  ctx.fillStyle = 'rgba(12,9,6,0.75)'; ctx.fillRect(x0, y0, S, S);
+  ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = 1.5; ctx.strokeRect(x0 + 0.5, y0 + 0.5, S - 1, S - 1);
+  // what's on screen
+  const hw = G.W / 2 / G.zoom, hh = G.H / 2 / G.zoom;
+  ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 1;
+  ctx.strokeRect(mx(G.cam.x - hw), my(G.cam.y - hh), hw * 2 * k, hh * 2 * k);
+  const dot = (x, y, r, c) => { ctx.fillStyle = c; ctx.fillRect(mx(x) - r / 2, my(y) - r / 2, r, r); };
+  for (const e of G.enemies) {
+    if (e.dead || e.rarity === 3) continue;
+    if (e.rarity === 2) dot(e.x, e.y, 3.5, '#ffd84a'); else if (e.rarity === 1) dot(e.x, e.y, 2.5, '#8a8cff'); else dot(e.x, e.y, 1.6, 'rgba(220,70,60,0.85)');
+  }
+  for (const g of G.items) if (g.item.rarity === 'unique' || g.item.rarity === 'rare') dot(g.x, g.y, 3, RARITY_COLOR[g.item.rarity]);
+  for (const s of G.shrines) dot(s.x, s.y, 4, SHRINES[s.kind].color);
+  // league content as rings so it stands out
+  const ring = (x, y, c) => { ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(mx(x), my(y), 4, 0, TAU); ctx.stroke(); };
+  const B = G.breach; if (B && (B.state === 'placed' || B.state === 'open')) ring(B.x, B.y, '#c070ff');
+  const L = G.league;
+  if (L) {
+    for (const b of L.boxes) if (b.state === 'closed') ring(b.x, b.y, STRONGBOXES[b.kind].color);
+    for (const R of L.rituals) if (R.state === 'placed' || R.state === 'active') ring(R.x, R.y, '#ff5a5a');
+    if (L.deli.state === 'placed') ring(L.deli.x, L.deli.y, '#e8eef8');
+    for (const e of G.enemies) if (e.encased && !e.dead) ring(e.x, e.y, ESSENCES[e.essence].color);
+  }
+  const boss = G.bossRef && !G.bossRef.dead ? G.bossRef : null;
+  if (boss) { dot(boss.x, boss.y, 7, boss.bossDef.glow); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(mx(boss.x) - 3.5, my(boss.y) - 3.5, 7, 7); }
+  // the player: white dot with a facing tick
+  const px = mx(P.x), py = my(P.y);
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py, 3, 0, TAU); ctx.fill();
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(P.facing) * 7, py + Math.sin(P.facing) * 7); ctx.stroke();
+  G.minimapRect = { x: x0, y: y0, w: S, h: S };
+}
+
+// outside the map: near-black ground and a wall line along the border
+function drawArenaEdge(ctx, vx0, vy0, vx1, vy1) {
+  const A = ARENA;
+  if (vx0 > -A && vx1 < A && vy0 > -A && vy1 < A) return;
+  ctx.fillStyle = 'rgba(5,4,3,0.94)';
+  if (vx0 < -A) ctx.fillRect(vx0, vy0, -A - vx0, vy1 - vy0);
+  if (vx1 > A) ctx.fillRect(A, vy0, vx1 - A, vy1 - vy0);
+  const x0 = Math.max(vx0, -A), x1 = Math.min(vx1, A);
+  if (vy0 < -A) ctx.fillRect(x0, vy0, x1 - x0, -A - vy0);
+  if (vy1 > A) ctx.fillRect(x0, A, x1 - x0, vy1 - A);
+  ctx.strokeStyle = '#4a3a26'; ctx.lineWidth = 14; ctx.strokeRect(-A - 7, -A - 7, A * 2 + 14, A * 2 + 14);
+  ctx.strokeStyle = 'rgba(200,160,90,0.35)'; ctx.lineWidth = 2; ctx.strokeRect(-A, -A, A * 2, A * 2);
+}
+
 function hazardPath(ctx, h, k) {
   ctx.beginPath();
   if (h.shape === 'line') {
@@ -550,6 +602,13 @@ function drawEffect(ctx, fx) {
   const p = fx.t / fx.dur, a = 1 - p;
   switch (fx.kind) {
     case 'hzfire': drawHazard(ctx, fx.h, p, true); break;
+    case 'phantom': {
+      // Flicker Strike's afterimage of the player
+      ctx.globalAlpha = 0.75 * a; ctx.imageSmoothingEnabled = false;
+      drawSprite(ctx, 'cls_' + G.player.cls.id, 1, fx.flip, '', 'white', fx.x, fx.y + 14, 2);
+      ctx.imageSmoothingEnabled = true; ctx.globalAlpha = 1;
+      break;
+    }
     case 'boom': {
       const r = fx.r * (0.5 + 0.5 * Math.min(1, p * 3));
       ctx.fillStyle = hexA(fx.color, 0.45 * a);
@@ -730,6 +789,7 @@ function drawHUD(ctx, W, H, P) {
     }
   }
   G.bagRect = { x: W - 150, y: 54, w: 150, h: 20 };
+  drawMinimap(ctx, W, H, P);
   // loot log (recent pickups)
   ctx.font = '700 13px Sarabun, sans-serif';
   G.lootLog.forEach((l, i) => {

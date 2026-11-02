@@ -7,6 +7,7 @@
 //  every new biome+tier cleared adds a Legacy Tree point.
 // ============================================================
 const MAX_MAP_TIER = 10;
+const ARENA = 2200;                   // the map is a square from -ARENA to +ARENA
 const ATLAS_POINT_CAP = 15;           // max bonus Legacy Tree points from the Atlas
 const MAP_REROLL_COST = 3;            // Ancient Shards to reroll mods
 
