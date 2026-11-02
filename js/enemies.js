@@ -166,7 +166,8 @@ function bossDefeated(e) {
   for (let i = 0; i < 12; i++) spawnOrb(e.x + rand(-60, 60), e.y + rand(-60, 60), 8 + G.time / 30);
   G.stats.bosses++;
   if (G.bossRef === e) G.bossRef = null;
-  if (e.final) { G.victoryT = 2.5; announce('ชัยชนะ!', 'คุณโค่น The Void Sovereign ได้แล้ว', '#ffd84a'); }
+  if (e.bossDef.pinnacle) G.stats.pinnacle = true;
+  if (e.final) { G.victoryT = 2.5; announce('ชัยชนะ!', `คุณโค่น ${e.name} ได้แล้ว`, '#ffd84a'); }
   else {
     G.pendingAscend++;
     announce('การทดสอบ Ascendancy สำเร็จ!', G.player.asc ? 'ปลดล็อกโหนด Ascendancy ใหม่' : 'เลือกคลาสย่อยของคุณ', '#ffd84a');

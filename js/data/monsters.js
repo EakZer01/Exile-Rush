@@ -13,7 +13,7 @@ const MONSTERS = {
   wraith:   { name: 'Frost Wraith', hp: 45, speed: 78, dmg: 12, r: 14, xp: 2, color: '#57b7d0', shape: 'tri' },
   cultist:  { name: 'Void Cultist', hp: 38, speed: 55, dmg: 11, r: 13, xp: 3, color: '#6b3fa0', shape: 'diamond',
               ranged: { range: 340, cd: 3.2, speed: 200, dmg: 14, color: '#c080ff', burst: 3 } },
-  golem:    { name: 'Stone Golem', hp: 260, speed: 38, dmg: 26, r: 28, xp: 10, color: '#8a8478', shape: 'square' },
+  golem:    { name: 'Stone Golem', hp: 260, speed: 38, dmg: 22, r: 28, xp: 10, color: '#8a8478', shape: 'square' },
   // leaps at the player after a short crouch
   ghoul:    { name: 'Ash Ghoul', hp: 30, speed: 56, dmg: 12, r: 13, xp: 2, color: '#9a9488', shape: 'circle',
               leap: { range: 270, cd: 3.6, speed: 540, dur: 0.32, windup: 0.4 } },
@@ -82,7 +82,7 @@ for (let i = 1; i < BOSSES.length; i++) BOSSES[i].phases = [0.66, 0.33];
 function bossVariant(i, o) { return Object.assign({}, BOSSES[i], o); }
 // Pinnacle boss: replaces the final boss on Tier 8+ maps
 const PINNACLE = bossVariant(3, { id: 'sovereign_crown', name: 'The Hollow Crown', th: 'มงกุฎกลวง — จ้าวแห่ง Atlas',
-  hp: 1500000, dmg: 64, r: 60, color: '#6a5a1a', glow: '#ffd84a', ptype: 'fire', summon: 'shaman', phases: [0.75, 0.5, 0.25], pinnacle: true });
+  hp: 450000, dmg: 64, r: 60, color: '#6a5a1a', glow: '#ffd84a', ptype: 'fire', summon: 'shaman', phases: [0.75, 0.5, 0.25], pinnacle: true });
 
 const RUN_LENGTH = 1200; // seconds — final boss spawns at 20:00
 

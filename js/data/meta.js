@@ -129,5 +129,6 @@ function shardReward(r) {
   ];
   if (r.salvage) parts.push(['ย่อยไอเทม', r.salvage]);
   if (r.win) parts.push(['ชัยชนะ', 100]);
+  if (r.pinnacle) parts.push(['Pinnacle: The Hollow Crown', 250]);
   return { parts, total: parts.reduce((a, p) => a + p[1], 0) };
 }

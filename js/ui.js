@@ -465,7 +465,7 @@ function showGameOver(win) {
   let metaHtml = '';
   if (!G.settled) {
     G.settled = true;
-    const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map }, rec));
+    const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle }, rec));
     metaHtml = `<div class="over-meta"><div class="over-shards">+${res.reward.total} ✦ Ancient Shards</div>
       <div class="muted">${res.reward.parts.filter((p) => p[1] > 0).map((p) => `${p[0]} +${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
       ${res.atlas ? `<div class="over-unlock">🗺 ผ่านแผนที่ ${mapLabel(G.map)}${res.atlas.first ? ' ครั้งแรก! (+1 แต้ม Legacy Tree)' : ''}${res.atlas.tierUp ? ` · ปลดล็อก Tier ${res.atlas.maxTier}` : ''}</div>` : ''}
