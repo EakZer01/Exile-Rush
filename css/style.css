@@ -420,3 +420,10 @@ details.bench summary { cursor: pointer; color: #d8c8a0; }
 .btn-danger { background: #6a1a14 !important; border-color: #c03a2a !important; color: #ffd8d0 !important; }
 .craft-box, .cmp-eq { margin-top: 4px; } .craft-box summary, .cmp-eq summary { cursor: pointer; color: #d8c8a0; }
 .bench-h { font-size: 12px; margin-top: 6px; }
+
+/* ---- level-up: compact cards, build-fit star, milestones ---- */
+.card .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card-star { display: inline-block; margin: 4px 0 2px; padding: 1px 6px; font-size: 12px; font-weight: 700; color: #1a1408; background: #ffd84a; }
+.card-ms { border: 1px solid #c8a040 !important; box-shadow: 0 0 14px rgba(255,200,80,.25), inset 0 0 20px rgba(255,200,80,.08); }
+#levelup.ms .panel { border-color: #ffd84a; box-shadow: 0 0 40px rgba(255,200,80,.25); }
+#levelup.ms .panel-title { color: #ffd84a; }

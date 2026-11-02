@@ -114,10 +114,10 @@ const TREE_START = 'origin';
 const UNLOCKS = [
   { id: 'cls_templar', kind: 'class', ref: 'templar', cost: 80, req: 'โค่นบอสตัวแรก (Infernal Warden)', test: (r) => r.bosses >= 1 },
   { id: 'cls_shadow', kind: 'class', ref: 'shadow', cost: 120, req: 'ฆ่าศัตรู 2,000 ตัวในรอบเดียว', test: (r) => r.kills >= 2000 },
-  { id: 'cls_duelist', kind: 'class', ref: 'duelist', cost: 120, req: 'ถึงเลเวล 40 ในรอบเดียว', test: (r) => r.level >= 40 },
+  { id: 'cls_duelist', kind: 'class', ref: 'duelist', cost: 120, req: 'ถึงเลเวล 25 ในรอบเดียว', test: (r) => r.level >= 25 },
   { id: 'cls_scion', kind: 'class', ref: 'scion', cost: 400, req: 'ชนะ 1 ครั้ง (โค่น The Void Sovereign)', test: (r) => r.win },
   { id: 'gem_caustic_arrow', kind: 'gem', ref: 'caustic_arrow', cost: 60, req: 'ฆ่าศัตรูสะสม 5,000 ตัว (ทุกรอบรวมกัน)', test: (r, life) => life.kills >= 5000 },
-  { id: 'gem_raging_spirit', kind: 'gem', ref: 'raging_spirit', cost: 100, req: 'ถึงเลเวล 50 ในรอบเดียว', test: (r) => r.level >= 50 },
+  { id: 'gem_raging_spirit', kind: 'gem', ref: 'raging_spirit', cost: 100, req: 'ถึงเลเวล 32 ในรอบเดียว', test: (r) => r.level >= 32 },
   { id: 'gem_firestorm', kind: 'gem', ref: 'firestorm', cost: 100, req: 'โค่นบอส 2 ตัวในรอบเดียว', test: (r) => r.bosses >= 2 },
   { id: 'gem_righteous_fire', kind: 'gem', ref: 'righteous_fire', cost: 150, req: 'รอดชีวิตถึง 11:15 (บอสตัวที่ 3)', test: (r) => r.time >= 675 },
 ];
@@ -128,7 +128,7 @@ function shardReward(r) {
     ['เวลารอด', Math.floor(Math.min(r.time, RUN_LENGTH) / 15)],
     ['ศัตรูที่ฆ่า', Math.floor(r.kills / 150)],
     ['บอส', r.bosses * 20],
-    ['เลเวล', Math.floor(r.level / 2)],
+    ['เลเวล', r.level],
   ];
   if (r.salvage) parts.push(['ย่อยไอเทม', r.salvage]);
   if (r.win) parts.push(['ชัยชนะ', 100]);

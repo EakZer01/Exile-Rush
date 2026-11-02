@@ -141,6 +141,7 @@ function openSettings(from) {
   $('settings-body').innerHTML = slider('sfx', '🔊 เสียงเอฟเฟกต์') + slider('music', '🎵 เพลง') +
     check('lighting', 'ระบบแสงเงา (L)') + check('fx', 'อนุภาคและเอฟเฟกต์ (F)') + check('dmgNumbers', 'ตัวเลขดาเมจ (N)') + check('shake', 'จอสั่น') +
     `<label class="set-row">คุณภาพกราฟิก <select data-sq="1">${[['auto', 'อัตโนมัติ (ลดเองเมื่อเครื่องช้า)'], ['high', 'สูง'], ['low', 'ต่ำ (ประหยัด)']].map(([v, t]) => `<option value="${v}"${S.quality === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+    <label class="set-row">เลเวลอัป <select data-sl="1">${[['auto', 'เปิดการ์ดทันที'], ['boss', 'เปิดทันที ยกเว้นตอนสู้บอส'], ['manual', 'เก็บไว้ — กด U เมื่อพร้อม']].map(([v, t]) => `<option value="${v}"${S.levelMode === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
     <label class="set-row">Loot Filter <select data-sf="1">${LOOT_FILTERS.map((f, i) => `<option value="${i}"${S.lootFilter === i ? ' selected' : ''}>${f.name}</option>`).join('')}</select></label>
     <div class="muted set-row">${LOOT_FILTERS[S.lootFilter].desc} · ของที่ถูกซ่อนจะย่อยเป็น Shard อัตโนมัติ</div>` +
     check('hlRes', 'ไฮไลต์ไอเทมที่มีค่าต้านทาน (กรอบเขียว)') +
@@ -149,6 +150,7 @@ function openSettings(from) {
   root.querySelectorAll('[data-sk]').forEach((el) => { el.onchange = () => { G.settings[el.dataset.sk] = el.checked; applySettings(); saveSettings(); }; });
   root.querySelectorAll('[data-sv]').forEach((el) => { el.oninput = () => { G.settings[el.dataset.sv] = el.value / 100; $('sv-' + el.dataset.sv).textContent = el.value + '%'; applySettings(); saveSettings(); }; });
   root.querySelector('[data-sq]').onchange = (ev) => { G.settings.quality = ev.target.value; saveSettings(); };
+  root.querySelector('[data-sl]').onchange = (ev) => { G.settings.levelMode = ev.target.value; saveSettings(); };
   root.querySelector('[data-sf]').onchange = (ev) => { G.settings.lootFilter = +ev.target.value; saveSettings(); openSettings(settingsFrom); };
   $('btn-tips-reset').onclick = () => { resetTips(); $('btn-tips-reset').textContent = 'รีเซ็ตแล้ว ✓'; };
   show('settings');

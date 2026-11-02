@@ -6,7 +6,7 @@
 ## วิธีเล่น
 - ดับเบิลคลิก `index.html` เพื่อเปิดในเบราว์เซอร์ หรือรันเซิร์ฟเวอร์: `python -m http.server 8765` แล้วเปิด http://localhost:8765
 - **WASD / ลูกศร** เดิน · **Space** Flame Dash (อมตะชั่วครู่) · **1–5** ใช้ฟลาสก์ช่อง 1–5 (**Q** / **E** = ช่อง 1 / 2)
-- **V** ใช้ท่าไม้ตาย Vaal (เมื่อวิญญาณเต็ม) · **I** กระเป๋า/อุปกรณ์ · **C / Tab / Esc** หน้าสถิติตัวละคร (หยุดเกม) · **1–5** เลือกการ์ด · **R** ใช้ Chaos Orb สุ่มการ์ดใหม่ · **M** ปิดเสียง · **N** ปิดตัวเลขดาเมจ
+- **V** ใช้ท่าไม้ตาย Vaal (เมื่อวิญญาณเต็ม) · **U** เลือกการ์ดที่เก็บไว้ · **I** กระเป๋า/อุปกรณ์ · **C / Tab / Esc** หน้าสถิติตัวละคร (หยุดเกม) · **1–5** เลือกการ์ด · **R** ใช้ Chaos Orb สุ่มการ์ดใหม่ · **M** ปิดเสียง · **N** ปิดตัวเลขดาเมจ
 - **L** เปิด/ปิดระบบแสงเงา · **F** เปิด/ปิดอนุภาคและเอฟเฟกต์ (ใช้เมื่อเครื่องช้า)
 - มือถือ: ลากนิ้วเพื่อเดิน, แตะสองครั้งเพื่อ Dash, แตะขวดที่มุมซ้ายล่างเพื่อใช้ Flask, แตะแถบสกิลเพื่อใช้ Vaal
 - เมนูหลักมี **📖 Codex** (ข้อมูลเจม/Passive/Ascendancy/Unique/Map Mods ทั้งหมด + คอมโบแนะนำ ค้นหาและกรองแท็กได้) และ **⚙ ตั้งค่า** (เสียง, เพลง, แสง, เอฟเฟกต์, จอสั่น, คุณภาพกราฟิก) ส่วนรอบแรกจะมี Tips แนะนำระบบต่างๆ
@@ -16,6 +16,9 @@
 - **Support Gem 55 อัน** ใส่ในซ็อกเก็ตของสกิล (เริ่ม 3-Link, ใช้ Orb of Fusing ขยายได้ถึง 6-Link) ใช้ระบบแท็กแบบ PoE รวมถึงคำสาป (Hextouch), Penetration, Elemental Proliferation, Spell Cascade, Multistrike, Ruthless, Brutality, Deadly Ailments, Returning Projectiles, Fortify, Close Combat, Impale, Trinity, Arcane Surge, Unleash, Barrage, Pulverise
 - **Passive 34 อัน + Keystone 15 อัน** (เช่น Elemental Overload, Avatar of Fire, Elemental Equilibrium, Runebinder, Hex Master, **Chaos Inoculation**, Perfect Agony, Arrow Dancing)
 - **คอมโบตัวอย่าง**: Herald of Ice + Ice Nova/Freezing Pulse (ศัตรูแช่แข็งแตกระเบิดต่อเนื่อง) · Contagion + Essence Drain (พิษแพร่ทั้งฝูง) · Storm/Armageddon Brand + Runebinder · คำสาป + Penetration ทะลุ map mod Warded · Elemental Equilibrium + สกิลหลายธาตุ
+- **เลเวลอัป**: เลือกการ์ด 3 ใบ (สกิลใหม่ / เลเวลเจม +2 / Support / Passive +2 ระดับ) ประมาณ 50–60 ครั้งต่อรอบ การ์ดที่เข้ากับบิลด์มีป้าย **★** · ทุก 10 เลเวลเป็น **MILESTONE** (Keystone ที่เข้ากับสกิลของคุณ, Awaken, Empower +3 เลเวลเจมหลัก)
+  - หีบจากมอนสเตอร์ Rare ให้ของทันทีไม่ต้องหยุดเกม (เลเวลเจม, Orb) — หีบจากบอสยังให้เลือกการ์ด
+  - ตั้งค่า "เลเวลอัป": เปิดการ์ดทันที / **เปิดทันทียกเว้นตอนสู้บอส** (ค่าเริ่มต้น) / เก็บไว้กด **U** เมื่อพร้อม — การ์ดที่รออยู่แสดงเป็นป้าย "⬆ เลือกการ์ด ×N" มุมซ้ายบน
 - **Ailment**: Ignite, Chill, Freeze, Shock, Poison
 - **ค่าต้านทาน (Resistance)**: มอนสเตอร์บางชนิด/บอส/map mod โจมตีเป็นไฟ น้ำแข็ง สายฟ้า หรือเคออส ผู้เล่นมีค่าต้านทานสูงสุด 75% (+max res) และ **แผนที่ Tier สูงลดค่าต้านทาน -8% ต่อ Tier** (T8 = -56%) — หาได้จาก mod ไอเทม (of the Drake / Penguin / Squall / Prism / Lost), แหวน Ruby/Sapphire/Topaz/Amethyst, ฟลาสก์ Ruby/Sapphire/Topaz/Amethyst, Passive, Jewel และ Legacy Tree
 - **หน้าสถิติ (C)**: ค่าต้านทานทุกธาตุ, Hit ใหญ่สุดที่รับได้ต่อธาตุ, DPS จริงของแต่ละสกิล (10 วิล่าสุด) · **สรุปก่อนตาย**: ดาเมจที่รับใน 6 วิสุดท้ายแยกตามแหล่งและธาตุ พร้อมคำแนะนำ

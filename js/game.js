@@ -120,8 +120,13 @@ function update(dt) {
   if (P.dead) { setTimeout(() => showGameOver(G.endless), 50); G.state = 'dying'; return; }
   if (G.victoryT > 0) { G.victoryT -= dt; if (G.victoryT <= 0) { openVictory(); return; } }
 
+  // level-ups can wait (setting): during boss fights, or until the player presses U
+  const mode = G.settings.levelMode || 'auto';
+  const bank = mode === 'manual' || (mode === 'boss' && G.bossRef && !G.bossRef.dead);
+  const want = G.input.levelUp; G.input.levelUp = false;
   if (G.pendingRitual) openRitual();
   else if (G.pendingAscend > 0) openAscend();
+  else if (bank && !want) return;
   else if (G.pendingLevels > 0) openLevelUp(false);
   else if (G.pendingChests > 0) openLevelUp(true);
 }
@@ -162,6 +167,7 @@ function onKey(e, down) {
   else if (e.code === 'AltLeft' || e.code === 'AltRight') { if (G.state === 'inventory') { G.showTiers = !G.showTiers; renderInvDetail(); e.preventDefault(); } }
   else if (e.code === 'KeyV') G.input.vaal = true;
   else if (e.code === 'KeyI') { if (G.state === 'play' || G.state === 'paused') openInventory(); else if (G.state === 'inventory') closeInventory(); }
+  else if (e.code === 'KeyU') G.input.levelUp = true;
   else if (e.code === 'KeyC') { if (G.state === 'play') openPause(); else if (G.state === 'paused') resume(); }
   else if (e.code === 'KeyM') { Sfx.muted = !Sfx.muted; Music.setVolume(Sfx.muted ? 0 : G.settings.music); }
   else if (e.code === 'KeyN') toggleSetting('dmgNumbers');
@@ -209,6 +215,8 @@ function setupTouch() {
     const t = e.changedTouches[0];
     for (const r of G.flaskRects || []) if (t.clientX >= r.x - 4 && t.clientX <= r.x + r.w + 4 && t.clientY >= r.y - 14 && t.clientY <= r.y + r.h) inp['flask' + r.i] = true;
     // tap the skill bar to unleash Vaal skills
+    const lr = G.lvlRect;
+    if (lr && t.clientX >= lr.x && t.clientX <= lr.x + lr.w && t.clientY >= lr.y && t.clientY <= lr.y + lr.h) { inp.levelUp = true; return; }
     const bg = G.bagRect;
     if (bg && G.state === 'play' && t.clientX >= bg.x && t.clientY >= bg.y && t.clientY <= bg.y + bg.h) { openInventory(); return; }
     const sb = G.skillBarRect;

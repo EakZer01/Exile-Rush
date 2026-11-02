@@ -668,6 +668,17 @@ function drawHUD(ctx, W, H, P) {
     ctx.font = '700 12px Cinzel, serif'; ctx.fillStyle = a.color;
     ctx.fillText(a.icon + ' ' + a.name, 10, 50);
   }
+  // banked level-ups / boss chests waiting to be picked
+  const waiting = G.pendingLevels + G.pendingChests;
+  if (waiting > 0 && G.state === 'play') {
+    const txt = `⬆ เลือกการ์ด ×${waiting} (${mobile ? 'แตะ' : 'U'})`;
+    ctx.font = '700 14px Sarabun, sans-serif';
+    const w = ctx.measureText(txt).width + 16, y = 100;
+    ctx.fillStyle = hexA('#3a2a08', 0.9); ctx.fillRect(8, y - 16, w, 24);
+    ctx.strokeStyle = hexA('#ffd84a', 0.6 + Math.sin(G.time * 6) * 0.35); ctx.lineWidth = 2; ctx.strokeRect(8, y - 16, w, 24);
+    ctx.fillStyle = '#ffe9a0'; ctx.textAlign = 'left'; ctx.fillText(txt, 16, y + 1);
+    G.lvlRect = { x: 8, y: y - 16, w, h: 24 };
+  } else G.lvlRect = null;
   if (P.revives > 0) {
     ctx.font = '700 13px Sarabun, sans-serif'; ctx.fillStyle = '#fff0c0';
     ctx.fillText('✟ Second Wind', 10, P.mods.ks.rage ? 86 : 68);

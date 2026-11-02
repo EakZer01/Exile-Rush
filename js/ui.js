@@ -69,7 +69,63 @@ function saveBest(rec) {
 }
 
 // ---------------- Level-up choices ----------------
-function generateChoices(n) {
+// Regular level: 3 cards. Every 10th level is a MILESTONE with big choices
+// (Keystone, Awaken, Empower +3 gem levels). Rare-monster chests open instantly.
+const MILESTONE_EVERY = 10;
+const isMilestone = (lv) => lv > 0 && lv % MILESTONE_EVERY === 0;
+const KS_NEED = { runebinder: ['Brand'], minion_instability: ['Minion'], point_blank: ['Projectile'], pain_attunement: ['Spell'],
+  elemental_overload: ['Fire', 'Cold', 'Lightning'], elemental_equilibrium: ['Fire', 'Cold', 'Lightning'], avatar_of_fire: ['Fire', 'Physical', 'Cold', 'Lightning'],
+  hex_master: ['Spell', 'Attack'], perfect_agony: ['Fire', 'Chaos'] };
+const PASSIVE_RANKS = 2;      // a passive card gives two ranks
+const GEM_LEVELS = 2;         // a gem level-up card gives two levels
+
+// tags of the skills doing the work (≥20% of damage, or every skill early on)
+function buildTags() {
+  const P = G.player, total = P.skills.reduce((a, s) => a + s.dmgDealt, 0), set = new Set();
+  for (const s of P.skills) if (!total || s.dmgDealt / total >= 0.2) for (const t of s.st.tags) set.add(t);
+  return set;
+}
+const PASSIVE_TAGS = { spell: ['Spell'], attack: ['Attack'], proj: ['Projectile'], area: ['AoE'], ele: ['Fire', 'Cold', 'Lightning'], phys: ['Physical'],
+  chaos: ['Chaos'], minion: ['Minion'], inferno: ['Fire'], winter: ['Cold'], thunder: ['Lightning'], duration: ['Duration'], affliction: ['Chaos', 'Fire'],
+  ricochet: ['Projectile', 'Chaining'], piercing: ['Projectile'], blade_dance: ['Attack', 'Melee'], malediction: [], crit: ['Attack', 'Spell'], speed: ['Attack', 'Spell'] };
+// does this card fit the build? (shown as ★)
+function cardFits(c) {
+  const P = G.player, tags = buildTags();
+  if (c.type === 'support') {
+    if (P.skills.some((i) => !i.evo && EVOLUTIONS[i.id] && EVOLUTIONS[i.id].req.includes(c.id))) return true;
+    const top = P.skills.reduce((b, s) => (!b || s.dmgDealt > b.dmgDealt ? s : b), null);
+    return !!top && !supportBlockReason(c.id, top, true) && SUPPORTS[c.id].req.length > 0;
+  }
+  if (c.type === 'passive') {
+    if (['prismatic', 'fortress'].includes(c.id)) return ['fire', 'cold', 'lightning'].some((t) => P.resRaw[t] < 0.5);
+    if (c.id === 'purity_flesh') return P.resRaw.chaos < 0.2;
+    return (PASSIVE_TAGS[c.id] || []).some((t) => tags.has(t));
+  }
+  if (c.type === 'level') { const total = P.skills.reduce((a, s) => a + s.dmgDealt, 0); return total > 0 && c.inst.dmgDealt / total >= 0.35; }
+  return false;
+}
+
+function generateChoices(n, milestone) {
+  if (milestone) return milestoneChoices(n);
+  return regularChoices(n);
+}
+function milestoneChoices(n) {
+  const P = G.player, pool = [];
+  // only keystones that can matter for the skills you have
+  const tags = new Set(P.skills.flatMap((s) => [...s.st.tags]));
+  const fits = (k) => !KS_NEED[k] || KS_NEED[k].some((t) => tags.has(t));
+  if (Object.keys(P.keystones).length < MAX_KEYSTONES) for (const id of weightedSample(Object.keys(KEYSTONES).filter((k) => !P.keystones[k] && fits(k)), 2, () => 1)) pool.push({ type: 'keystone', id });
+  const aw = [];
+  for (const inst of P.skills) for (const sid of inst.supports) if (!inst.awakened.includes(sid)) aw.push({ type: 'awaken', inst, id: sid });
+  for (const a of weightedSample(aw, Math.min(2, aw.length), () => 1)) pool.push(a);
+  for (const inst of P.skills.slice().sort((a, b) => b.dmgDealt - a.dmgDealt).slice(0, 2)) if (inst.level < MAX_GEM_LEVEL) pool.push({ type: 'empower', inst });
+  if (P.skills.some((s) => s.sockets < MAX_SOCKETS)) pool.push({ type: 'fusing' });
+  const out = weightedSample(pool, Math.min(n, pool.length), (c) => (c.type === 'keystone' ? 2 : 1));
+  const evo = P.skills.find(evolveRecipeMet);
+  if (evo) { if (out.length >= n) out.pop(); out.unshift({ type: 'evolve', inst: evo }); }
+  return out.length ? out : regularChoices(n);
+}
+function regularChoices(n) {
   const P = G.player, owned = new Set(P.skills.map((s) => s.id));
   const cats = { skill: [], level: [], support: [], passive: [], keystone: [], fusing: [] };
   if (P.skills.length < MAX_SKILLS + P.mods.skillSlots) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id)) cats.skill.push({ type: 'skill', id });
@@ -80,14 +136,8 @@ function generateChoices(n) {
     if (fits.length && free) cats.support.push({ type: 'support', id });
   }
   for (const id in PASSIVES) if ((P.passives[id] || 0) < PASSIVES[id].max) cats.passive.push({ type: 'passive', id });
-  if (P.level >= 8 && Object.keys(P.keystones).length < MAX_KEYSTONES) for (const id in KEYSTONES) if (!P.keystones[id]) cats.keystone.push({ type: 'keystone', id });
+  // Keystones and Awakens are milestone cards now
   if (P.skills.some((s) => s.sockets < MAX_SOCKETS)) cats.fusing.push({ type: 'fusing' });
-  cats.awaken = [];
-  if (P.level >= 12) {
-    const all = [];
-    for (const inst of P.skills) for (const sid of inst.supports) if (!inst.awakened.includes(sid)) all.push({ type: 'awaken', inst, id: sid });
-    cats.awaken = weightedSample(all, Math.min(3, all.length), () => 1);
-  }
 
   const cw = {
     skill: P.skills.length <= 2 ? 3.2 : 1.6, level: 3.2, support: 3.0,
@@ -126,12 +176,19 @@ function ascNodeChoices() {
 
 function cardHtml(c, idx) {
   const P = G.player;
-  const key = `<span class="card-key">${idx + 1}</span>`;
+  const key = `<span class="card-key">${idx + 1}</span>`, star = cardFits(c) ? '<div class="card-star">★ เข้ากับบิลด์</div>' : '';
   if (c.type === 'skill') {
     const d = SKILLS[c.id];
-    return `<div class="card card-skill">${key}
-      <div class="card-head">${skillGemHtml(d.id)}<div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Skill Gem</div></div><div class="badge badge-new">ใหม่!</div></div>
-      ${tagsHtml(d.tags)}<div class="card-desc">${d.desc}</div><div class="card-note">${d.levelNote}</div>${weaponNoteHtml(d)}${evolveHintHtml(d.id)}</div>`;
+    return `<div class="card card-skill" title="${d.desc}">${key}
+      <div class="card-head">${skillGemHtml(d.id)}<div><div class="card-name">${d.name}</div><div class="card-th">สกิลใหม่ · เริ่ม Lv ${newSkillLevel()}</div></div><div class="badge badge-new">ใหม่</div></div>
+      ${tagsHtml(d.tags)}<div class="card-desc clamp">${d.desc}</div>${weaponNoteHtml(d)}</div>`;
+  }
+  if (c.type === 'empower') {
+    const d = SKILLS[c.inst.id], to = Math.min(MAX_GEM_LEVEL, c.inst.level + 3);
+    const nxt = buildSkillStats(Object.assign({}, c.inst, { level: to }), P), now = c.inst.st;
+    return `<div class="card card-level card-ms">${key}
+      <div class="card-head">${skillGemHtml(d.id, false, c.inst.evo)}<div><div class="card-name">Empower: ${skillDisplayName(c.inst)}</div><div class="card-th">เจมหลักของคุณ +3 เลเวล</div></div><div class="badge">Lv ${c.inst.level} → ${to}</div></div>
+      <div class="card-desc">ดาเมจ ${fmtNum(now.hitTotal)} → <b>${fmtNum(nxt.hitTotal)}</b></div></div>`;
   }
   if (c.type === 'evolve') {
     const d = SKILLS[c.inst.id], ev = EVOLUTIONS[c.inst.id];
@@ -142,7 +199,7 @@ function cardHtml(c, idx) {
   }
   if (c.type === 'awaken') {
     const d = SUPPORTS[c.id], b = AWAKEN_BONUS[c.id];
-    return `<div class="card card-awaken">${key}
+    return `<div class="card card-awaken card-ms">${key}
       <div class="card-head">${supportGemHtml(d.gem)}<div><div class="card-name">Awakened ${d.name}</div><div class="card-th">ปลุกพลัง Support บน ${skillDisplayName(c.inst)}</div></div><div class="badge badge-awk">AWAKEN</div></div>
       <div class="card-desc">ดาเมจ 20% more${b ? ' · ' + b.desc : ''}<br><span class="muted">${d.desc}</span></div></div>`;
   }
@@ -162,7 +219,7 @@ function cardHtml(c, idx) {
   }
   if (c.type === 'level') {
     const d = SKILLS[c.inst.id];
-    const now = c.inst.st, nxt = buildSkillStats(Object.assign({}, c.inst, { level: c.inst.level + 1 }), P);
+    const now = c.inst.st, nxt = buildSkillStats(Object.assign({}, c.inst, { level: Math.min(MAX_GEM_LEVEL, c.inst.level + GEM_LEVELS) }), P);
     const lines = [];
     const dmgNow = now.behavior === 'aura' ? now.auraDps : now.hitTotal, dmgN = nxt.behavior === 'aura' ? nxt.auraDps : nxt.hitTotal;
     lines.push(`ดาเมจ ${fmtNum(dmgNow)} → <b>${fmtNum(dmgN)}</b>`);
@@ -174,27 +231,26 @@ function cardHtml(c, idx) {
     if (Math.round(nxt.radius) !== Math.round(now.radius)) lines.push(`รัศมี ${Math.round(now.radius)} → <b>${Math.round(nxt.radius)}</b>`);
     if (nxt.cdFinal < now.cdFinal - 0.005) lines.push(`คูลดาวน์ ${now.cdFinal.toFixed(2)} → <b>${nxt.cdFinal.toFixed(2)}s</b>`);
     return `<div class="card card-level">${key}
-      <div class="card-head">${skillGemHtml(d.id, false, c.inst.evo)}<div><div class="card-name">${skillDisplayName(c.inst)}</div><div class="card-th">เลเวลอัพเจม</div></div><div class="badge">Lv ${c.inst.level} → ${c.inst.level + 1}</div></div>
-      <div class="card-desc">${lines.join('<br>')}</div><div class="card-note">${d.levelNote}</div>${c.inst.evo ? '' : evolveHintHtml(d.id)}</div>`;
+      <div class="card-head">${skillGemHtml(d.id, false, c.inst.evo)}<div><div class="card-name">${skillDisplayName(c.inst)}</div><div class="card-th">เลเวลเจม +${GEM_LEVELS}</div></div><div class="badge">Lv ${c.inst.level} → ${Math.min(MAX_GEM_LEVEL, c.inst.level + GEM_LEVELS)}</div></div>
+      ${star}<div class="card-desc">${lines.join(' · ')}</div></div>`;
   }
   if (c.type === 'support') {
     const d = SUPPORTS[c.id];
     const fits = P.skills.filter((inst) => !supportBlockReason(c.id, inst));
-    return `<div class="card card-support">${key}
-      <div class="card-head">${supportGemHtml(d.gem)}<div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Support Gem</div></div></div>
-      ${d.req.length ? tagsHtml(d.req) : '<div class="tags"><span class="tag">ใช้ได้ทุกสกิล</span></div>'}
-      <div class="card-desc">${d.desc}</div>
-      <div class="card-note">ใส่ได้กับ: ${fits.map((i) => skillDisplayName(i)).join(', ')}</div>${evoUseHtml(c.id)}</div>`;
+    return `<div class="card card-support" title="${d.desc}">${key}
+      <div class="card-head">${supportGemHtml(d.gem)}<div><div class="card-name">${d.name}</div><div class="card-th">Support · ใส่กับ ${fits.map((i) => skillDisplayName(i)).join(', ') || '—'}</div></div></div>
+      ${star}<div class="card-desc clamp">${d.desc}</div>${evoUseHtml(c.id)}</div>`;
   }
   if (c.type === 'passive') {
     const d = PASSIVES[c.id], r = P.passives[c.id] || 0;
+    const to = Math.min(d.max, r + PASSIVE_RANKS);
     return `<div class="card card-passive">${key}
-      <div class="card-head"><span class="node">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Passive</div></div><div class="badge">${r}/${d.max}</div></div>
-      <div class="card-desc">${d.desc}</div></div>`;
+      <div class="card-head"><span class="node">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">Passive · ระดับ ${r} → ${to}/${d.max}</div></div></div>
+      ${star}<div class="card-desc">${to - r > 1 ? `×${to - r}: ` : ''}${d.desc}</div></div>`;
   }
   if (c.type === 'keystone') {
     const d = KEYSTONES[c.id];
-    return `<div class="card card-keystone">${key}
+    return `<div class="card card-keystone card-ms">${key}
       <div class="card-head"><span class="node node-key">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Keystone</div></div><div class="badge badge-key">KEYSTONE</div></div>
       <div class="card-desc">${d.desc}</div><div class="card-note">Keystone ${Object.keys(P.keystones).length + 1}/${MAX_KEYSTONES} ของรอบนี้ — เลือกให้ดี!</div></div>`;
   }
@@ -212,7 +268,19 @@ function evoUseHtml(supId) {
   return hits.length ? `<div class="card-note evo-hint">✦ ใช้วิวัฒน์ ${hits.map((i) => SKILLS[i.id].name).join(', ')} ได้</div>` : '';
 }
 
-function choiceCount(isChest) { return (isChest ? 5 : 4) + G.player.mods.extraChoices; }
+function choiceCount(isChest) { return (isChest ? 4 : 3) + G.player.mods.extraChoices; }
+const newSkillLevel = () => Math.min(10, 1 + Math.floor(G.player.level / 5));
+// a rare monster's chest: a small reward right away, no pause
+function openChestInstant(x, y) {
+  const P = G.player, r = Math.random(), ok = P.skills.filter((s) => s.level < MAX_GEM_LEVEL);
+  let txt, col = '#ffcf4a';
+  if (r < 0.45 && ok.length) { const s = pick(ok); s.level++; recomputePlayer(); txt = `${skillDisplayName(s)} +1 เลเวล`; }
+  else if (r < 0.7) { const k = randomCraftOrb(); P.currency[k] = (P.currency[k] || 0) + 1; txt = CRAFT_ORBS[k].name; col = CRAFT_ORBS[k].color; }
+  else if (r < 0.85) { P.currency.chaos += 2; txt = 'Chaos Orb ×2'; col = PICKUPS.chaos.color; }
+  else { P.currency.fusing++; txt = 'Orb of Fusing'; col = PICKUPS.fusing.color; }
+  addText(x, y - 34, '▣ ' + txt, col, 1.15);
+  lootLog('หีบ: ' + txt, col);
+}
 function setLevelupButtons(on) {
   $('btn-reroll').style.display = on ? '' : 'none';
   $('btn-skip').style.display = on ? '' : 'none';
@@ -222,13 +290,17 @@ function openLevelUp(isChest) {
   G.levelIsChest = isChest;
   G.choiceKind = isChest ? 'chest' : 'level';
   setLevelupButtons(true);
-  G.choices = generateChoices(choiceCount(isChest));
+  const lv = G.player.level - G.pendingLevels + 1;
+  G.milestone = !isChest && isMilestone(lv);
+  G.choices = generateChoices(choiceCount(isChest), G.milestone);
+  $('levelup').classList.toggle('ms', G.milestone);
   if (G.choices.some((c) => c.type === 'evolve')) showTip('evolve');
   else if (G.choices.some((c) => c.type === 'keystone')) showTip('keystone');
   else if (G.choices.some((c) => c.type === 'support')) showTip('support');
   else showTip('levelup');
-  $('levelup-title').textContent = isChest ? 'หีบสมบัติ!' : 'LEVEL UP!';
-  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่างจากหีบ' : `เลเวล ${G.player.level - G.pendingLevels + 1} — เลือก 1 อย่าง`;
+  $('levelup-title').textContent = isChest ? 'หีบสมบัติของบอส!' : G.milestone ? `★ MILESTONE — เลเวล ${lv} ★` : 'LEVEL UP!';
+  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่าง' : G.milestone ? 'การ์ดพิเศษทุก 10 เลเวล — Keystone, Awaken, Empower · อ่านให้ดี!'
+    : `เลเวล ${lv} — เลือก 1 อย่าง${G.pendingLevels > 1 ? ` (เหลืออีก ${G.pendingLevels - 1})` : ''} · ★ = เข้ากับบิลด์`;
   renderCards();
   Sfx.play('levelup');
   show('levelup');
@@ -243,7 +315,7 @@ function renderCards() {
 function reroll() {
   if (G.state !== 'levelup' || G.player.currency.chaos <= 0) return;
   G.player.currency.chaos--;
-  G.choices = generateChoices(choiceCount(G.levelIsChest));
+  G.choices = generateChoices(choiceCount(G.levelIsChest), G.milestone);
   renderCards();
 }
 
@@ -252,7 +324,8 @@ function openAscend() {
   const P = G.player;
   G.state = 'levelup';
   G.choiceKind = 'asc';
-  G.levelIsChest = false;
+  G.levelIsChest = false; G.milestone = false;
+  $('levelup').classList.remove('ms');
   if (!P.asc) {
     G.choices = Object.values(ASCENDANCY).filter((a) => a.cls === P.cls.id).map((a) => ({ type: 'ascclass', id: a.id }));
     $('levelup-sub').textContent = 'ผ่านการทดสอบแล้ว! เลือกคลาสย่อย (เลือกได้ครั้งเดียวต่อรอบ)';
@@ -294,9 +367,10 @@ function skipLevel() {
 function chooseCard(i) {
   const c = G.choices[i], P = G.player;
   if (!c) return;
-  if (c.type === 'skill') { P.skills.push(newSkillInstance(c.id)); recomputePlayer(); finishChoice(); }
-  else if (c.type === 'level') { c.inst.level++; recomputePlayer(); finishChoice(); }
-  else if (c.type === 'passive') { P.passives[c.id] = (P.passives[c.id] || 0) + 1; recomputePlayer(); finishChoice(); }
+  if (c.type === 'skill') { const inst = newSkillInstance(c.id); inst.level = newSkillLevel(); P.skills.push(inst); recomputePlayer(); finishChoice(); }
+  else if (c.type === 'level') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + GEM_LEVELS); recomputePlayer(); finishChoice(); }
+  else if (c.type === 'empower') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + 3); recomputePlayer(); finishChoice(); }
+  else if (c.type === 'passive') { P.passives[c.id] = Math.min(PASSIVES[c.id].max, (P.passives[c.id] || 0) + PASSIVE_RANKS); recomputePlayer(); finishChoice(); }
   else if (c.type === 'keystone') { P.keystones[c.id] = 1; recomputePlayer(); finishChoice(); }
   else if (c.type === 'evolve') {
     c.inst.evo = true; recomputePlayer();

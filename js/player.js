@@ -28,8 +28,9 @@ function defaultMods() {
   };
 }
 
-const xpReq = (lv) => Math.floor(5 + (lv - 1) * 5 + Math.pow(lv - 1, 2) * 0.32);
-const LIFE_PER_LEVEL = 3;
+// about 40–50 levels per run: early levels come quickly, later ones take longer
+const xpReq = (lv) => Math.floor((5 + (lv - 1) * 5 + Math.pow(lv - 1, 2) * 0.32) * Math.min(6, 1.8 + (lv - 1) * 0.28));
+const LIFE_PER_LEVEL = 7;
 
 function createPlayer(cls) {
   return {
@@ -160,13 +161,12 @@ function updatePickups(dt) {
     const d2 = dist2(o.x, o.y, P.x, P.y);
     if (!o.pull && d2 < R2) o.pull = true;
     if (o.pull) {
+      // fly straight at the player, speeding up — steering (not accelerating sideways) so orbs never orbit
       const d = Math.sqrt(d2) || 1;
-      const acc = 1600;
-      o.vx += ((P.x - o.x) / d) * acc * dt; o.vy += ((P.y - o.y) / d) * acc * dt;
-      const sp = Math.hypot(o.vx, o.vy), max = 900;
-      if (sp > max) { o.vx *= max / sp; o.vy *= max / sp; }
-      o.x += o.vx * dt; o.y += o.vy * dt;
-      if (d < P.r + 8) {
+      o.sp = Math.min(1400, (o.sp || 250) + 1800 * dt);
+      const step = o.sp * dt;
+      if (d <= step + P.r + 8) { o.x = P.x; o.y = P.y; } else { o.x += ((P.x - o.x) / d) * step; o.y += ((P.y - o.y) / d) * step; }
+      if (d <= step + P.r + 8) {
         gainXp(o.v);
         Sfx.play('pickup');
         G.orbs[i] = G.orbs[G.orbs.length - 1]; G.orbs.pop();
@@ -198,7 +198,7 @@ function collectPickup(kind, x, y, it) {
   else if (kind === 'fusing') P.currency.fusing++;
   else if (kind === 'life') P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3);
   else if (kind === 'magnet') for (const o of G.orbs) o.pull = true;
-  else if (kind === 'chest') G.pendingChests++;
+  else if (kind === 'chest') { if (it && it.boss) G.pendingChests++; else openChestInstant(x, y); }
   else if (kind === 'map') collectMap(it.map);
   else if (kind === 'essence') { P.essences[it.ess] = (P.essences[it.ess] || 0) + 1; lootLog(def.name, def.color); showTip('essence'); }
 }
@@ -252,7 +252,7 @@ function updateAscendancy(dt) {
 function procStats(kind, dmgOverride) {
   const P = G.player, m = P.mods;
   const lv = P.level;
-  const base = dmgOverride !== undefined ? dmgOverride : 10 + lv * 2.4;
+  const base = dmgOverride !== undefined ? dmgOverride : 10 + lv * 5;
   const type = kind === 'thunder' ? 'lightning' : kind === 'poison' ? 'chaos' : 'fire';
   const inc = 1 + (type === 'chaos' ? m.incChaos : m.incEle) + (kind === 'thunder' || kind === 'retaliate' ? m.incSpell : 0);
   const more = (type === 'chaos' ? 1 : m.moreEle) * m.moreAll;

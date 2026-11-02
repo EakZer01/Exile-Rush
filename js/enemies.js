@@ -167,7 +167,7 @@ function spawnBoss(def) {
 }
 
 function bossDefeated(e) {
-  spawnPickup(e.x, e.y, 'chest');
+  spawnPickup(e.x, e.y, 'chest', { boss: true });
   spawnPickup(e.x + 30, e.y, 'chest');
   spawnPickup(e.x - 30, e.y, 'fusing');
   spawnPickup(e.x, e.y + 30, 'chaos');
