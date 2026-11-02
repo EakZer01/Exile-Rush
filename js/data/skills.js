@@ -250,7 +250,7 @@ defSkill({
 });
 defSkill({
   id: 'molten_strike', name: 'Molten Strike', th: 'หมัดหลอมเหลว', gem: 'r', icon: '✸',
-  tags: ['Attack', 'Melee', 'Projectile', 'Fire', 'AoE'],
+  tags: ['Attack', 'Melee', 'Strike', 'Projectile', 'Fire', 'AoE'],
   desc: 'ฟาดศัตรูระยะประชิด แล้วพ่นลูกลาวาออกไปตกระเบิดรอบเป้าหมาย (Support กระสุนเพิ่มจำนวนลูกลาวา)',
   behavior: 'strike',
   base: { dmg: 15, types: { fire: 1, physical: 0.3 }, cd: 0.7, range: 120, balls: 3, area: 38, ignite: 0.15, knock: 20 },
@@ -312,7 +312,7 @@ defSkill({
 });
 defSkill({
   id: 'smite', name: 'Smite', th: 'ทัณฑ์สายฟ้า', gem: 'r', icon: 'ϟ',
-  tags: ['Attack', 'Melee', 'AoE', 'Lightning'],
+  tags: ['Attack', 'Melee', 'Strike', 'AoE', 'Lightning'],
   desc: 'ฟาดศัตรูที่ใกล้ที่สุด แล้วเรียกสายฟ้าลงใส่ศัตรูรอบๆ เป้าหมาย 3 ตัว',
   behavior: 'strike',
   base: { dmg: 14, types: { physical: 0.5, lightning: 1 }, cd: 0.6, range: 120, balls: 0, bolts: 3, boltR: 220, area: 30, shock: 0.25 },
@@ -322,7 +322,7 @@ defSkill({
 });
 defSkill({
   id: 'frost_blades', name: 'Frost Blades', th: 'ใบมีดน้ำแข็ง', gem: 'g', icon: '❆',
-  tags: ['Attack', 'Melee', 'Projectile', 'Cold'],
+  tags: ['Attack', 'Melee', 'Strike', 'Projectile', 'Cold'],
   desc: 'ฟันศัตรูที่ใกล้ที่สุด แล้วใบมีดน้ำแข็งพุ่งทะลุต่อจากเป้าหมาย (Support กระสุนเพิ่มจำนวนใบมีด)',
   behavior: 'strike',
   base: { dmg: 13, types: { physical: 0.4, cold: 1 }, cd: 0.6, range: 120, balls: 0, blades: 3, speed: 620, life: 0.6, size: 6, spread: 0.3, pierce: 1 },
@@ -374,7 +374,7 @@ defSkill({
 });
 defSkill({
   id: 'viper_strike', name: 'Viper Strike', th: 'จู่โจมอสรพิษ', gem: 'g', icon: '§',
-  tags: ['Attack', 'Melee', 'Chaos', 'Physical'],
+  tags: ['Attack', 'Melee', 'Strike', 'Chaos', 'Physical'],
   desc: 'แทงศัตรูที่ใกล้ที่สุดอย่างรวดเร็ว ติด Poison เกือบทุกครั้ง พิษซ้อนกันได้เรื่อยๆ — เหมาะกับบอส',
   behavior: 'strike',
   base: { dmg: 10, types: { physical: 0.7, chaos: 0.6 }, cd: 0.42, range: 125, balls: 0, poison: 0.65, crit: 0.07 },

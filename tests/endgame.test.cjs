@@ -128,3 +128,38 @@ test('Crimson Bleed corpses burst onto nearby enemies', () => {
     for (const d of G.delayed.splice(0)) d.fn();`);
   assert.ok(run('B6.maxHp - B6.hp') >= 199);
 });
+
+function supportGame(cls, skill, sup, weapon) {
+  const g = game();
+  g.run(`startGame(CLASSES[${cls}]); P7 = G.player; P7.x = P7.y = 0; ${weapon ? `P7.equip.weapon = makeNormal('${weapon}');` : ''}
+    I7 = newSkillInstance('${skill}'); I7.supports = ['${sup}']; P7.skills = [I7]; recomputePlayer();
+    function foe(x, y) { const e = makeEnemy('zombie', x, y, 0); e.hp = e.maxHp = 1e9; e.speed = 0; e.dmg = 0; G.enemies.push(e); return e; }
+    function step(n) { for (let k = 0; k < n; k++) { G.time += 1/60; G.hash.clear(); for (const e of G.enemies) if (!e.dead) G.hash.insert(e); updateSkills(1/60); updateProjectiles(1/60); for (const d of G.delayed.splice(0)) d.fn(); } }`);
+  return g;
+}
+
+test('Ballista Totem: the player stops firing and totems fire instead', () => {
+  const { run } = supportGame(1, 'split_arrow', 'ballista_totem');
+  run(`foe(300, 0); step(30);`);
+  assert.equal(run('(I7.rt.totems || []).length'), 1);
+  assert.equal(run('G.projectiles.every(p => Math.hypot(p.ox - I7.rt.totems[0].x, p.oy - I7.rt.totems[0].y) < 1)'), true);
+  // walk far away: the oldest totem follows once the cap is reached
+  run(`step(80); P7.x = 1500; G.enemies[0].x = 1700; step(120);`);
+  assert.ok(run('I7.rt.totems.some(t => Math.hypot(t.x - P7.x, t.y - P7.y) < 60)'));
+});
+
+test('Mirage Archer: a ghost appears and fires at reduced damage', () => {
+  const { run } = supportGame(1, 'split_arrow', 'mirage_archer');
+  run(`foe(300, 0); step(70);`);
+  assert.ok(run('!!I7.rt.mirage'));
+  assert.ok(run('G.projectiles.some(p => p.s._src === I7.st && Math.abs(p.s.hitTotal - I7.st.hitTotal * 0.6) < 1e-6)'));
+});
+
+test('Melee Splash hits around the target; Onslaught speeds you up on kill', () => {
+  const { run } = supportGame(2, 'smite', 'melee_splash', 'driftwood_club');
+  run(`I7.st.bolts = 0; const a = foe(80, 0), b = foe(140, 0), c = foe(500, 0); A7 = [a, b, c]; step(60);`);
+  assert.deepEqual(Array.from(run('A7.map(e => e.hp < 1e9)')), [true, true, false]);
+  const g2 = supportGame(2, 'smite', 'onslaught', 'driftwood_club');
+  g2.run(`const w = foe(80, 0); w.hp = w.maxHp = 1; step(60);`);
+  assert.ok(g2.run('P7.onslaughtT > G.time'));
+});

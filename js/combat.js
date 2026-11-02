@@ -161,6 +161,7 @@ function killEnemy(e, inst) {
   if (inst) inst.kills++;
   const P = G.player;
   Sfx.play('kill');
+  if (inst && inst.st && inst.st.onslaught) P.onslaughtT = G.time + 4;
 
   // flask charges
   const fc = (e.rarity === 3 ? 30 : e.rarity === 2 ? 6 : e.rarity === 1 ? 2 : 0.5) * (1 + P.mods.flaskCharge) * P.mods.flaskGainMore;

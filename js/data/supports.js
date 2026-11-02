@@ -145,6 +145,26 @@ defSupport({
   apply(s) { s.bleedMore *= 1.35; s.bloodBurst = true; },
 });
 defSupport({
+  id: 'onslaught', name: 'Onslaught', th: 'บุกตะลุย', gem: 'g',
+  desc: 'ฆ่าศัตรูด้วยสกิลนี้ได้ Onslaught 4 วิ: ทุกสกิลร่าย/โจมตีเร็วขึ้น 20% · เคลื่อนที่เร็วขึ้น 15% · ดาเมจ 8% less',
+  apply(s) { s.onslaught = true; s.more *= 0.92; },
+});
+defSupport({
+  id: 'melee_splash', name: 'Melee Splash', th: 'ฟันกระจาย', gem: 'r', req: ['Strike'],
+  desc: 'Strike โดนศัตรูรอบเป้าหมาย (รัศมี 90 ขยายตามพื้นที่) ด้วยดาเมจ 60% · ดาเมจ 10% less',
+  apply(s) { s.splash = 90; s.more *= 0.9; },
+});
+defSupport({
+  id: 'mirage_archer', name: 'Mirage Archer', th: 'นักธนูมายา', gem: 'g', req: ['Bow'], conflicts: ['ballista_totem'],
+  desc: 'ยิงแล้วเรียกร่างเงาขึ้นข้างหลังคุณ ร่างเงายิงสกิลนี้เองนาน 4 วิ ด้วยดาเมจ 60% (1 ร่างต่อสกิล)',
+  apply(s) { s.mirage = true; },
+});
+defSupport({
+  id: 'ballista_totem', name: 'Ballista Totem', th: 'ป้อมธนู', gem: 'g', req: ['Projectile'], excl: ['Spell', 'Melee'], conflicts: ['mirage_archer'], addTags: ['Totem'],
+  desc: 'คุณไม่ยิงสกิลนี้เอง แต่วางป้อมยิงอัตโนมัติ สูงสุด 2 ป้อม อยู่ได้ 8 วิ (วิ่งห่างแล้ววางใหม่ตามคุณ) · ดาเมจ 30% less',
+  apply(s) { s.totem = true; s.totemMax = 2; s.totemDur = 8; s.more *= 0.7; },
+});
+defSupport({
   id: 'swift_affliction', name: 'Swift Affliction', th: 'ทรมานรวดเร็ว', gem: 'g', req: ['DoT', 'Fire', 'Chaos'],
   desc: 'ดาเมจต่อเนื่อง (DoT ทุกชนิด) 45% more · ระยะเวลา 20% less',
   apply(s) { s.dotMore *= 1.45; s.durMore *= 0.8; },

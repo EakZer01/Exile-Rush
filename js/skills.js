@@ -32,13 +32,15 @@ function enemiesInRadius(x, y, r, out) {
 
 function updateSkills(dt) {
   const P = G.player;
-  const speedMul = (G.buffs.acceleration > 0 ? 1.4 : 1) * (P.mods.ks.rage ? 1 + P.rage * 0.005 : 1) * (1 + P.flaskFx.speed);
+  const speedMul = (G.buffs.acceleration > 0 ? 1.4 : 1) * (P.mods.ks.rage ? 1 + P.rage * 0.005 : 1) * (1 + P.flaskFx.speed) * (P.onslaughtT > G.time ? 1.2 : 1);
   if (G.input.vaal) { G.input.vaal = false; unleashVaal(); }
   else if (P.skills.some((s) => s.evo && s.souls >= vaalSouls())) showTip('vaal');
   for (const inst of P.skills) {
     const s = inst.st;
     if (inst.vaalT > 0) inst.vaalT -= dt;
-    if (s.disabled) { if (inst.rt.blades) inst.rt.blades.length = 0; inst.rt.beamT = 0; continue; }
+    if (s.disabled) { if (inst.rt.blades) inst.rt.blades.length = 0; inst.rt.beamT = 0; inst.rt.totems = null; inst.rt.mirage = null; continue; }
+    if (inst.rt.mirage) updateMirage(inst, s, dt, speedMul);
+    if (s.totem) { updateTotems(inst, s, dt, speedMul * (inst.vaalT > 0 ? 2.5 : 1)); continue; }
     if (s.behavior === 'flicker') { updateFlicker(inst, s, dt, speedMul); continue; }
     if (s.behavior === 'aura') { tickAura(inst, s, dt); continue; }
     if (s.behavior === 'herald') continue;          // works through on-kill only
@@ -51,6 +53,7 @@ function updateSkills(dt) {
       if (s.ruthless && (inst.rt.rc || 0) % 3 === 2) inst.rt.ruthT = G.time + 0.12;
       if (castSkill(inst, s)) {
         inst.rt.rc = (inst.rt.rc || 0) + 1;
+        if (s.mirage && !inst.rt.mirage) summonMirage(inst);
         inst.timer = Math.max(inst.timer + s.cdFinal, s.cdFinal * 0.5);
         const echoes = s.echo + (G.buffs.echoing > 0 && s.behavior !== 'orbit' && s.behavior !== 'minion' ? 1 : 0);
         for (let i = 0; i < echoes; i++) G.delayed.push({ t: 0.14 * (i + 1), fn: () => castSkill(inst, inst.st) });
@@ -125,16 +128,17 @@ function castSkill(inst, s) {
 }
 
 // ---------------- Projectiles ----------------
-function castProjectiles(inst, s) {
-  const P = G.player;
+// (ox, oy): fire from somewhere other than the player (totems, mirages)
+function castProjectiles(inst, s, ox, oy) {
+  const P = G.player, x = ox === undefined ? P.x : ox, y = oy === undefined ? P.y : oy;
   let base;
   if (s.pattern === 'ring') {
-    if (!nearestEnemy(P.x, P.y, 420)) return false;
+    if (!nearestEnemy(x, y, 420)) return false;
     base = P.facing;
   } else {
-    const tgt = s.aim === 'random' ? (randomEnemyNear(P.x, P.y, 480) || nearestEnemy(P.x, P.y, 650)) : nearestEnemy(P.x, P.y, 650);
+    const tgt = s.aim === 'random' ? (randomEnemyNear(x, y, 480) || nearestEnemy(x, y, 650)) : nearestEnemy(x, y, 650);
     if (!tgt) return false;
-    base = angleTo(P.x, P.y, tgt.x, tgt.y);
+    base = angleTo(x, y, tgt.x, tgt.y);
   }
   const n = s.proj;
   for (let i = 0; i < n; i++) {
@@ -146,7 +150,7 @@ function castProjectiles(inst, s) {
       a = base - total / 2 + (total * i) / (n - 1);
     }
     if (s.wander) a += rand(-0.15, 0.15);
-    spawnProjectile(inst, s, P.x, P.y, a, null);
+    spawnProjectile(inst, s, x, y, a, null);
   }
   return true;
 }
@@ -560,6 +564,12 @@ function castStrike(inst, s) {
   if (!tgt) return false;
   hitEnemy(tgt, s, inst, 1, P.x, P.y);
   addEffect({ kind: 'spark', x: tgt.x, y: tgt.y, r: 22, t: 0, dur: 0.18, color: s.color });
+  // Melee Splash: the blow also lands around the target
+  if (s.splash) {
+    const R = s.splash * Math.sqrt(Math.max(0.1, (1 + s.areaInc) * s.areaMore));
+    for (const e of enemiesInRadius(tgt.x, tgt.y, R, [])) if (e !== tgt) hitEnemy(e, s, inst, 0.6, tgt.x, tgt.y);
+    addEffect({ kind: 'ring', x: tgt.x, y: tgt.y, r: R, t: 0, dur: 0.2, color: s.color });
+  }
   // Smite: lightning bolts on enemies around the target
   if (s.bolts) {
     const list = enemiesInRadius(tgt.x, tgt.y, s.boltR, []);
@@ -581,6 +591,52 @@ function castStrike(inst, s) {
     G.meteors.push({ x: tgt.x + Math.cos(a) * d, y: tgt.y + Math.sin(a) * d, delay: 0.25 + i * 0.03, fall: 0.25, r: s.radius, inst, s, mult: 0.6 });
   }
   return true;
+}
+
+// a copy of a stat block that hits for k× damage (mirages)
+function scaledStats(s, k) {
+  const o = Object.assign({}, s, { hit: {}, mirage: false, totem: false, _src: s });
+  for (const t in s.hit) o.hit[t] = s.hit[t] * k;
+  o.hitTotal = s.hitTotal * k; o.cloudDpsFinal = s.cloudDpsFinal * k;
+  return o;
+}
+// Mirage Archer: a ghost behind you that fires the skill on its own for a few seconds
+function summonMirage(inst) {
+  const P = G.player;
+  inst.rt.mirage = { x: P.x - Math.cos(P.facing) * 45, y: P.y - Math.sin(P.facing) * 45, t: 4, timer: 0.3, flip: !!P._faceLeft };
+  emit('wisp', inst.rt.mirage.x, inst.rt.mirage.y, 8);
+}
+function updateMirage(inst, s, dt, speedMul) {
+  const m = inst.rt.mirage;
+  m.t -= dt; m.timer -= dt * speedMul;
+  if (m.t <= 0) { inst.rt.mirage = null; return; }
+  if (m.timer > 0) return;
+  const ms = inst.rt.mirS && inst.rt.mirS._src === s ? inst.rt.mirS : (inst.rt.mirS = scaledStats(s, 0.6));
+  const ok = s.behavior === 'projectile' ? castProjectiles(inst, ms, m.x, m.y) : castSkill(inst, ms);
+  m.timer = ok ? s.cdFinal : 0.15;
+}
+// Ballista Totem: totems placed where you stand fire the skill instead of you
+function updateTotems(inst, s, dt, speedMul) {
+  const P = G.player, T = inst.rt.totems || (inst.rt.totems = []);
+  for (let i = T.length - 1; i >= 0; i--) {
+    const t = T[i];
+    t.t -= dt; t.timer -= dt * speedMul;
+    if (t.t <= 0) { T.splice(i, 1); continue; }
+    if (t.timer > 0) continue;
+    if (castProjectiles(inst, s, t.x, t.y)) {
+      t.timer = s.cdFinal; inst.rt.rc = (inst.rt.rc || 0) + 1;
+      for (let k = 0; k < s.echo; k++) G.delayed.push({ t: 0.14 * (k + 1), fn: () => castProjectiles(inst, inst.st, t.x, t.y) });
+    } else t.timer = 0.15;
+  }
+  inst.timer -= dt;
+  if (inst.timer > 0 || !nearestEnemy(P.x, P.y, 520)) return;
+  // once every totem is far behind, the oldest one is moved to you
+  const far = T.every((t) => dist2(t.x, t.y, P.x, P.y) > 350 * 350);
+  if (T.length >= s.totemMax) { if (!far) return; T.shift(); }
+  const x = clampArena(P.x + rand(-20, 20), 20), y = clampArena(P.y + rand(-20, 20), 20);
+  T.push({ x, y, t: s.totemDur, timer: 0.25, id: uid() });
+  addEffect({ kind: 'ring', x, y, r: 26, t: 0, dur: 0.35, color: s.color });
+  inst.timer = 1.2;
 }
 
 // enemies on a line from (x, y) at angle a, length L, half-width w

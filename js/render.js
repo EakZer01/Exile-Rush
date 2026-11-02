@@ -158,6 +158,24 @@ function render() {
   drawPlayer(ctx, P);
   ctx.imageSmoothingEnabled = true;
 
+  // Ballista totems and Mirage Archers
+  for (const inst of P.skills) {
+    for (const t of inst.rt.totems || []) {
+      ctx.drawImage(shadowSprite(), t.x - 12, t.y + 6, 24, 8);
+      ctx.fillStyle = '#5a4a30'; ctx.fillRect(t.x - 7, t.y - 6, 14, 14);
+      ctx.strokeStyle = '#c8a870'; ctx.lineWidth = 2; ctx.strokeRect(t.x - 7, t.y - 6, 14, 14);
+      ctx.strokeStyle = inst.st.color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(t.x, t.y - 10, 9, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(t.x, t.y + 1, 15, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(t.t / inst.st.totemDur, 0, 1)); ctx.stroke();
+    }
+    const m = inst.rt.mirage;
+    if (m) {
+      ctx.globalAlpha = 0.45 * clamp(m.t / 0.5, 0, 1); ctx.imageSmoothingEnabled = false;
+      drawSprite(ctx, 'cls_' + P.cls.id, 0, m.flip, '', 'white', m.x, m.y + 14, 2);
+      ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = true;
+    }
+  }
   // blade vortex
   for (const inst of P.skills) {
     if (inst.st.behavior !== 'orbit' || !inst.rt.blades) continue;
@@ -694,6 +712,11 @@ function drawAscendancyAuras(ctx, P) {
     ctx.setLineDash([10, 12]); ctx.lineDashOffset = -G.time * 20;
     ctx.beginPath(); ctx.arc(P.x, P.y, 220, 0, TAU); ctx.stroke();
     ctx.setLineDash([]);
+  }
+  if (P.onslaughtT > G.time) {
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(glowSprite('#ffb040', 34), P.x - 34, P.y - 34);
+    ctx.globalCompositeOperation = 'source-over';
   }
   if (P.aegis) {
     ctx.strokeStyle = hexA('#ffe9a0', 0.55 + Math.sin(G.time * 5) * 0.15); ctx.lineWidth = 2.5;

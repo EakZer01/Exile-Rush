@@ -49,7 +49,7 @@ function createPlayer(cls) {
     currency: { chaos: 3, jeweller3: 0, jeweller4: 0, jeweller5: 0, jeweller6: 0, regal: 0, exalt: 0, divine: 0, annul: 0, whetstone: 0, scrap: 0, vaal: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
     // ascendancy state
     asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
-    critT: 0, frenzyT: 0, revives: 0, masteries: [], extraSlots: 0,
+    critT: 0, frenzyT: 0, revives: 0, masteries: [], extraSlots: 0, onslaughtT: 0,
     essences: {},
     equip: { weapon: null, offhand: null, helm: null, body: null, gloves: null, boots: null, belt: null, amulet: null, ring: null, ring2: null }, backpack: [], newItems: 0,
   };
@@ -110,6 +110,7 @@ function updatePlayer(dt) {
   let spd = P.moveSpeed;
   spd *= 1 + P.flaskFx.move;
   if (G.buffs.acceleration > 0) spd *= 1.4;
+  if (P.onslaughtT > G.time) spd *= 1.15;
 
   if (P.dashT > 0) {
     P.dashT -= dt;
