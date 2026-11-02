@@ -390,9 +390,13 @@ function finishChoice() {
 function supportReplacementReason(supId, inst, index) {
   if (inst.supports.includes(supId)) return 'ใส่ไว้แล้ว';
   if (!Number.isInteger(index) || index < 0 || index >= inst.supports.length) return 'ไม่พบเจมที่จะแทนที่';
+  if (index >= skillSockets(inst).cap) return 'ต้องเพิ่มช่องก่อนแทนที่เจมที่ยังไม่มีช่อง';
   if (inst.supports.length > MAX_SOCKETS) return 'เกินเพดาน 6 Support';
   const trial = { ...inst, supports: inst.supports.filter((_, i) => i !== index) };
-  return supportBlockReason(supId, trial, true);
+  const reason = supportBlockReason(supId, trial, true);
+  if (reason) return reason;
+  const next = { ...inst, supports: inst.supports.map((sid, i) => i === index ? supId : sid) };
+  return activeSupports(next).active.includes(supId) ? '' : 'Support ใหม่ยังทำงานไม่ได้กับเจมที่เหลือ';
 }
 function canSocketSupport(supId, inst) {
   return !supportBlockReason(supId, inst) || inst.supports.some((_, i) => !supportReplacementReason(supId, inst, i));

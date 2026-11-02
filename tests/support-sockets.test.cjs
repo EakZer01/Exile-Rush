@@ -113,6 +113,35 @@ test('already-owned supports cannot be offered as replacements or lose their awa
   assert.equal(run('inst.st.hitTotal'), run('beforeHit'));
 });
 
+test('inactive supports still occupy sockets and cannot permit an extra appended gem', () => {
+  const { run } = socketsGame();
+  assert.equal(run("insert('inc_aoe')"), true);
+  assert.equal(run("insert('added_cold')"), true);
+  assert.equal(run("insert('hypothermia', 0)"), true);
+  assert.equal(run("insert('added_fire', 1)"), true);
+  assert.equal(run('activeSupports(inst).active.length'), 1);
+  assert.equal(run("insert('fortify')"), false);
+  assert.equal(run('inst.supports.length'), 2);
+  assert.equal(run('G.pendingLevels'), 1);
+  assert.equal(run("insert('fire_pen', 0)"), true);
+  assert.equal(run('activeSupports(inst).active.length'), 2);
+  assert.ok(run('inst.st.pen.fire') > 0);
+});
+
+test('legacy gems outside actual slots cannot supply tags or consume replacement rewards', () => {
+  const { run } = socketsGame();
+  run("inst.supports = ['inc_aoe', 'fortify', 'added_fire']; recomputePlayer();");
+  assert.equal(run("skillTags(inst).has('Fire')"), false);
+  assert.equal(run("insert('fire_pen', 0)"), false);
+  assert.equal(run("insert('added_lightning', 2)"), false);
+  assert.equal(run('G.pendingLevels'), 1);
+  run('P.currency.jeweller3 = 1;');
+  assert.equal(run('upgrade(3)'), true);
+  assert.equal(run("insert('fire_pen', 0)"), true);
+  assert.equal(run('activeSupports(inst).active.length'), 3);
+  assert.ok(run('inst.st.pen.fire') > 0);
+});
+
 test('six-slot skills accept exactly six supports and block overflow, duplicates and stale clicks', () => {
   const { run } = socketsGame();
   run('P.currency.jeweller6 = 1;');

@@ -237,7 +237,8 @@ function useSkillJeweller(inst, id) {
 function activeSupports(inst) {
   const so = skillSockets(inst), active = [], inactive = [], slots = Array(so.cap).fill(null), reasons = {};
   const tags = new Set(SKILLS[inst.id].tags), candidates = [], seen = new Set(), enabled = new Set();
-  for (const sid of inst.supports) {
+  for (const [index, sid] of inst.supports.entries()) {
+    if (index >= so.cap) { inactive.push(sid); reasons[sid] = 'ช่อง Support ไม่พอ · ใช้ Jeweller เพิ่มช่อง'; continue; }
     if (!SUPPORTS[sid] || seen.has(sid)) { inactive.push(sid); reasons[sid] = 'เจมไม่ถูกต้องหรือใส่ซ้ำ'; continue; }
     seen.add(sid); candidates.push(sid);
   }
@@ -254,7 +255,7 @@ function activeSupports(inst) {
     if (!changed) break;
   }
   for (const sid of candidates) {
-    if (enabled.has(sid)) { slots[active.length] = sid; active.push(sid); }
+    if (enabled.has(sid)) { slots[inst.supports.indexOf(sid)] = sid; active.push(sid); }
     else {
       inactive.push(sid);
       reasons[sid] = enabled.size >= so.cap ? 'ช่อง Support ไม่พอ · ใช้ Jeweller เพิ่มช่อง' : 'แท็กสกิลไม่ตรง หรือขัดกับ Support ที่ทำงานอยู่';

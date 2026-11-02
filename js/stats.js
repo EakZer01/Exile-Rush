@@ -31,7 +31,7 @@ function supportBlockReason(supId, inst, ignoreSockets) {
   if (!ignoreSockets) {
     const act = activeSupports(inst);
     if (inst.supports.length >= MAX_SOCKETS) return 'เต็มเพดาน 6 Support แล้ว · เลือกแทนที่เจมเดิม';
-    if (act.active.length >= act.so.cap) return `เต็ม ${act.so.cap} ช่อง · ใช้ Jeweller ระดับสูงกว่าที่ I → ช่อง Support หรือเลือกแทนที่เจมเดิม`;
+    if (inst.supports.length >= act.so.cap) return `เต็ม ${act.so.cap} ช่อง · ใช้ Jeweller ระดับสูงกว่าที่ I → ช่อง Support หรือเลือกแทนที่เจมเดิม`;
   }
   return '';
 }
