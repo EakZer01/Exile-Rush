@@ -58,6 +58,7 @@ function onItemPickup(it) {
   Sfx.play('currency');
   emit('gold', P.x, P.y, 12, { color: RARITY_COLOR[it.rarity] });
   lootLog(it.name, RARITY_COLOR[it.rarity]);
+  showTip('item');
   if (it.unique) {
     announce(it.name, 'Unique ' + SLOT_NAME[it.slot] + ' — ' + UNIQUES[it.unique].th, RARITY_COLOR.unique);
     const M = loadMeta();

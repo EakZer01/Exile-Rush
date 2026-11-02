@@ -57,6 +57,7 @@ function spriteCanvas(id, frame, flip, outline, tint, emitOnly) {
       let rgb = hexRgb(col);
       if (tint === 'white') rgb = [255, 255, 255];
       else if (tint === 'frost') rgb = rgb.map((v, i) => Math.round(v * 0.35 + frost[i] * 0.65));
+      else if (tint === 'breach') rgb = rgb.map((v, i) => Math.round(v * 0.45 + [200, 90, 255][i] * 0.55));
       const px = (flip ? w - 1 - x : x) + 1, py = y + 1;
       put(px, py, rgb, 255);
       solid[py * W + px] = 1;
@@ -107,3 +108,37 @@ function spriteURL(id, scale) {
   _sprUrl.set(key, u);
   return u;
 }
+
+// ---------------- palette recolours ----------------
+// New monsters and biome bosses reuse existing art with shifted colours.
+function hexHsl(hex) {
+  const [r, g, b] = hexRgb(hex).map((v) => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+  if (mx === mn) return [0, 0, l];
+  const d = mx - mn, s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h * 60, s, l];
+}
+function hslHex(h, s, l) {
+  const f = (n) => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
+  return '#' + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+// o: hue (absolute degrees) | sat (multiplier) | satMin | light (multiplier)
+function recolorSprite(id, base, o) {
+  const src = SPRITE_ART[base], pal = {};
+  for (const k in src.pal) {
+    let [h, s, l] = hexHsl(src.pal[k]);
+    if (o.hue !== undefined) h = o.hue;
+    s = Math.min(1, Math.max(s * (o.sat || 1), o.satMin || 0));
+    l = Math.min(0.95, l * (o.light || 1));
+    pal[k] = hslHex(h, s, l);
+  }
+  SPRITE_ART[id] = Object.assign({}, src, { pal, _frames: undefined });
+}
+recolorSprite('ghoul', 'zombie', { sat: 0.2, light: 1.15 });
+recolorSprite('spitter', 'cultist', { hue: 95, satMin: 0.35 });
+recolorSprite('shaman', 'skeleton', { hue: 275, satMin: 0.35 });
+recolorSprite('colossus_cinder', 'colossus', { hue: 18, satMin: 0.45 });
+recolorSprite('herald_rime', 'herald', { hue: 195, satMin: 0.4, light: 1.1 });
+recolorSprite('colossus_bog', 'colossus', { hue: 95, satMin: 0.35 });
+recolorSprite('herald_void', 'herald', { hue: 275, satMin: 0.45 });
+recolorSprite('sovereign_crown', 'sovereign', { hue: 45, satMin: 0.55, light: 1.2 });

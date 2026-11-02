@@ -19,6 +19,8 @@ function defaultMods() {
     evolveLevelAdd: 0, vaalSoulMul: 1, unevolvedMore: 1, nonMinionMore: 1,
     gemLevel: 0, flaskGainMore: 1,
     incFire: 0, incCold: 0, incLight: 0, curseEff: 0,
+    // unique item hooks
+    brandAdd: 0, brandSpeed: 0, heraldMore: 1, beamRange: 0, beamMore: 1, summonAdd: 0, poisonMore: 1, aftershockAdd: 0,
   };
 }
 
@@ -34,7 +36,7 @@ function createPlayer(cls) {
       { kind: 'life', name: 'Life Flask', key: 'Q', charges: 45, max: 60, use: 20, active: 0, dur: 2.5 },
       { kind: 'quick', name: 'Quicksilver Flask', key: 'E', charges: 30, max: 50, use: 25, active: 0, dur: 4 },
     ],
-    currency: { chaos: 3, fusing: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
+    currency: { chaos: 3, fusing: 0, regal: 0, exalt: 0, divine: 0, annul: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
     // ascendancy state
     asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
     critT: 0, frenzyT: 0, revives: 0,
@@ -175,7 +177,8 @@ function collectPickup(kind, x, y) {
   Sfx.play('currency');
   addText(x, y - 20, def.name, def.color, 1.1);
   emit('gold', x, y, 14, { color: def.color });
-  if (kind === 'chaos') P.currency.chaos++;
+  if (def.craft) { P.currency[kind] = (P.currency[kind] || 0) + 1; showTip('craft'); }
+  else if (kind === 'chaos') P.currency.chaos++;
   else if (kind === 'fusing') P.currency.fusing++;
   else if (kind === 'life') P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3);
   else if (kind === 'magnet') for (const o of G.orbs) o.pull = true;

@@ -77,6 +77,8 @@ function collectLights(P, inView) {
   for (const m of G.minions) addLight(m.x, m.y, 80, 0.7);
   for (const g of G.grounds) if (inView(g.x, g.y, g.r)) addLight(g.x, g.y, g.r * 1.4, 0.35);
   for (const s of G.shrines) addLight(s.x, s.y, 170, 0.8);
+  if (G.breach && G.breach.state === 'placed') addLight(G.breach.x, G.breach.y, 150, 0.8);
+  else if (G.breach && G.breach.state === 'open') addLight(G.breach.x, G.breach.y, G.breach.r * 1.1, 0.35);
   for (const it of G.pickups) addLight(it.x, it.y, 70, 0.6);
   for (const g of G.items) addLight(g.x, g.y, g.item.rarity === 'unique' ? 120 : 70, 0.6);
   for (const p of G.eproj) if (inView(p.x, p.y, 40)) addLight(p.x, p.y, 50, 0.5);
@@ -97,7 +99,8 @@ function render() {
   if (!P) return;
 
   const z = G.zoom;
-  const sx = G.shake > 0 ? rand(-G.shake, G.shake) : 0, sy = G.shake > 0 ? rand(-G.shake, G.shake) : 0;
+  const shk = G.settings.shake === false ? 0 : G.shake;
+  const sx = shk > 0 ? rand(-shk, shk) : 0, sy = shk > 0 ? rand(-shk, shk) : 0;
   const camX = G.cam.x, camY = G.cam.y;
   const worldTransform = () => { ctx.save(); ctx.translate(W / 2 + sx, H / 2 + sy); ctx.scale(z, z); ctx.translate(-camX, -camY); };
 
@@ -123,6 +126,14 @@ function render() {
     grd.addColorStop(1, 'rgba(60,120,30,0)');
     ctx.fillStyle = grd;
     ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, TAU); ctx.fill();
+  }
+
+  // poison pools (Bile Spitter)
+  for (const p of G.epools) {
+    if (!inView(p.x, p.y, p.r)) continue;
+    const a = Math.min(1, (p.dur - p.t) / 0.6) * 0.55;
+    ctx.fillStyle = `rgba(110,190,40,${a})`;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r, p.r * 0.55, 0, 0, TAU); ctx.fill();
   }
 
   // shrine bodies
@@ -228,6 +239,7 @@ function render() {
   }
 
   drawGroundItems(ctx, inView);
+  drawBreach(ctx);
 
   // Righteous Fire aura
   for (const inst of P.skills) {
@@ -373,7 +385,8 @@ function drawEnemy(ctx, e, P) {
   const foot = e.y + e.r * 0.9 + bob;
   ctx.drawImage(shadowSprite(), e.x - e.r * 1.05, e.y + e.r * 0.62, e.r * 2.1, e.r * 0.8);
   const outline = e.rarity === 2 ? 'rare' : e.rarity === 1 ? 'magic' : 'dark';
-  const h = drawSprite(ctx, id, frame, flip, outline, e.freeze > 0 ? 'frost' : '', e.x, foot, px * k);
+  const crouch = e.leapS === 'wind' ? 0.8 : 1;
+  const h = drawSprite(ctx, id, frame, flip, outline, e.freeze > 0 ? 'frost' : e.breach ? 'breach' : '', e.x, foot, px * k * crouch);
   // hit flash / volatile fuse: white overlay on top so the art stays readable
   const blink = e.fuse && Math.floor(G.time * 16) % 2;
   if (e.flash > 0 || blink) {
@@ -431,6 +444,15 @@ function drawEnemyOverlay(ctx, e, P) {
       ctx.lineTo(x + Math.cos(a + 0.3) * r * 1.2, y + Math.sin(a + 0.3) * r * 1.2);
     }
     ctx.stroke();
+  }
+  if (e.immuneT > G.time) {
+    ctx.strokeStyle = hexA('#fff0c0', 0.6 + Math.sin(G.time * 12) * 0.3); ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(x, y, r * 1.25, 0, TAU); ctx.stroke();
+  }
+  if (e.buffT > G.time) {
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5;
+    ctx.drawImage(glowSprite('#c060ff', r * 1.3), x - r * 1.3, y - r * 1.3);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   }
   if (e.curse && e.curse.t > G.time) {
     ctx.strokeStyle = e.curse.type === 'ele' ? '#c8a0ff' : e.curse.type === 'vuln' ? '#ff6a5a' : '#9a5aff';
@@ -645,6 +667,26 @@ function drawHUD(ctx, W, H, P) {
   ctx.fillStyle = PICKUPS.fusing.color; ctx.fillText('◈ Fusing ×' + P.currency.fusing, W - 12, 50);
   ctx.fillStyle = P.newItems > 0 ? hexA('#ffe866', 0.7 + Math.sin(G.time * 6) * 0.3) : '#b8a888';
   ctx.fillText(`🎒 ${mobile ? 'แตะ' : 'I'} กระเป๋า ${P.backpack.length}/${BACKPACK_SIZE}`, W - 12, 68);
+  const cur = P.currency;
+  if (cur.regal + cur.exalt + cur.divine + cur.annul > 0) {
+    ctx.fillStyle = '#c8b8e8';
+    ctx.fillText(`♛${cur.regal} ✷${cur.exalt} ✧${cur.divine} ⊘${cur.annul}`, W - 12, 86);
+  }
+  const B = G.breach;
+  if (B && B.state === 'open') {
+    ctx.textAlign = 'center'; ctx.font = '700 16px Cinzel, serif'; ctx.fillStyle = '#d8a0ff';
+    ctx.fillText(`BREACH ${Math.max(0, B.t).toFixed(1)}s · ☠ ${B.kills}`, W / 2, G.bossRef && !G.bossRef.dead ? 134 : 96);
+    ctx.textAlign = 'right'; ctx.font = '600 14px Sarabun, sans-serif';
+  }
+  if (B && B.state === 'placed') {
+    const dx = (B.x - G.cam.x) * G.zoom, dy = (B.y - G.cam.y) * G.zoom;
+    if (Math.abs(dx) > W / 2 - 20 || Math.abs(dy) > H / 2 - 20) {
+      const a = Math.atan2(dy, dx), m = Math.min((W / 2 - 34) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - 34) / Math.abs(Math.sin(a) || 1e-6));
+      ctx.save(); ctx.translate(W / 2 + Math.cos(a) * m, H / 2 + Math.sin(a) * m); ctx.rotate(a);
+      ctx.fillStyle = '#c070ff'; ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-8, -10); ctx.lineTo(-8, 10); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
   G.bagRect = { x: W - 150, y: 54, w: 150, h: 20 };
   // loot log (recent pickups)
   ctx.font = '700 13px Sarabun, sans-serif';
@@ -652,7 +694,7 @@ function drawHUD(ctx, W, H, P) {
     const a = clamp(4 - l.t, 0, 1);
     if (a <= 0) return;
     ctx.globalAlpha = a; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
-    ctx.strokeText(l.text, W - 12, 90 + i * 17); ctx.fillStyle = l.color; ctx.fillText(l.text, W - 12, 90 + i * 17);
+    ctx.strokeText(l.text, W - 12, 106 + i * 17); ctx.fillStyle = l.color; ctx.fillText(l.text, W - 12, 106 + i * 17);
   });
   ctx.globalAlpha = 1;
 

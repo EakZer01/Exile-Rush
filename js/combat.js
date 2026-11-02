@@ -25,6 +25,7 @@ function situationalMore(e, inst) {
 // A "hit" from a skill. mult = situational multiplier (point blank, etc.)
 function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (e.dead) return 0;
+  if (e.immuneT > G.time) { if (Math.random() < 0.05) addText(e.x, e.y - e.r - 10, 'IMMUNE', '#c8c8c8', 0.8); return 0; }
   const P = G.player, ks = P.mods.ks;
   let crit = false;
   if (!ks.resolute) crit = G.buffs.diamond > 0 || P.critT > 0 || Math.random() < s.critChance;
@@ -76,7 +77,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
       e.shock.eff = Math.min(0.5, (boss ? 0.15 : 0.25) * (s.shockEff || 1)); e.shock.t = 3 * s.ailmentDur;
     }
     if (chaos > 0 && Math.random() < s.poison) {
-      if (e.poison.length < 40) e.poison.push({ dps: chaos * 0.3 * s.dotMul * (s.ailMore || 1), t: 2.5 * s.ailmentDur, src: inst });
+      if (e.poison.length < 40) e.poison.push({ dps: chaos * 0.3 * s.dotMul * (s.ailMore || 1) * P.mods.poisonMore, t: 2.5 * s.ailmentDur, src: inst });
     }
   }
 
@@ -108,8 +109,9 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
 }
 
 function dealDamage(e, amount, inst, crit, type, silent) {
-  if (e.dead || amount <= 0) return;
+  if (e.dead || amount <= 0 || e.immuneT > G.time) return;
   e.hp -= amount;
+  if (e.phases && e.phases.length && e.hp < e.maxHp * e.phases[0]) bossPhase(e);
   e.flash = 0.07;
   if (inst) inst.dmgDealt += amount;
   G.stats.dmg += amount;
@@ -123,10 +125,11 @@ function dealDamage(e, amount, inst, crit, type, silent) {
 // damage over time (no hit) — RF, clouds, ignite, poison
 // ail = true for ignite/poison, whose dps already includes the hit's multipliers
 function dotDamage(e, amount, inst, color, ail) {
-  if (e.dead || amount <= 0) return;
+  if (e.dead || amount <= 0 || e.immuneT > G.time) return;
   amount *= e.dmgTakenMul * (e.shock.t > 0 ? 1 + e.shock.eff : 1) * (ail ? 1 : situationalMore(e, inst));
   if (e.curse && e.curse.t > G.time && e.curse.type !== 'ele') amount *= 1 + e.curse.eff * 0.6;
   e.hp -= amount;
+  if (e.phases && e.phases.length && e.hp < e.maxHp * e.phases[0]) bossPhase(e);
   e.dotAcc += amount;
   if (inst) inst.dmgDealt += amount;
   G.stats.dmg += amount;
@@ -155,10 +158,15 @@ function killEnemy(e, inst) {
   spawnOrb(e.x, e.y, xpv);
 
   // loot
+  // crafting orbs
+  if (e.rarity === 3) { spawnPickup(e.x + 20, e.y + 30, randomCraftOrb()); spawnPickup(e.x - 20, e.y + 30, randomCraftOrb()); }
+  else if (e.rarity === 2 && Math.random() < 0.2) spawnPickup(e.x - 10, e.y + 10, randomCraftOrb());
+  else if ((e.rarity === 1 || e.breach) && Math.random() < 0.012) spawnPickup(e.x, e.y, randomCraftOrb());
+  onBreachKill(e);
   if (e.rarity === 2) {
     spawnPickup(e.x + 10, e.y, 'chest');
     if (Math.random() < 0.35) spawnPickup(e.x - 12, e.y + 6, 'fusing');
-    if (Math.random() < 0.5) spawnPickup(e.x, e.y - 12, 'chaos');
+    if (Math.random() < 0.22) spawnPickup(e.x, e.y - 12, 'chaos');
   } else if (e.rarity === 1) {
     if (Math.random() < 0.06) spawnPickup(e.x, e.y, 'chaos');
     if (Math.random() < 0.08) spawnPickup(e.x + 8, e.y, 'life');
@@ -244,6 +252,10 @@ const PICKUPS = {
   life:   { name: 'Life Orb', th: 'ฟื้นชีวิต 30%', color: '#ff3a3a', icon: '❤' },
   magnet: { name: 'Orb of Gathering', th: 'ดูดลูกแก้วประสบการณ์ทั้งหมด', color: '#4ad0ff', icon: '⊛' },
   chest:  { name: 'Treasure Chest', th: 'สมบัติจากมอนสเตอร์ Rare', color: '#ffcf4a', icon: '▣' },
+  regal:  { name: 'Regal Orb', color: '#7aa8ff', icon: '♛', craft: true },
+  exalt:  { name: 'Exalted Orb', color: '#ffe8a0', icon: '✷', craft: true },
+  divine: { name: 'Divine Orb', color: '#ffc8ff', icon: '✧', craft: true },
+  annul:  { name: 'Orb of Annulment', color: '#c0c0d8', icon: '⊘', craft: true },
 };
 function spawnPickup(x, y, kind) { G.pickups.push({ x, y, kind, t: 0 }); }
 

@@ -14,6 +14,15 @@ const MONSTERS = {
   cultist:  { name: 'Void Cultist', hp: 38, speed: 55, dmg: 11, r: 13, xp: 3, color: '#6b3fa0', shape: 'diamond',
               ranged: { range: 340, cd: 3.2, speed: 200, dmg: 14, color: '#c080ff', burst: 3 } },
   golem:    { name: 'Stone Golem', hp: 260, speed: 38, dmg: 26, r: 28, xp: 10, color: '#8a8478', shape: 'square' },
+  // leaps at the player after a short crouch
+  ghoul:    { name: 'Ash Ghoul', hp: 30, speed: 56, dmg: 12, r: 13, xp: 2, color: '#9a9488', shape: 'circle',
+              leap: { range: 270, cd: 3.6, speed: 540, dur: 0.32, windup: 0.4 } },
+  // lobs bile that leaves a poison pool
+  spitter:  { name: 'Bile Spitter', hp: 34, speed: 48, dmg: 9, r: 13, xp: 3, color: '#7ac040', shape: 'diamond',
+              ranged: { range: 330, cd: 3.4, speed: 190, dmg: 8, color: '#9be05a', pool: true } },
+  // empowers nearby monsters — kill it first
+  shaman:   { name: 'Bone Shaman', hp: 26, speed: 50, dmg: 6, r: 11, xp: 4, color: '#a070e0', shape: 'diamond',
+              support: { cd: 4.5, r: 210, dur: 4 } },
 };
 
 // wave table: from minute `t`, these monster weights apply
@@ -21,12 +30,13 @@ const WAVES = [
   { t: 0,  w: { zombie: 6, skeleton: 3 } },
   { t: 1,  w: { zombie: 5, skeleton: 4, bat: 3 } },
   { t: 2.5, w: { zombie: 4, skeleton: 4, bat: 3, archer: 2 } },
-  { t: 4,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, brute: 1.5, volatile: 1 } },
-  { t: 6,  w: { skeleton: 3, bat: 4, archer: 2, brute: 2, volatile: 2, wraith: 2 } },
-  { t: 8,  w: { skeleton: 2, bat: 3, archer: 2, brute: 2, volatile: 2, wraith: 3, cultist: 1 } },
-  { t: 11, w: { bat: 3, archer: 2, brute: 3, volatile: 2, wraith: 4, cultist: 2, golem: 0.6 } },
-  { t: 14, w: { bat: 3, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1 } },
-  { t: 17, w: { bat: 4, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1.5 } },
+  { t: 3,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, ghoul: 1.5 } },
+  { t: 4,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, brute: 1.5, volatile: 1, ghoul: 1.5 } },
+  { t: 6,  w: { skeleton: 3, bat: 4, archer: 2, brute: 2, volatile: 2, wraith: 2, ghoul: 2, spitter: 1 } },
+  { t: 8,  w: { skeleton: 2, bat: 3, archer: 2, brute: 2, volatile: 2, wraith: 3, cultist: 1, ghoul: 2, spitter: 1.5, shaman: 0.8 } },
+  { t: 11, w: { bat: 3, archer: 2, brute: 3, volatile: 2, wraith: 4, cultist: 2, golem: 0.6, ghoul: 2, spitter: 2, shaman: 1 } },
+  { t: 14, w: { bat: 3, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1, ghoul: 2.5, spitter: 2, shaman: 1.2 } },
+  { t: 17, w: { bat: 4, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1.5, ghoul: 3, spitter: 2.5, shaman: 1.5 } },
 ];
 
 // Health multiplier over time (minutes)
@@ -65,6 +75,15 @@ const BOSSES = [
   { at: 1200, id: 'sovereign', name: 'The Void Sovereign', th: 'จักรพรรดิแห่งความว่างเปล่า', hp: 600000, speed: 70, dmg: 50, r: 54,
     color: '#3a1a5a', glow: '#b060ff', patterns: ['spiral', 'strike', 'ring', 'radial', 'summon', 'charge'], ptype: 'chaos', final: true },
 ];
+BOSSES[0].phases = [0.5];
+for (let i = 1; i < BOSSES.length; i++) BOSSES[i].phases = [0.66, 0.33];
+
+// a boss with some fields replaced (biome bosses, pinnacle)
+function bossVariant(i, o) { return Object.assign({}, BOSSES[i], o); }
+// Pinnacle boss: replaces the final boss on Tier 8+ maps
+const PINNACLE = bossVariant(3, { id: 'sovereign_crown', name: 'The Hollow Crown', th: 'มงกุฎกลวง — จ้าวแห่ง Atlas',
+  hp: 1500000, dmg: 64, r: 60, color: '#6a5a1a', glow: '#ffd84a', ptype: 'fire', summon: 'shaman', phases: [0.75, 0.5, 0.25], pinnacle: true });
+
 const RUN_LENGTH = 1200; // seconds — final boss spawns at 20:00
 
 // Shrines (PoE style temporary buffs)

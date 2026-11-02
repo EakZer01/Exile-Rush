@@ -32,13 +32,16 @@ const GORE = {
   wraith:   { chunk: '#57b7d0', blood: '#2a6a80', decal: '#1a4a5a' },
   cultist:  { chunk: '#6b3fa0', blood: '#5a0a3a', decal: '#3a0828' },
   golem:    { chunk: '#8a8478', blood: '#5a564e', decal: 'rubble' },
+  ghoul:    { chunk: '#8a8478', blood: '#4a4440', decal: '#2e2a26' },
+  spitter:  { chunk: '#7ac040', blood: '#6ab030', decal: '#3a5a18' },
+  shaman:   { chunk: '#a070e0', blood: '#6a3aa0', decal: null },
 };
 
 const _parts = [];
 function emit(kind, x, y, n, opt) {
   const d = PART[kind];
   if (!d || !G.settings.fx) return;
-  const room = MAX_PARTICLES - _parts.length;
+  const room = particleCap() - _parts.length;
   if (room <= 0) return;
   if (n > room) n = room;
   const o = opt || {};

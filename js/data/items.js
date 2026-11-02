@@ -108,6 +108,24 @@ const UNIQUES = {
   ouroboros: { slot: 'ring', name: 'Ouroboros Loop', th: 'วงแหวนงูกินหาง', flavor: 'จุดจบคือจุดเริ่ม',
     lines: ['Vaal ใช้วิญญาณน้อยลง 40%', '+10% ระยะเวลาสกิล'],
     apply(m) { m.vaalSoulMul *= 0.6; m.durInc += 0.1; } },
+  runeweaver: { slot: 'amulet', name: "Runeweaver's Sigil", th: 'ตราช่างทออักขระ', flavor: 'ทุกอักษรคือคำสั่งที่ไม่มีใครขัดได้',
+    lines: ['สกิล Brand ติดตราได้เพิ่ม +1', 'ตราทำงานเร็วขึ้น 25%', '+10% ดาเมจ Spell'],
+    apply(m) { m.brandAdd += 1; m.brandSpeed += 0.25; m.incSpell += 0.1; } },
+  glacier_heart: { slot: 'body', name: 'Heart of the Glacier', th: 'หัวใจธารน้ำแข็ง', flavor: 'ความเย็นไม่เคยรีบ แต่ไม่เคยพลาด',
+    lines: ['ระเบิดของ Herald 50% more', '+20% ดาเมจน้ำแข็ง', '+8% ชีวิตสูงสุด'],
+    apply(m) { m.heraldMore *= 1.5; m.incCold += 0.2; m.lifeInc += 0.08; } },
+  sunfire_lens: { slot: 'helm', name: 'Sunfire Lens', th: 'เลนส์ตะวันเพลิง', flavor: 'มองผ่านมัน แล้วโลกจะลุกเป็นไฟ',
+    lines: ['ลำแสง (Channelling) ยาวขึ้น 30%', 'ลำแสงทำดาเมจ 25% more', '+15% ดาเมจไฟ'],
+    apply(m) { m.beamRange += 0.3; m.beamMore *= 1.25; m.incFire += 0.15; } },
+  gravecaller: { slot: 'gloves', name: "Gravecaller's Grip", th: 'ถุงมือผู้ปลุกหลุมศพ', flavor: 'ดินเรียกคืนสิ่งที่เป็นของมันเสมอ',
+    lines: ['มินเนียนสูงสุด +1', 'อัญเชิญมินเนียนเพิ่มครั้งละ +1', 'มินเนียนเร็วขึ้น 25%'],
+    apply(m) { m.minionCount += 1; m.summonAdd += 1; m.minionSpeed += 0.25; } },
+  plaguebringer: { slot: 'ring', name: "Plaguebringer's Coil", th: 'ขดแหวนผู้นำโรค', flavor: 'โรคร้ายไม่เลือกหน้า',
+    lines: ['ดาเมจ Poison 35% more', '+15% ดาเมจเคออส', 'ทุกสกิลมีโอกาส Poison +10%'],
+    apply(m) { m.poisonMore *= 1.35; m.incChaos += 0.15; m.poisonAdd += 0.1; } },
+  tectonic: { slot: 'boots', name: 'Tectonic Greaves', th: 'แข้งแผ่นเปลือกโลก', flavor: 'ทุกก้าวคือแผ่นดินไหว',
+    lines: ['สกิล Slam มี Aftershock เพิ่ม +1', '+8% ความเร็วเคลื่อนที่', '+15% พื้นที่'],
+    apply(m) { m.aftershockAdd += 1; m.moveInc += 0.08; m.areaInc += 0.15; } },
   hunters_signet: { slot: 'ring', name: "Hunter's Signet", th: 'แหวนนักล่า', flavor: 'เหยื่อที่ไกลที่สุดหวานที่สุด',
     lines: ['+15% ดาเมจ Projectile', '+10% ความเร็วกระสุน', 'Projectile แรงขึ้นตามระยะ (Far Shot)'],
     apply(m) { m.incProj += 0.15; m.projSpeedInc += 0.1; m.ks.farShot = true; } },
@@ -144,7 +162,7 @@ function makeItem(rarity, slot, time) {
   const name = rarity === 'rare'
     ? `${pick(ITEM_PREFIX)} ${pick(ITEM_SUFFIX[slot])}`
     : `${AFFIXES[ids[0]].adj} ${base.name}`;
-  return { uid: uid(), rarity, slot, name, base: base.name, implicit: { id: base.imp, v: base.iv }, affixes };
+  return { uid: uid(), rarity, slot, name, base: base.name, implicit: { id: base.imp, v: base.iv }, affixes, scale };
 }
 
 // human-readable mod lines for UI
@@ -158,3 +176,35 @@ function applyItem(it, m) {
   if (it.implicit) AFFIXES[it.implicit.id].apply(m, it.implicit.v);
   for (const a of it.affixes) AFFIXES[a.id].apply(m, a.v);
 }
+
+// ---------------- crafting orbs ----------------
+const CRAFT_ORBS = {
+  regal:  { name: 'Regal Orb', th: 'อัปเกรด Magic → Rare (+1 mod)', icon: '♛', color: '#7aa8ff', w: 3 },
+  exalt:  { name: 'Exalted Orb', th: 'เพิ่ม mod ให้ Rare 1 อัน (สูงสุด 5)', icon: '✷', color: '#ffe8a0', w: 1.4 },
+  divine: { name: 'Divine Orb', th: 'สุ่มตัวเลขของ mod ใหม่', icon: '✧', color: '#ffc8ff', w: 2 },
+  annul:  { name: 'Orb of Annulment', th: 'ลบ mod แบบสุ่ม 1 อัน', icon: '⊘', color: '#c0c0d8', w: 2 },
+  chaos:  { name: 'Chaos Orb', th: 'สุ่ม mod ของ Rare ใหม่ทั้งหมด (ใช้ร่วมกับการสุ่มการ์ด)', icon: '✪', color: '#d4b45a', w: 2 },
+};
+const randomCraftOrb = () => weightedSample(Object.keys(CRAFT_ORBS), 1, (k) => CRAFT_ORBS[k].w)[0];
+
+// ---------------- crafting ----------------
+function affixPoolFor(it) {
+  const have = new Set(it.affixes.map((a) => a.id));
+  return Object.keys(AFFIXES).filter((id) => AFFIXES[id].slots.split(' ').includes(it.slot) && !have.has(id) && (it.rarity === 'rare' || !AFFIXES[id].rareOnly));
+}
+function addRandomAffix(it) {
+  const pool = affixPoolFor(it);
+  if (!pool.length) return false;
+  const id = weightedSample(pool, 1, (k) => AFFIXES[k].w)[0];
+  it.affixes.push(rollAffix(id, it.scale || 1));
+  return true;
+}
+const itemRareName = (slot) => `${pick(ITEM_PREFIX)} ${pick(ITEM_SUFFIX[slot])}`;
+// can(it) → true when the orb does something; use(it) changes the item
+const CRAFT = {
+  regal:  { can: (it) => it.rarity === 'magic', use(it) { it.rarity = 'rare'; it.name = itemRareName(it.slot); addRandomAffix(it); } },
+  exalt:  { can: (it) => it.rarity === 'rare' && it.affixes.length < 5 && affixPoolFor(it).length > 0, use(it) { addRandomAffix(it); } },
+  divine: { can: (it) => !it.unique && it.affixes.some((a) => !AFFIXES[a.id].fixed), use(it) { it.affixes = it.affixes.map((a) => rollAffix(a.id, it.scale || 1)); } },
+  annul:  { can: (it) => !it.unique && it.affixes.length > 1, use(it) { it.affixes.splice(Math.floor(Math.random() * it.affixes.length), 1); } },
+  chaos:  { can: (it) => it.rarity === 'rare', use(it) { it.affixes = []; const n = 3 + (Math.random() < 0.45 ? 1 : 0); for (let i = 0; i < n; i++) addRandomAffix(it); it.name = itemRareName(it.slot); } },
+};

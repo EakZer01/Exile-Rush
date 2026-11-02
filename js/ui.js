@@ -219,6 +219,10 @@ function openLevelUp(isChest) {
   G.choiceKind = isChest ? 'chest' : 'level';
   setLevelupButtons(true);
   G.choices = generateChoices(choiceCount(isChest));
+  if (G.choices.some((c) => c.type === 'evolve')) showTip('evolve');
+  else if (G.choices.some((c) => c.type === 'keystone')) showTip('keystone');
+  else if (G.choices.some((c) => c.type === 'support')) showTip('support');
+  else showTip('levelup');
   $('levelup-title').textContent = isChest ? 'หีบสมบัติ!' : 'LEVEL UP!';
   $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่างจากหีบ' : `เลเวล ${G.player.level - G.pendingLevels + 1} — เลือก 1 อย่าง`;
   renderCards();
@@ -255,6 +259,7 @@ function openAscend() {
   if (!G.choices.length) { G.pendingAscend = 0; G.state = 'play'; return; }
   $('levelup-title').textContent = 'ASCENDANCY';
   setLevelupButtons(false);
+  showTip('ascend');
   const wrap = $('cards');
   wrap.innerHTML = G.choices.map((c, i) => cardHtml(c, i)).join('');
   [...wrap.children].forEach((el, i) => { el.onclick = () => chooseCard(i); });
@@ -456,6 +461,7 @@ function showGameOver(win) {
   $('over-title').className = 'panel-title ' + (win ? 'win' : 'dead');
   const rec = { time: G.time, level: P.level, kills: G.stats.kills, cls: P.asc ? ASCENDANCY[P.asc].name : P.cls.name, win };
   saveBest(rec);
+  showTip('codex');
   let metaHtml = '';
   if (!G.settled) {
     G.settled = true;
@@ -636,12 +642,28 @@ function renderInvDetail() {
   if (worn) h += `<button class="btn btn-small" id="inv-btn-unequip" ${P.backpack.length >= BACKPACK_SIZE ? 'disabled' : ''}>ถอดเก็บ</button>`;
   else h += `<button class="btn btn-small" id="inv-btn-equip">สวมใส่${cur ? ' (สลับ)' : ''}</button>`;
   h += `<button class="btn btn-small btn-dim" id="inv-btn-salvage">ย่อย (+${SALVAGE_SHARDS[it.rarity]} ✦)</button></div>`;
+  if (!it.unique) {
+    h += '<div class="inv-actions craft-row">' + Object.entries(CRAFT).map(([k, c]) => {
+      const n = P.currency[k] || 0, ok = n > 0 && c.can(it);
+      return `<button class="btn btn-small craft-btn" data-craft="${k}" ${ok ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '')} ×${n}</button>`;
+    }).join('') + '</div>';
+  }
   if (!worn && cur) h += itemCardHtml(cur, 'เทียบกับที่สวมอยู่');
   box.innerHTML = h;
   const eq = $('inv-btn-equip'), un = $('inv-btn-unequip'), sv = $('inv-btn-salvage');
   if (eq) eq.onclick = () => { equipItem(it); Sfx.play('flask'); openInventory(); };
   if (un) un.onclick = () => { unequipItem(it.slot); openInventory(); };
   if (sv) sv.onclick = () => { salvageItem(it); invSel = null; Sfx.play('pickup'); openInventory(); };
+  box.querySelectorAll('[data-craft]').forEach((b) => {
+    b.onclick = () => {
+      const k = b.dataset.craft;
+      if (!(P.currency[k] > 0) || !CRAFT[k].can(it)) return;
+      P.currency[k]--; CRAFT[k].use(it);
+      if (P.equip[it.slot] === it) recomputePlayer();
+      Sfx.play('currency'); emit('gold', P.x, P.y, 10, { color: CRAFT_ORBS[k].color });
+      openInventory();
+    };
+  });
 }
 function closeInventory() {
   if (G.state !== 'inventory') return;

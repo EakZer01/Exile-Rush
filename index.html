@@ -18,7 +18,7 @@
     <div class="subtitle">เอาตัวรอดในดินแดนต้องสาป · สร้างบิวด้วย Skill Gem + Support Gem</div>
     <h2 class="section-title">เลือกคลาส</h2>
     <div id="class-list" class="class-list"></div>
-    <div class="meta-bar"><span id="meta-shards" class="meta-shards"></span><button id="btn-altar" class="btn">⛩ แท่นบูชามรดก (Altar of Legacy)</button></div>
+    <div class="meta-bar"><span id="meta-shards" class="meta-shards"></span><button id="btn-altar" class="btn">⛩ แท่นบูชามรดก (Altar of Legacy)</button><button id="btn-codex" class="btn">📖 Codex</button><button id="btn-settings" class="btn btn-dim">⚙ ตั้งค่า</button></div>
     <div id="best-run" class="best-run"></div>
     <div class="controls-help">
       <b>WASD / ลูกศร</b> เดิน · <b>Space</b> Flame Dash · <b>Q</b> Life Flask · <b>E</b> Quicksilver Flask ·
@@ -112,6 +112,7 @@
     <div class="levelup-actions">
       <button id="btn-resume" class="btn">เล่นต่อ</button>
       <button id="btn-inv" class="btn">🎒 กระเป๋า / อุปกรณ์ (I)</button>
+      <button id="btn-pause-settings" class="btn btn-dim">⚙ ตั้งค่า</button>
       <button id="btn-quit" class="btn btn-dim">ออกไปเมนู</button>
     </div>
   </div>
@@ -143,6 +144,28 @@
   </div>
 </div>
 
+<!-- Codex -->
+<div id="codex" class="overlay hidden">
+  <div class="panel build-panel codex-panel">
+    <h2 class="panel-title">Codex</h2>
+    <div class="panel-sub">ข้อมูลทุกอย่างในเกม · สูตรวิวัฒน์ · คอมโบแนะนำ</div>
+    <div id="codex-tabs" class="codex-tabs"></div>
+    <input id="codex-search" class="codex-search" type="search" placeholder="ค้นหา... (เช่น fire, minion, คำสาป)">
+    <div id="codex-body" class="codex-body"></div>
+    <div class="levelup-actions"><button id="btn-codex-close" class="btn">กลับ</button></div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="settings" class="overlay hidden">
+  <div class="panel settings-panel">
+    <h2 class="panel-title">ตั้งค่า</h2>
+    <div id="settings-body" class="settings-body"></div>
+    <div class="levelup-actions"><button id="btn-settings-close" class="btn">กลับ</button></div>
+  </div>
+</div>
+
+<div id="tip" class="tip hidden"></div>
 <div id="tooltip" class="tooltip hidden"></div>
 
 <script src="js/util.js?v=9"></script>
@@ -163,14 +186,17 @@
 <script src="js/skills.js?v=9"></script>
 <script src="js/enemies.js?v=9"></script>
 <script src="js/player.js?v=9"></script>
+<script src="js/settings.js?v=9"></script>
 <script src="js/meta.js?v=9"></script>
 <script src="js/items.js?v=9"></script>
+<script src="js/breach.js?v=9"></script>
 <script src="js/lighting.js?v=9"></script>
 <script src="js/world.js?v=9"></script>
 <script src="js/icons.js?v=9"></script>
 <script src="js/sprites.js?v=9"></script>
 <script src="js/render.js?v=9"></script>
 <script src="js/ui.js?v=9"></script>
+<script src="js/codex.js?v=9"></script>
 <script src="js/game.js?v=9"></script>
 </body>
 </html>

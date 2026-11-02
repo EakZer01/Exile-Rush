@@ -98,13 +98,14 @@ function hexA(hex, a) {
 
 // ---------- Tiny synth audio ----------
 const Sfx = {
-  ctx: null, muted: false, last: {},
+  ctx: null, muted: false, last: {}, vol: 0.7,
   init() {
     if (this.ctx) return;
     try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { this.ctx = null; }
+    if (this.ctx && typeof Music !== 'undefined') Music.start();
   },
   play(name) {
-    if (this.muted || !this.ctx) return;
+    if (this.muted || !this.ctx || this.vol <= 0) return;
     const now = this.ctx.currentTime;
     const def = SFX_DEFS[name];
     if (!def) return;
@@ -114,7 +115,7 @@ const Sfx = {
     o.type = def.type || 'sine';
     o.frequency.setValueAtTime(def.f0, now);
     o.frequency.exponentialRampToValueAtTime(Math.max(20, def.f1), now + def.dur);
-    g.gain.setValueAtTime(def.vol || 0.08, now);
+    g.gain.setValueAtTime((def.vol || 0.08) * this.vol * 1.4, now);
     g.gain.exponentialRampToValueAtTime(0.0001, now + def.dur);
     o.connect(g); g.connect(this.ctx.destination);
     o.start(now); o.stop(now + def.dur + 0.02);

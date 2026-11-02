@@ -6,7 +6,7 @@ const G = {
   state: 'menu', canvas: null, ctx: null, W: 0, H: 0, dpr: 1, zoom: 1,
   time: 0, lastTs: 0, player: null, cam: { x: 0, y: 0 }, shake: 0,
   enemies: [], projectiles: [], eproj: [], novas: [], meteors: [], grounds: [], minions: [],
-  orbs: [], pickups: [], effects: [], texts: [], hazards: [], shrines: [], delayed: [], items: [], lootLog: [],
+  orbs: [], pickups: [], effects: [], texts: [], hazards: [], shrines: [], delayed: [], items: [], lootLog: [], epools: [], breach: null,
   map: { biome: 'graveyard', tier: 1, mods: [] }, mapFx: null,
   hash: new SpatialHash(64), buffs: {}, spawn: null, stats: null, announce: null,
   pendingLevels: 0, pendingChests: 0, choices: [], banned: new Set(), bossRef: null, victoryT: 0,
@@ -29,11 +29,12 @@ function startGame(cls, map) {
   G.mapFx = mapFx(G.map);
   G.lastMap = G.map;
   G.mapHazT = 4;
+  resetBreach();
   _bgPattern = null;
   hide('menu'); hide('gameover'); hide('pause'); hide('levelup'); hide('socket');
   Object.assign(G, {
     time: 0, enemies: [], projectiles: [], eproj: [], novas: [], meteors: [], grounds: [], minions: [],
-    orbs: [], pickups: [], effects: [], texts: [], hazards: [], shrines: [], delayed: [], items: [], lootLog: [],
+    orbs: [], pickups: [], effects: [], texts: [], hazards: [], shrines: [], delayed: [], items: [], lootLog: [], epools: [],
     buffs: { diamond: 0, acceleration: 0, resistance: 0, echoing: 0 }, announce: null,
     pendingLevels: 0, pendingChests: 0, pendingAscend: 0, bossRef: null, victoryT: 0, shake: 0, banned: new Set(),
     decals: [], hitStop: 0, worldSeed: Math.floor(Math.random() * 1e9),
@@ -56,6 +57,7 @@ function startGame(cls, map) {
   G.state = 'play';
   G.lastTs = performance.now();
   announce('ดินแดนต้องสาป', 'เอาชีวิตรอด 20 นาที และโค่นบอสสุดท้าย', '#e8c870');
+  showTip('start');
 }
 
 function update(dt) {
@@ -85,6 +87,8 @@ function update(dt) {
   updateEnemyProjectiles(dt);
   updateHazards(dt);
   updateMapHazards(dt);
+  updatePools(dt);
+  updateBreach(dt);
   updateShrines(dt);
   updateParticles(dt);
 
@@ -109,6 +113,8 @@ function update(dt) {
 
 function frame(ts) {
   requestAnimationFrame(frame);
+  const t0 = performance.now();
+  Music.update();
   if (G.state === 'play') {
     let dt = (ts - G.lastTs) / 1000;
     G.lastTs = ts;
@@ -123,6 +129,7 @@ function frame(ts) {
     G.lastTs = ts;
   }
   render();
+  if (G.state === 'play') perfSample(performance.now() - t0, 1 / 60);
 }
 
 // ---------------- Input ----------------
@@ -138,10 +145,10 @@ function onKey(e, down) {
   else if (e.code === 'KeyE' || e.code === 'Digit2' && G.state === 'play') G.input.flask1 = true;
   else if (e.code === 'KeyV') G.input.vaal = true;
   else if (e.code === 'KeyI') { if (G.state === 'play' || G.state === 'paused') openInventory(); else if (G.state === 'inventory') closeInventory(); }
-  else if (e.code === 'KeyM') Sfx.muted = !Sfx.muted;
-  else if (e.code === 'KeyN') G.settings.dmgNumbers = !G.settings.dmgNumbers;
-  else if (e.code === 'KeyL') G.settings.lighting = !G.settings.lighting;
-  else if (e.code === 'KeyF') { G.settings.fx = !G.settings.fx; if (!G.settings.fx) _parts.length = 0; }
+  else if (e.code === 'KeyM') { Sfx.muted = !Sfx.muted; Music.setVolume(Sfx.muted ? 0 : G.settings.music); }
+  else if (e.code === 'KeyN') toggleSetting('dmgNumbers');
+  else if (e.code === 'KeyL') toggleSetting('lighting');
+  else if (e.code === 'KeyF') toggleSetting('fx');
 
   if (G.state === 'levelup') {
     const n = parseInt(e.key, 10);
@@ -196,6 +203,7 @@ function setupTouch() {
 function init() {
   G.canvas = $('game');
   G.ctx = G.canvas.getContext('2d');
+  loadSettings();
   resize();
   window.addEventListener('resize', resize);
   window.addEventListener('keydown', (e) => onKey(e, true));
@@ -205,6 +213,11 @@ function init() {
 
   $('btn-reroll').onclick = reroll;
   $('btn-altar').onclick = () => { Sfx.init(); openAltar(); };
+  $('btn-codex').onclick = () => { Sfx.init(); openCodex(); };
+  $('btn-codex-close').onclick = closeCodex;
+  $('btn-settings').onclick = () => { Sfx.init(); openSettings('menu'); };
+  $('btn-pause-settings').onclick = () => openSettings('pause');
+  $('btn-settings-close').onclick = closeSettings;
   $('btn-map-alch').onclick = mapAlchemy;
   $('btn-map-chaos').onclick = mapChaos;
   $('btn-map-clear').onclick = mapClear;

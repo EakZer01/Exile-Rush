@@ -116,13 +116,31 @@ function updateSpawner(dt) {
     G.shrines.push({ x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, kind: pick(Object.keys(SHRINES)), t: 0 });
   }
   // bosses
-  const nb = BOSSES[S.bossIdx];
+  const nb = bossForSlot(S.bossIdx);
   if (nb && G.time >= nb.at) {
     S.bossIdx++;
     spawnBoss(nb);
   }
 }
 
+function bossForSlot(i) {
+  if (!BOSSES[i]) return null;
+  if (i === BOSSES.length - 1 && G.map.tier >= 8) return PINNACLE;
+  const B = BIOMES[G.map.biome];
+  return (B.bosses && B.bosses[i]) || BOSSES[i];
+}
+// boss phase transition: brief immunity, a summon wave and a shockwave ring
+function bossPhase(e) {
+  const thr = e.phases.shift();
+  e.hp = e.maxHp * thr;
+  e.immuneT = G.time + 2.5;
+  const n = e.phases.length;
+  announce(`${e.name} — ระยะที่ ${e.bossDef.phases.length - n + 1}`, 'บอสอมตะชั่วครู่และเรียกลูกน้อง!', e.bossDef.glow);
+  Sfx.play('boss'); G.shake = Math.max(G.shake, 8);
+  const type = e.bossDef.summon || 'volatile';
+  for (let i = 0; i < 10 && G.enemies.length < MAX_ENEMIES; i++) { const a = (i / 10) * TAU; spawnEnemy(type, e.x + Math.cos(a) * 90, e.y + Math.sin(a) * 90, i % 5 ? 0 : 1); }
+  for (let k = 0; k < 16; k++) enemyShoot(e.x, e.y, (k / 16) * TAU, 210, e.dmg * 0.6, e.bossDef.glow);
+}
 function spawnBoss(def) {
   const [x, y] = spawnPoint(-80);
   const min = G.time / 60;
@@ -130,7 +148,7 @@ function spawnBoss(def) {
   Object.assign(e, {
     rarity: 3, bossDef: def, name: def.name, r: def.r, hp: def.hp * bossHpMul(), maxHp: def.hp * bossHpMul(), speed: def.speed,
     dmg: def.dmg * (1 + min * 0.03) * tierDmg(G.map.tier) * G.mapFx.monDmg * G.mapFx.bossDmg,
-    color: def.color, shape: 'boss', xp: 400, final: !!def.final, deathBoom: false,
+    color: def.color, shape: 'boss', xp: 400, final: !!def.final, deathBoom: false, phases: (def.phases || []).slice(), immuneT: 0,
     boss: { cd: 2.5, state: 'chase', st: 0, spiral: 0, spiralA: 0, cvx: 0, cvy: 0 },
   });
   G.enemies.push(e);
@@ -183,15 +201,35 @@ function updateEnemies(dt) {
 
     const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy) || 1;
 
-    // relocate stragglers (survivor-genre convention)
-    if (d > far && e.rarity < 3) {
+    // relocate stragglers (survivor-genre convention) — breach monsters stay in their rift
+    if (d > far && e.rarity < 3 && !e.breach) {
       const [nx, ny] = spawnPoint();
       e.x = nx; e.y = ny; continue;
     }
 
-    let spd = e.speed * (1 - (e.chill.t > 0 ? e.chill.eff : 0));
+    const buffed = e.buffT > G.time;
+    let spd = e.speed * (1 - (e.chill.t > 0 ? e.chill.eff : 0)) * (buffed ? 1.3 : 1);
     if (e.freeze > 0 || e.fuse) spd = 0;
     let mx = dx / d, my = dy / d;
+    if (e.def.leap && e.freeze <= 0) {
+      // Ash Ghoul: crouch, then pounce in a straight line
+      const L = e.def.leap;
+      e.leapCd = (e.leapCd === undefined ? rand(1, L.cd) : e.leapCd) - dt;
+      if (e.leapS === 'wind') { spd = 0; e.leapT -= dt; if (e.leapT <= 0) { e.leapS = 'jump'; e.leapT = L.dur; e.lvx = mx; e.lvy = my; } }
+      else if (e.leapS === 'jump') { mx = e.lvx; my = e.lvy; spd = L.speed; e.leapT -= dt; if (e.leapT <= 0) e.leapS = null; }
+      else if (e.leapCd <= 0 && d < L.range && d > 60) { e.leapS = 'wind'; e.leapT = L.windup; e.leapCd = L.cd * rand(0.85, 1.2); }
+    }
+    if (e.def.support) {
+      // Bone Shaman: periodically empowers monsters around it
+      e.supT = (e.supT === undefined ? rand(1, 3) : e.supT) - dt;
+      if (e.supT <= 0 && e.freeze <= 0) {
+        const S = e.def.support;
+        e.supT = S.cd;
+        for (const o of enemiesInRadius(e.x, e.y, S.r, [])) if (o.rarity < 3) o.buffT = G.time + S.dur;
+        addEffect({ kind: 'ring', x: e.x, y: e.y, r: S.r, t: 0, dur: 0.45, color: '#c080ff' });
+      }
+      if (d < 200) { mx = -mx; my = -my; }   // keeps its distance
+    }
 
     if (e.rarity === 3) {
       const r = updateBoss(e, dt, d, mx, my);
@@ -203,7 +241,8 @@ function updateEnemies(dt) {
       if (e.rcd <= 0 && d < R.range * 1.15 && e.freeze <= 0) {
         e.rcd = R.cd * rand(0.85, 1.15);
         const a = Math.atan2(dy, dx), n = R.burst || 1;
-        for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, a + (i - (n - 1) / 2) * 0.18, R.speed, R.dmg * dmgScale(G.time / 60) * (e.rarity === 2 ? 1.5 : 1), R.color);
+        const dmg = R.dmg * dmgScale(G.time / 60) * tierDmg(G.map.tier) * G.mapFx.monDmg * (e.rarity === 2 ? 1.5 : 1) * (buffed ? 1.2 : 1);
+        for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, a + (i - (n - 1) / 2) * 0.18, R.speed, dmg, R.color, R.pool ? d : 0);
       }
     }
     if (e.def.flutter) { e.wob += dt * 8; mx += Math.cos(e.wob) * 0.5; my += Math.sin(e.wob) * 0.5; }
@@ -230,7 +269,7 @@ function updateEnemies(dt) {
     const cr = e.r + P.r - 2;
     if (d < cr && e.contactCd <= 0 && e.freeze <= 0) {
       if (e.def.explode && e.rarity < 3) { if (!e.fuse) e.fuse = 0.55; continue; }
-      hurtPlayer(e.dmg, e.name || e.def.name);
+      hurtPlayer(e.dmg * (buffed ? 1.2 : 1), e.name || e.def.name);
       e.contactCd = e.rarity === 3 ? 0.6 : 0.8;
     }
   }
@@ -240,8 +279,19 @@ function updateEnemies(dt) {
   G.enemies.length = j;
 }
 
-function enemyShoot(x, y, a, speed, dmg, color) {
-  G.eproj.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: 6, dmg, color, t: 0, life: 4 });
+// pool > 0: a lobbed blob that bursts into a poison pool where the player stood
+function enemyShoot(x, y, a, speed, dmg, color, pool) {
+  G.eproj.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: pool ? 8 : 6, dmg, color, t: 0, life: pool ? pool / speed : 4, pool: !!pool });
+}
+function updatePools(dt) {
+  const P = G.player;
+  for (let i = G.epools.length - 1; i >= 0; i--) {
+    const p = G.epools[i];
+    p.t += dt; p.tick -= dt;
+    if (p.t >= p.dur) { G.epools.splice(i, 1); continue; }
+    if (Math.random() < 0.15) emit('bubble', p.x + rand(-p.r, p.r) * 0.7, p.y + rand(-p.r, p.r) * 0.4, 1);
+    if (p.tick <= 0 && dist2(p.x, p.y, P.x, P.y) < p.r * p.r) { p.tick = 0.35; hurtPlayer(p.dps * 0.35, 'แอ่งพิษ (Bile Spitter)'); }
+  }
 }
 function updateEnemyProjectiles(dt) {
   const P = G.player;
@@ -250,7 +300,10 @@ function updateEnemyProjectiles(dt) {
     p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
     const rr = p.r + P.r - 3;
     if (dist2(p.x, p.y, P.x, P.y) < rr * rr) { hurtPlayer(p.dmg, 'กระสุนศัตรู'); p.t = 99; }
-    if (p.t > p.life) { G.eproj[i] = G.eproj[G.eproj.length - 1]; G.eproj.pop(); }
+    if (p.t > p.life) {
+      if (p.pool && G.epools.length < 30) G.epools.push({ x: p.x, y: p.y, r: 55, t: 0, dur: 4, dps: p.dmg * 1.2, tick: 0 });
+      G.eproj[i] = G.eproj[G.eproj.length - 1]; G.eproj.pop();
+    }
   }
 }
 
@@ -305,7 +358,7 @@ function updateBoss(e, dt, d, mx, my) {
         addHazard(px, py, 55, 0.8 + i * 0.2, dmg * 0.9, glow);
       }
     } else if (pat === 'summon' && G.enemies.length < MAX_ENEMIES - 20) {
-      const type = def.ptype === 'cold' ? 'wraith' : def.ptype === 'lightning' ? 'cultist' : 'volatile';
+      const type = def.summon || (def.ptype === 'cold' ? 'wraith' : def.ptype === 'lightning' ? 'cultist' : 'volatile');
       for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; spawnEnemy(type, e.x + Math.cos(a) * 70, e.y + Math.sin(a) * 70, 0); }
     } else if (pat === 'spiral') {
       b.spiral = 2.2;

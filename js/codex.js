@@ -1,0 +1,139 @@
+'use strict';
+// ============================================================
+//  Codex: in-menu reference for every gem, passive, ascendancy,
+//  unique and map mod, plus hand-picked combos.
+// ============================================================
+const COMBOS = [
+  { name: 'Shatter Chain', parts: ['herald_of_ice', 'ice_nova', 'hypothermia', 'elemental_prolif'],
+    desc: 'Ice Nova แช่แข็งฝูง → Herald of Ice ทำให้ศพแตกระเบิดต่อกันเป็นทอดๆ · Elemental Proliferation กระจาย Chill ให้ทั่ว' },
+  { name: 'Plague Bearer', parts: ['contagion', 'essence_drain', 'deadly_ailments', 'void_manipulation'],
+    desc: 'Contagion แปะเชื้อ ศัตรูตายแล้วแพร่ต่อ · Essence Drain ทำพิษแรงและดูดเลือด · Deadly Ailments ขยายดาเมจพิษ' },
+  { name: 'Rune Lord', parts: ['storm_brand', 'armageddon_brand', 'chain', 'inc_duration'],
+    desc: 'ตราสองแบบทำงานพร้อมกัน · เลือก Keystone Runebinder เพื่อติดตราเพิ่มและทำงานเร็วขึ้น' },
+  { name: 'Elemental Equilibrium', parts: ['fireball', 'arc', 'frostbolt', 'curse_ele'],
+    desc: 'ตีสลับหลายธาตุ — Keystone Elemental Equilibrium ทำให้ธาตุถัดไปแรงขึ้น 30% · Elemental Weakness ลดต้านธาตุ' },
+  { name: 'Earthbreaker', parts: ['earthquake', 'multistrike', 'brutality', 'melee_physical'],
+    desc: 'ทุบพื้นซ้ำ 3 ครั้ง แต่ละครั้งมี Aftershock แรงกว่าเดิม · สายกายภาพล้วน (อย่าใช้กับ Avatar of Fire)' },
+  { name: 'Bone Army', parts: ['summon_skeletons', 'raging_spirit', 'minion_damage', 'minion_speed'],
+    desc: 'กองทัพมินเนียนสองแบบ · Ascendancy Bonecaller / Keystone Minion Lord บน Legacy Tree ช่วยเต็มที่' },
+  { name: 'Storm Archer', parts: ['lightning_arrow', 'tornado_shot', 'gmp', 'light_pen'],
+    desc: 'ลูกธนูสายฟ้าฟาดรอบเป้า + ลูกธนูย่อยกระจาย · Penetration ทะลุมอนสเตอร์ต้านธาตุในแผนที่ Tier สูง' },
+  { name: 'Burning Beam', parts: ['scorching_ray', 'infused_channelling', 'burning_damage', 'fire_pen'],
+    desc: 'ลำแสงเผาต่อเนื่อง ยิ่งยืนยิงยิ่งร้อน · Infused Channelling ลดดาเมจที่ได้รับขณะยิง' },
+];
+
+const CODEX_TABS = [['skills', 'Skill Gem'], ['supports', 'Support Gem'], ['passives', 'Passive / Keystone'], ['ascend', 'Ascendancy'], ['uniques', 'Unique'], ['maps', 'Map Mods'], ['combos', 'คอมโบแนะนำ']];
+let codexTab = 'skills', codexFilter = '', codexSearch = '';
+
+function openCodex() {
+  hide('menu');
+  $('codex-tabs').innerHTML = CODEX_TABS.map(([id, label]) => `<button class="btn btn-small${codexTab === id ? ' sel' : ''}" data-ctab="${id}">${label}</button>`).join('');
+  $('codex').querySelectorAll('[data-ctab]').forEach((b) => { b.onclick = () => { codexTab = b.dataset.ctab; codexFilter = ''; openCodex(); }; });
+  const search = $('codex-search');
+  search.value = codexSearch;
+  search.oninput = () => { codexSearch = search.value; renderCodexBody(); };
+  renderCodexBody();
+  show('codex');
+}
+function closeCodex() { hide('codex'); buildMenu(); show('menu'); }
+
+const codexMatch = (...texts) => !codexSearch || texts.join(' ').toLowerCase().includes(codexSearch.toLowerCase());
+
+// skills a support can be linked to (fresh level-1 instance, ignoring socket count)
+function supportTargets(supId) {
+  return Object.keys(SKILLS).filter((id) => !supportBlockReason(supId, newSkillInstance(id), true));
+}
+
+function renderCodexBody() {
+  const body = $('codex-body');
+  let filters = '', h = '';
+  if (codexTab === 'skills' || codexTab === 'supports') {
+    const tags = new Set();
+    if (codexTab === 'skills') for (const id in SKILLS) for (const t of SKILLS[id].tags) tags.add(t);
+    else for (const id in SUPPORTS) for (const t of SUPPORTS[id].req) tags.add(t);
+    tags.delete('Damage');
+    filters = `<div class="codex-filters"><span class="tag${!codexFilter ? ' on' : ''}" data-cf="">ทั้งหมด</span>${[...tags].sort().map((t) => `<span class="tag tag-${t.toLowerCase()}${codexFilter === t ? ' on' : ''}" data-cf="${t}">${t}</span>`).join('')}</div>`;
+  }
+  if (codexTab === 'skills') {
+    for (const id in SKILLS) {
+      const d = SKILLS[id], ev = EVOLUTIONS[id];
+      if (codexFilter && !d.tags.includes(codexFilter)) continue;
+      if (!codexMatch(d.name, d.th, d.desc, d.tags.join(' '))) continue;
+      const lock = isLocked('gem', id) ? UNLOCKS.find((u) => u.ref === id) : null;
+      h += `<div class="codex-card">${skillGemHtml(id)}<div class="codex-info">
+        <div class="card-name">${d.name} <small class="muted">${d.th}</small>${lock ? ` <span class="bad">🔒 ${lock.req}</span>` : ''}</div>
+        ${tagsHtml(d.tags)}<div class="card-desc">${d.desc}</div><div class="card-note">${d.levelNote}</div>
+        ${ev ? `<div class="card-note evo-hint">✦ ${ev.name} (Lv ${EVOLVE_LEVEL}+ ลิงก์ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}): ${ev.desc}</div>` : ''}</div></div>`;
+    }
+  } else if (codexTab === 'supports') {
+    for (const id in SUPPORTS) {
+      const d = SUPPORTS[id];
+      if (codexFilter && !d.req.includes(codexFilter)) continue;
+      if (!codexMatch(d.name, d.th, d.desc)) continue;
+      const fits = supportTargets(id);
+      h += `<div class="codex-card">${supportGemHtml(d.gem)}<div class="codex-info">
+        <div class="card-name">${d.name} <small class="muted">${d.th}</small></div>
+        ${d.req.length ? tagsHtml(d.req) : '<div class="tags"><span class="tag">ใช้ได้ทุกสกิล</span></div>'}
+        <div class="card-desc">${d.desc}</div>
+        <div class="card-note">ใช้กับ: ${fits.length === Object.keys(SKILLS).length ? 'ทุกสกิล' : fits.map((s) => SKILLS[s].name).join(', ') || '-'}</div>
+        ${AWAKEN_BONUS[id] ? `<div class="card-note">Awakened: ดาเมจ 20% more · ${AWAKEN_BONUS[id].desc}</div>` : ''}</div></div>`;
+    }
+  } else if (codexTab === 'passives') {
+    h += '<h3 class="altar-h">Keystone (สูงสุด ' + MAX_KEYSTONES + ' อันต่อรอบ)</h3>';
+    for (const id in KEYSTONES) { const d = KEYSTONES[id]; if (codexMatch(d.name, d.th, d.desc)) h += `<div class="codex-row"><span class="node node-key">${d.icon}</span><div><b>${d.name}</b> <small class="muted">${d.th}</small><br>${d.desc}</div></div>`; }
+    h += '<h3 class="altar-h">Passive</h3>';
+    for (const id in PASSIVES) { const d = PASSIVES[id]; if (codexMatch(d.name, d.th, d.desc)) h += `<div class="codex-row"><span class="node">${d.icon}</span><div><b>${d.name}</b> <small class="muted">${d.th} · สูงสุด ${d.max}</small><br>${d.desc}</div></div>`; }
+  } else if (codexTab === 'ascend') {
+    for (const id in ASCENDANCY) {
+      const a = ASCENDANCY[id], cls = CLASSES.find((c) => c.id === a.cls);
+      if (!codexMatch(a.name, a.th, a.desc, a.nodes.map((n) => n.name + n.desc).join(' '))) continue;
+      h += `<div class="codex-asc" style="--cc:${a.color}"><div class="card-name" style="color:${a.color}">${a.icon} ${a.name} <small class="muted">${a.th} · ${cls.name}</small></div><div class="muted">${a.desc}</div>
+        ${a.nodes.map((n, i) => `<div class="asc-node${i === 0 ? ' asc-first' : ''}"><b>${n.icon} ${n.name}</b>${i === 0 ? ' <span class="badge">ได้ทันที</span>' : ''} — ${n.desc}</div>`).join('')}</div>`;
+    }
+  } else if (codexTab === 'uniques') {
+    const found = loadMeta().found || {};
+    h += `<div class="muted" style="margin-bottom:8px">ค้นพบแล้ว ${Object.keys(UNIQUES).filter((u) => found[u]).length}/${Object.keys(UNIQUES).length} — Unique ที่ยังไม่เจอจะแสดงเป็น ???</div><div class="codex-uniques">`;
+    for (const id in UNIQUES) {
+      const u = UNIQUES[id];
+      if (!found[id]) { h += `<div class="item-card"><div class="ic-head" style="color:#6a5a40">???</div><div class="ic-base">Unique ${SLOT_NAME[u.slot]}</div></div>`; continue; }
+      if (codexMatch(u.name, u.th, u.lines.join(' '))) h += itemCardHtml({ rarity: 'unique', slot: u.slot, unique: id, name: u.name, affixes: [] });
+    }
+    h += '</div>';
+  } else if (codexTab === 'maps') {
+    h += '<h3 class="altar-h">พื้นที่</h3>' + Object.values(BIOMES).map((b) => `<div class="codex-row"><span class="node" style="color:${b.color}">🗺</span><div><b style="color:${b.color}">${b.name}</b> <small class="muted">${b.th} · เริ่ม Tier ${b.minTier}</small><br>${b.desc}${b.boss ? `<br><span class="muted">บอสประจำพื้นที่: ${b.boss}</span>` : ''}</div></div>`).join('');
+    h += '<h3 class="altar-h">Map Mods</h3>' + Object.values(MAP_MODS).filter((m) => codexMatch(m.name, m.th)).map((m) => `<div class="codex-row"><span class="node">⚠</span><div><b>${m.name}</b> — ${m.th} <span class="muted">(Item Quantity +${m.qty}%)</span></div></div>`).join('');
+  } else if (codexTab === 'combos') {
+    for (const c of COMBOS) {
+      if (!codexMatch(c.name, c.desc)) continue;
+      h += `<div class="codex-combo"><div class="card-name">${c.name}</div><div class="combo-parts">${c.parts.map((p) => SKILLS[p]
+        ? `<span class="combo-part">${skillGemHtml(p, true)} ${SKILLS[p].name}</span>` : `<span class="combo-part">${supportGemHtml(SUPPORTS[p].gem, true)} ${SUPPORTS[p].name}</span>`).join('<span class="muted">+</span>')}</div>
+        <div class="card-desc">${c.desc}</div></div>`;
+    }
+  }
+  body.innerHTML = filters + (h || '<div class="muted">ไม่พบข้อมูลที่ค้นหา</div>');
+  body.querySelectorAll('[data-cf]').forEach((t) => { t.onclick = () => { codexFilter = t.dataset.cf; renderCodexBody(); }; });
+}
+
+// ---------------- Settings panel ----------------
+let settingsFrom = 'menu';
+function openSettings(from) {
+  settingsFrom = from || 'menu';
+  hide('menu'); hide('pause');
+  const S = G.settings;
+  const check = (k, label) => `<label class="set-row"><input type="checkbox" data-sk="${k}" ${S[k] ? 'checked' : ''}> ${label}</label>`;
+  const slider = (k, label) => `<label class="set-row">${label} <input type="range" min="0" max="100" value="${Math.round(S[k] * 100)}" data-sv="${k}"> <span id="sv-${k}">${Math.round(S[k] * 100)}%</span></label>`;
+  $('settings-body').innerHTML = slider('sfx', '🔊 เสียงเอฟเฟกต์') + slider('music', '🎵 เพลง') +
+    check('lighting', 'ระบบแสงเงา (L)') + check('fx', 'อนุภาคและเอฟเฟกต์ (F)') + check('dmgNumbers', 'ตัวเลขดาเมจ (N)') + check('shake', 'จอสั่น') +
+    `<label class="set-row">คุณภาพกราฟิก <select data-sq="1">${[['auto', 'อัตโนมัติ (ลดเองเมื่อเครื่องช้า)'], ['high', 'สูง'], ['low', 'ต่ำ (ประหยัด)']].map(([v, t]) => `<option value="${v}"${S.quality === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+    <div class="set-row"><button class="btn btn-small" id="btn-tips-reset">แสดงคำแนะนำ (Tips) อีกครั้ง</button></div>`;
+  const root = $('settings');
+  root.querySelectorAll('[data-sk]').forEach((el) => { el.onchange = () => { G.settings[el.dataset.sk] = el.checked; applySettings(); saveSettings(); }; });
+  root.querySelectorAll('[data-sv]').forEach((el) => { el.oninput = () => { G.settings[el.dataset.sv] = el.value / 100; $('sv-' + el.dataset.sv).textContent = el.value + '%'; applySettings(); saveSettings(); }; });
+  root.querySelector('[data-sq]').onchange = (ev) => { G.settings.quality = ev.target.value; saveSettings(); };
+  $('btn-tips-reset').onclick = () => { resetTips(); $('btn-tips-reset').textContent = 'รีเซ็ตแล้ว ✓'; };
+  show('settings');
+}
+function closeSettings() {
+  hide('settings');
+  if (settingsFrom === 'pause' && G.player) { G.state = 'play'; openPause(); } else { buildMenu(); show('menu'); }
+}

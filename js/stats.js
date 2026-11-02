@@ -78,6 +78,11 @@ function buildSkillStats(inst, p) {
   s.burnMore *= m.burnMore; s.moreEle *= m.moreEle; s.dotMore *= m.dotMore; s.more *= m.moreAll;
   s.cull = Math.max(s.cull, m.cullAdd);
   if (s.behavior === 'brand' && m.ks.runebinder) { s.maxCount += 1; s.hitCd /= 1.2; }
+  if (s.behavior === 'brand') { s.maxCount += m.brandAdd; s.hitCd /= 1 + m.brandSpeed; }
+  if (s.behavior === 'herald') s.more *= m.heraldMore;
+  if (s.behavior === 'beam') { s.range *= 1 + m.beamRange; s.more *= m.beamMore; }
+  if (s.summonN) s.summonN += m.summonAdd;
+  if (s.aftershocks) s.aftershocks += m.aftershockAdd;
   if (!inst.evo) s.more *= m.unevolvedMore;
   if (!tags.has('Minion')) s.more *= m.nonMinionMore;
   s.shockEff = 1 + m.shockEffInc;

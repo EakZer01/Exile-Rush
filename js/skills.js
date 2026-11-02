@@ -34,6 +34,7 @@ function updateSkills(dt) {
   const P = G.player;
   const speedMul = (G.buffs.acceleration > 0 ? 1.4 : 1) * (P.mods.ks.rage ? 1 + P.rage * 0.005 : 1);
   if (G.input.vaal) { G.input.vaal = false; unleashVaal(); }
+  else if (P.skills.some((s) => s.evo && s.souls >= vaalSouls())) showTip('vaal');
   for (const inst of P.skills) {
     const s = inst.st;
     if (inst.vaalT > 0) inst.vaalT -= dt;
