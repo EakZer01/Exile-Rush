@@ -377,7 +377,7 @@ function enemySpriteId(e) { return e.rarity === 3 ? e.bossDef.id : e.type; }
 function drawEnemy(ctx, e, P) {
   const id = enemySpriteId(e), def = SPRITE_ART[id];
   const boss = e.rarity === 3;
-  const px = boss ? (e.r * 2.3) / 24 : def.px * (e.r / MONSTERS[e.type].r);
+  const px = boss ? (e.r * 2.3) / 24 : def.px * (e.r / MONSTERS[e.type].r) * (MONSTERS[e.type].scale || 1);
   const k = 1 + (e.punch > 0 ? e.punch * (boss ? 0.5 : 1.6) : 0);
   const n = spriteFrameCount(id);
   const frame = n > 1 && e.freeze <= 0 ? Math.floor(G.time * (def.fps || 5) + e.id * 0.37) % n : 0;
@@ -449,6 +449,14 @@ function drawEnemyOverlay(ctx, e, P) {
   if (e.immuneT > G.time) {
     ctx.strokeStyle = hexA('#fff0c0', 0.6 + Math.sin(G.time * 12) * 0.3); ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(x, y, r * 1.25, 0, TAU); ctx.stroke();
+  }
+  if (e.guardT > G.time) {
+    ctx.strokeStyle = hexA('#7ab8ff', 0.55 + Math.sin(G.time * 8 + e.id) * 0.2); ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(x, y, r * 1.35, 0, TAU); ctx.stroke();
+  }
+  if (e.chS === 'wind') {
+    ctx.fillStyle = 'rgba(255,140,90,0.9)'; ctx.font = '700 16px Sarabun, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('!', x, top - 4);
   }
   if (e.buffT > G.time) {
     ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5;

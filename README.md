@@ -55,7 +55,11 @@
   - คืนแต้มฟรี: คลิกโหนดปลายทางเพื่อคืนทีละโหนด หรือกด "คืนแต้มทั้งหมด"
   - คลาส Templar / Shadow / Duelist / Scion และเจม Caustic Arrow / Raging Spirit / Firestorm / Righteous Fire เริ่มแบบล็อก ปลดล็อกได้ด้วยการทำเงื่อนไขในเกม หรือซื้อด้วย Shards
   - ข้อมูลถาวรเก็บใน localStorage ของเบราว์เซอร์ (`exile_meta`) ถ้าเคยเล่นมาก่อน สถิติดีที่สุดเดิมจะปลดล็อกของที่เข้าเงื่อนไขให้อัตโนมัติ
-- มอนสเตอร์ 12 ชนิด Normal / Magic / Rare (มี mod สุ่ม) รวมถึง **Ash Ghoul** (กระโจนใส่), **Bile Spitter** (พ่นแอ่งพิษ), **Bone Shaman** (บัฟมอนสเตอร์รอบตัว — ฆ่าก่อน)
+- มอนสเตอร์ 20 ชนิด Normal / Magic / Rare (มี mod สุ่ม) แต่ละแบบต้องรับมือต่างกัน (ดูได้ใน Codex แท็บ "มอนสเตอร์"):
+  - **Ash Ghoul** กระโจนใส่ · **Bile Spitter** พ่นแอ่งพิษ · **Bone Shaman** บัฟพวกเดียวกัน
+  - **Grave Caller** อัญเชิญโครงกระดูกแล้วหนี · **Bristleback Charger** พุ่งชาร์จเป็นเส้นตรง (มีเส้นเตือน) · **Plague Bloater** ตายแล้วแตกเป็นแอ่งพิษใหญ่
+  - **Ember Mortar** ยิงกระสุนครกลงตรงที่คุณกำลังจะเดินไป · **Aegis Sentinel** สร้างเกราะให้มอนสเตอร์รอบตัว (รับดาเมจครึ่งเดียว) · **Void Stalker** วาร์ปมาโผล่ข้างหลัง · **Carrion Broodmother** ตายแล้วแตกเป็นฝูง Scuttler
+  - แต่ละพื้นที่มีมอนสเตอร์เด่นต่างกัน (Ashen: Mortar/Charger · Frozen: Stalker/Sentinel · Marsh: Bloater/Broodmother/Grave Caller · Void: Stalker/Sentinel)
 - **หนึ่งรอบยาว 15 นาที**: บอส 4 ตัว (3:45, 7:30, 11:15, 15:00) โค่นบอสสุดท้ายเพื่อชนะ · บอสมี **Phase**: ที่ 66% และ 33% จะอมตะชั่วครู่และเรียกลูกน้อง
   - บอสประจำพื้นที่: Cinder Colossus (Ashen), Rime Herald (Frozen), Bog Leviathan (Marsh), Herald of the Void (Void)
   - **Pinnacle Boss** — The Hollow Crown แทนบอสสุดท้ายใน Tier 8 ขึ้นไป (โบนัส +250 ✦)

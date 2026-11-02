@@ -28,7 +28,7 @@ const COMBOS = [
     desc: 'ลำแสงเผาต่อเนื่อง ยิ่งยืนยิงยิ่งร้อน · Infused Channelling ลดดาเมจที่ได้รับขณะยิง' },
 ];
 
-const CODEX_TABS = [['skills', 'Skill Gem'], ['supports', 'Support Gem'], ['passives', 'Passive / Keystone'], ['ascend', 'Ascendancy'], ['uniques', 'Unique'], ['maps', 'Map Mods'], ['combos', 'คอมโบแนะนำ']];
+const CODEX_TABS = [['skills', 'Skill Gem'], ['supports', 'Support Gem'], ['passives', 'Passive / Keystone'], ['ascend', 'Ascendancy'], ['uniques', 'Unique'], ['maps', 'Map Mods'], ['monsters', 'มอนสเตอร์'], ['combos', 'คอมโบแนะนำ']];
 let codexTab = 'skills', codexFilter = '', codexSearch = '';
 
 function openCodex() {
@@ -71,6 +71,16 @@ function renderCodexBody() {
         ${tagsHtml(d.tags)}<div class="card-desc">${d.desc}</div><div class="card-note">${d.levelNote}</div>
         ${ev ? `<div class="card-note evo-hint">✦ ${ev.name} (Lv ${EVOLVE_LEVEL}+ ลิงก์ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}): ${ev.desc}</div>` : ''}</div></div>`;
     }
+  } else if (codexTab === 'monsters') {
+    for (const id in MONSTERS) {
+      const d = MONSTERS[id], el = d.elem || 'physical';
+      if (!codexMatch(d.name, MONSTER_TH[id] || '', ELEM_TH[el])) continue;
+      h += `<div class="codex-card"><img class="codex-mon" src="${spriteURL(id, 3)}" alt=""><div class="codex-info">
+        <div class="card-name">${d.name} <small style="color:${ELEM_COLOR[el]}">${ELEM_TH[el]}</small></div>
+        <div class="card-desc">${MONSTER_TH[id] || ''}</div><div class="card-note muted">ชีวิต ${d.hp} · ดาเมจ ${d.dmg} · ความเร็ว ${d.speed}</div></div></div>`;
+    }
+    h += '<div class="codex-card"><div class="codex-info"><div class="card-name">Rare / Magic mods</div><div class="card-desc">' +
+      Object.values(MONSTER_MODS).map((m) => `<b>${m.name}</b> ${m.th}`).join(' · ') + '</div></div></div>';
   } else if (codexTab === 'supports') {
     for (const id in SUPPORTS) {
       const d = SUPPORTS[id];

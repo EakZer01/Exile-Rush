@@ -395,3 +395,5 @@ details.bench summary { cursor: pointer; color: #d8c8a0; }
 .pt-crafted { color: #b8e0ff !important; }
 #stash .inv-main { grid-template-columns: minmax(200px, 340px) 1fr; }
 @media (max-width: 760px) { #stash .inv-main { grid-template-columns: 1fr; } }
+
+.codex-mon { width: 56px; height: 56px; object-fit: contain; image-rendering: pixelated; flex: none; }

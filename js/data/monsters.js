@@ -23,20 +23,57 @@ const MONSTERS = {
   // empowers nearby monsters — kill it first
   shaman:   { name: 'Bone Shaman', hp: 26, speed: 50, dmg: 6, r: 11, xp: 4, color: '#a070e0', shape: 'diamond', elem: 'lightning',
               support: { cd: 4.5, r: 210, dur: 4 } },
+  // ---- expansion: monsters that each ask for a different answer ----
+  // raises skeletons from the ground and stays out of reach
+  necromancer: { name: 'Grave Caller', hp: 42, speed: 46, dmg: 6, r: 13, xp: 6, color: '#7a6aa0', shape: 'diamond', elem: 'chaos',
+              summoner: { cd: 5.5, n: 3, type: 'skeleton' } },
+  // lowers its head, then charges in a straight (telegraphed) line
+  charger:  { name: 'Bristleback Charger', hp: 70, speed: 50, dmg: 17, r: 18, xp: 4, color: '#a0603a', shape: 'square', scale: 0.9,
+              charge: { range: 400, cd: 4.2, windup: 0.65, speed: 660, dur: 0.5 } },
+  // slow and fat — bursts into a lingering poison pool when killed
+  bloater:  { name: 'Plague Bloater', hp: 95, speed: 34, dmg: 10, r: 19, xp: 4, color: '#8ab040', shape: 'circle', elem: 'chaos', scale: 1.45,
+              deathPool: { r: 95, dur: 5 } },
+  // shells the ground where you're headed (circles on the floor)
+  mortar:   { name: 'Ember Mortar', hp: 46, speed: 36, dmg: 15, r: 15, xp: 4, color: '#c8502a', shape: 'square', elem: 'fire', scale: 0.6,
+              mortar: { range: 500, cd: 3.8, warn: 1.15, r: 70 } },
+  // shields every monster around it: kill it first or hit for half
+  guardian: { name: 'Aegis Sentinel', hp: 125, speed: 40, dmg: 12, r: 18, xp: 6, color: '#6a9ad0', shape: 'square', scale: 0.72,
+              guard: { cd: 6, r: 210, dur: 4 } },
+  // fades out and reappears right behind you
+  stalker:  { name: 'Void Stalker', hp: 34, speed: 72, dmg: 14, r: 12, xp: 3, color: '#9050d0', shape: 'tri', elem: 'chaos', scale: 0.85,
+              blink: { cd: 3.6, range: 560 } },
+  // splits into a swarm of scuttlers when it dies
+  broodmother: { name: 'Carrion Broodmother', hp: 110, speed: 40, dmg: 12, r: 20, xp: 6, color: '#7a6a3a', shape: 'square',
+              brood: { n: 6, type: 'scuttler' } },
+  scuttler: { name: 'Carrion Scuttler', hp: 6, speed: 135, dmg: 5, r: 8, xp: 0.5, color: '#a08a50', shape: 'tri', flutter: true, scale: 0.75, noWave: true },
+};
+// Codex text for every monster
+const MONSTER_TH = {
+  zombie: 'ซากศพเดินช้า แต่มาเป็นฝูง', skeleton: 'โครงกระดูกเร็วปานกลาง', bat: 'ค้างคาวบินเร็ว ส่ายไปมา', archer: 'ยิงธนูจากระยะไกล',
+  brute: 'ตัวใหญ่ ถึก ตีแรง', volatile: 'วิ่งเข้าหาแล้วระเบิด — เห็นวงส้มให้รีบหนี', wraith: 'วิญญาณน้ำแข็ง ตีเป็นธาตุน้ำแข็ง',
+  cultist: 'ยิงลูกเวทเคออสเป็นชุด 3 ลูก', golem: 'หินยักษ์ ชีวิตเยอะมาก', ghoul: 'ย่อตัวแล้วกระโจนใส่',
+  spitter: 'พ่นแอ่งพิษลงพื้นตรงที่คุณยืน', shaman: 'บัฟมอนสเตอร์รอบตัวให้เร็วและแรงขึ้น — ฆ่าก่อน',
+  necromancer: 'อัญเชิญโครงกระดูก 3 ตัวทุก 5 วิ และหนีไม่ให้เข้าใกล้ — ไล่ฆ่าก่อนกองทัพจะใหญ่',
+  charger: 'ก้มหัวแล้วพุ่งชาร์จเป็นเส้นตรง (มีเส้นเตือน) — ก้าวหลบด้านข้าง',
+  bloater: 'ตัวอ้วนเดินช้า ตายแล้วแตกเป็นแอ่งพิษใหญ่ 5 วิ — อย่าฆ่าตอนอยู่ติดตัว',
+  mortar: 'ยิงกระสุนครกไฟลงตรงที่คุณกำลังจะเดินไป (มีวงเตือน) — เปลี่ยนทิศ',
+  guardian: 'สร้างเกราะให้มอนสเตอร์รอบตัว รับดาเมจแค่ครึ่งเดียว (วงสีฟ้า) — ฆ่าก่อน',
+  stalker: 'หายตัวแล้วโผล่ข้างหลังคุณ — ระวังเวลายืนนิ่ง',
+  broodmother: 'ตายแล้วแตกเป็นฝูง Scuttler 6 ตัว', scuttler: 'ลูกแมลงตัวเล็ก วิ่งเร็วมาก',
 };
 
 // wave table: from minute `t`, these monster weights apply
 const WAVES = [
   { t: 0,  w: { zombie: 6, skeleton: 3 } },
   { t: 1,  w: { zombie: 5, skeleton: 4, bat: 3 } },
-  { t: 2.5, w: { zombie: 4, skeleton: 4, bat: 3, archer: 2 } },
-  { t: 3,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, ghoul: 1.5 } },
-  { t: 4,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, brute: 1.5, volatile: 1, ghoul: 1.5 } },
-  { t: 6,  w: { skeleton: 3, bat: 4, archer: 2, brute: 2, volatile: 2, wraith: 2, ghoul: 2, spitter: 1 } },
-  { t: 8,  w: { skeleton: 2, bat: 3, archer: 2, brute: 2, volatile: 2, wraith: 3, cultist: 1, ghoul: 2, spitter: 1.5, shaman: 0.8 } },
-  { t: 11, w: { bat: 3, archer: 2, brute: 3, volatile: 2, wraith: 4, cultist: 2, golem: 0.6, ghoul: 2, spitter: 2, shaman: 1 } },
-  { t: 14, w: { bat: 3, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1, ghoul: 2.5, spitter: 2, shaman: 1.2 } },
-  { t: 17, w: { bat: 4, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1.5, ghoul: 3, spitter: 2.5, shaman: 1.5 } },
+  { t: 2.5, w: { zombie: 4, skeleton: 4, bat: 3, archer: 2, charger: 0.8 } },
+  { t: 3,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, ghoul: 1.5, charger: 1, stalker: 0.6 } },
+  { t: 4,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, brute: 1.5, volatile: 1, ghoul: 1.5, charger: 1, bloater: 0.8, necromancer: 0.5, stalker: 0.8 } },
+  { t: 6,  w: { skeleton: 3, bat: 4, archer: 2, brute: 2, volatile: 2, wraith: 2, ghoul: 2, spitter: 1, charger: 1.2, bloater: 1, mortar: 0.8, stalker: 1.2, broodmother: 0.6, necromancer: 0.6 } },
+  { t: 8,  w: { skeleton: 2, bat: 3, archer: 2, brute: 2, volatile: 2, wraith: 3, cultist: 1, ghoul: 2, spitter: 1.5, shaman: 0.8, charger: 1.5, bloater: 1.2, mortar: 1, stalker: 1.5, broodmother: 0.8, guardian: 0.5, necromancer: 0.7 } },
+  { t: 11, w: { bat: 3, archer: 2, brute: 3, volatile: 2, wraith: 4, cultist: 2, golem: 0.6, ghoul: 2, spitter: 2, shaman: 1, charger: 1.8, bloater: 1.5, mortar: 1.3, stalker: 2, broodmother: 1, guardian: 0.8, necromancer: 0.9 } },
+  { t: 14, w: { bat: 3, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1, ghoul: 2.5, spitter: 2, shaman: 1.2, charger: 2, bloater: 1.8, mortar: 1.6, stalker: 2.4, broodmother: 1.2, guardian: 1, necromancer: 1 } },
+  { t: 17, w: { bat: 4, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1.5, ghoul: 3, spitter: 2.5, shaman: 1.5, charger: 2.4, bloater: 2, mortar: 2, stalker: 2.8, broodmother: 1.5, guardian: 1.2, necromancer: 1.2 } },
 ];
 
 // The run lasts 15 minutes, but monsters scale on "difficulty minutes":

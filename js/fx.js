@@ -35,6 +35,14 @@ const GORE = {
   ghoul:    { chunk: '#8a8478', blood: '#4a4440', decal: '#2e2a26' },
   spitter:  { chunk: '#7ac040', blood: '#6ab030', decal: '#3a5a18' },
   shaman:   { chunk: '#a070e0', blood: '#6a3aa0', decal: null },
+  necromancer: { chunk: '#7a6aa0', blood: '#4a2a6a', decal: '#2a1a3a' },
+  charger:  { chunk: '#a0603a', blood: '#7a0a0a', decal: '#4a0606' },
+  bloater:  { chunk: '#8ab040', blood: '#7ac030', decal: '#3a5a18' },
+  mortar:   { chunk: '#c8502a', blood: '#ff8a3a', decal: 'scorch' },
+  guardian: { chunk: '#6a9ad0', blood: '#5a6a80', decal: 'rubble' },
+  stalker:  { chunk: '#9050d0', blood: '#4a1a7a', decal: null },
+  broodmother: { chunk: '#7a6a3a', blood: '#5a4a10', decal: '#3a300a' },
+  scuttler: { chunk: '#a08a50', blood: '#5a4a10', decal: null },
 };
 
 const _parts = [];

@@ -57,7 +57,7 @@ function waveType() {
   const w = Object.assign({}, base);
   if (min >= 1.5) for (const k in B.add) w[k] = Math.max(w[k] || 0, B.add[k]);
   for (const k in B.mult) if (w[k]) w[k] *= B.mult[k];
-  const keys = Object.keys(w);
+  const keys = Object.keys(w).filter((k) => !MONSTERS[k].noWave);
   return weightedSample(keys, 1, (k) => w[k])[0];
 }
 
@@ -248,6 +248,65 @@ function updateEnemies(dt) {
       if (d < 200) { mx = -mx; my = -my; }   // keeps its distance
     }
 
+    const D = e.def;
+    if (e.rarity < 3 && e.freeze <= 0) {
+      if (D.summoner) {
+        // Grave Caller: raise skeletons, keep away
+        e.sumT = (e.sumT === undefined ? rand(1.5, 3) : e.sumT) - dt;
+        if (e.sumT <= 0 && G.enemies.length < MAX_ENEMIES - 10) {
+          e.sumT = D.summoner.cd;
+          for (let k = 0; k < D.summoner.n; k++) {
+            const a = rand(0, TAU), m = spawnEnemy(D.summoner.type, e.x + Math.cos(a) * 40, e.y + Math.sin(a) * 40, 0);
+            m.xp *= 0.3; emit('wisp', m.x, m.y, 4);
+          }
+          addEffect({ kind: 'ring', x: e.x, y: e.y, r: 60, t: 0, dur: 0.4, color: '#a08ad0' });
+        }
+        if (d < 260) { mx = -mx; my = -my; }
+      }
+      if (D.charge) {
+        // Bristleback Charger: wind up (lane is telegraphed), then rush in a straight line
+        const C = D.charge;
+        e.chCd = (e.chCd === undefined ? rand(1.5, C.cd) : e.chCd) - dt;
+        if (e.chS === 'wind') { spd = 0; e.chT -= dt; if (e.chT <= 0) { e.chS = 'go'; e.chT = C.dur; } }
+        else if (e.chS === 'go') { mx = e.cvx; my = e.cvy; spd = C.speed; e.chT -= dt; if (e.chT <= 0) e.chS = null; if (Math.random() < 0.4) emit('phys', e.x, e.y, 1); }
+        else if (e.chCd <= 0 && d < C.range && d > 90) {
+          e.chS = 'wind'; e.chT = C.windup; e.chCd = C.cd * rand(0.85, 1.2); e.cvx = mx; e.cvy = my;
+          if (G.hazards.length < 80) addHazard(e.x, e.y, e.r * 0.8, C.windup, 0, '#ff9a6a', '', 'physical', { shape: 'line', a: Math.atan2(my, mx), len: C.speed * C.dur, ghost: true });
+        }
+      }
+      if (D.mortar) {
+        // Ember Mortar: keep range, shell where the player is heading
+        const M = D.mortar;
+        e.moT = (e.moT === undefined ? rand(1, M.cd) : e.moT) - dt;
+        if (d < M.range * 0.55) { mx = -mx; my = -my; } else if (d < M.range * 0.9) spd *= 0.15;
+        if (e.moT <= 0 && d < M.range && G.hazards.length < 80) {
+          e.moT = M.cd * rand(0.85, 1.15);
+          addHazard(P.x + P.vx * 0.55 + rand(-30, 30), P.y + P.vy * 0.55 + rand(-30, 30), M.r, M.warn, e.dmg * (buffed ? 1.2 : 1), '#ff7a2a', e.name || D.name, e.elem);
+          emit('ember', e.x, e.y - 12, 6, { dir: -Math.PI / 2, spread: 0.4, speed: 1.5 });
+        }
+      }
+      if (D.guard) {
+        // Aegis Sentinel: shield nearby monsters (half damage taken)
+        e.gT = (e.gT === undefined ? rand(1, 3) : e.gT) - dt;
+        if (e.gT <= 0) {
+          e.gT = D.guard.cd;
+          for (const o of enemiesInRadius(e.x, e.y, D.guard.r, [])) if (o.rarity < 3) o.guardT = G.time + D.guard.dur;
+          addEffect({ kind: 'ring', x: e.x, y: e.y, r: D.guard.r, t: 0, dur: 0.45, color: '#7ab8ff' });
+        }
+      }
+      if (D.blink) {
+        // Void Stalker: vanish and reappear behind the player
+        e.bkT = (e.bkT === undefined ? rand(1.5, D.blink.cd) : e.bkT) - dt;
+        if (e.bkT <= 0 && d > 140 && d < D.blink.range) {
+          e.bkT = D.blink.cd * rand(0.85, 1.2);
+          emit('wisp', e.x, e.y, 8);
+          const mv = Math.hypot(P.vx, P.vy) > 20, a = (mv ? Math.atan2(P.vy, P.vx) + Math.PI : rand(0, TAU)) + rand(-0.7, 0.7);
+          e.x = P.x + Math.cos(a) * 75; e.y = P.y + Math.sin(a) * 75;
+          e.contactCd = Math.max(e.contactCd, 0.45); e.blinkT = G.time + 0.45;
+          emit('wisp', e.x, e.y, 8);
+        }
+      }
+    }
     if (e.rarity === 3) {
       const r = updateBoss(e, dt, d, mx, my);
       if (r) { mx = r[0]; my = r[1]; spd = r[2]; if (e.freeze > 0) spd *= 0.3; }
@@ -286,7 +345,7 @@ function updateEnemies(dt) {
     const cr = e.r + P.r - 2;
     if (d < cr && e.contactCd <= 0 && e.freeze <= 0) {
       if (e.def.explode && e.rarity < 3) { if (!e.fuse) e.fuse = 0.55; continue; }
-      hurtPlayer(e.dmg * (buffed ? 1.2 : 1), e.name || e.def.name, 'phys', e.elem);
+      hurtPlayer(e.dmg * (buffed ? 1.2 : 1) * (e.chS === 'go' ? 1.5 : 1), e.name || e.def.name, 'phys', e.elem);
       e.contactCd = e.rarity === 3 ? 0.6 : 0.8;
     }
   }
@@ -307,7 +366,7 @@ function updatePools(dt) {
     p.t += dt; p.tick -= dt;
     if (p.t >= p.dur) { G.epools.splice(i, 1); continue; }
     if (Math.random() < 0.15) emit('bubble', p.x + rand(-p.r, p.r) * 0.7, p.y + rand(-p.r, p.r) * 0.4, 1);
-    if (p.tick <= 0 && dist2(p.x, p.y, P.x, P.y) < p.r * p.r) { p.tick = 0.35; hurtPlayer(p.dps * 0.35, 'แอ่งพิษ (Bile Spitter)', 'area', 'chaos'); }
+    if (p.tick <= 0 && dist2(p.x, p.y, P.x, P.y) < p.r * p.r) { p.tick = 0.35; hurtPlayer(p.dps * 0.35, p.src || 'แอ่งพิษ (Bile Spitter)', 'area', 'chaos'); }
   }
 }
 function updateEnemyProjectiles(dt) {

@@ -142,6 +142,14 @@ recolorSprite('herald_rime', 'herald', { hue: 195, satMin: 0.4, light: 1.1 });
 recolorSprite('colossus_bog', 'colossus', { hue: 95, satMin: 0.35 });
 recolorSprite('herald_void', 'herald', { hue: 275, satMin: 0.45 });
 recolorSprite('sovereign_crown', 'sovereign', { hue: 45, satMin: 0.55, light: 1.2 });
+recolorSprite('necromancer', 'cultist', { hue: 255, sat: 0.55, light: 0.85 });
+recolorSprite('charger', 'brute', { hue: 22, satMin: 0.5, light: 1.05 });
+recolorSprite('bloater', 'zombie', { hue: 82, satMin: 0.45, light: 1.15 });
+recolorSprite('mortar', 'golem', { hue: 14, satMin: 0.5 });
+recolorSprite('guardian', 'golem', { hue: 212, satMin: 0.35, light: 1.1 });
+recolorSprite('stalker', 'wraith', { hue: 280, satMin: 0.5, light: 0.9 });
+recolorSprite('broodmother', 'brute', { hue: 55, sat: 0.45, light: 0.8 });
+recolorSprite('scuttler', 'bat', { hue: 40, satMin: 0.35, light: 0.9 });
 // flasks: one sprite per kind, only the liquid colour changes
 // jewels: a cut gem in three colours
 SPRITE_ART.item_jewel = { px: 2, sym: true, emit: 'gG', pal: { a: '#2a1a10', g: '#c02838', G: '#ff8090' }, body: ['..a', '.ag', 'agG', 'aGG', 'agg', '.ag', '..a'] };

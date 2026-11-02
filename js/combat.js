@@ -36,6 +36,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if ((e.chill.t > 0 || e.freeze > 0) && s.vsChilled !== 1) m *= s.vsChilled;
   if (ks.painAttune && s.tags.has('Spell') && P.life < P.maxLife * 0.5) m *= 1.4;
   m *= e.dmgTakenMul;
+  if (e.guardT > G.time) m *= 0.5;                         // Aegis Sentinel shield
 
   if (inst && inst.rt.ruthT > G.time) m *= 2;
   if (s.closeCombat && dist2(e.x, e.y, P.x, P.y) < 160 * 160) m *= 1.35;
@@ -130,7 +131,7 @@ function dealDamage(e, amount, inst, crit, type, silent) {
 // ail = true for ignite/poison, whose dps already includes the hit's multipliers
 function dotDamage(e, amount, inst, color, ail) {
   if (e.dead || amount <= 0 || e.immuneT > G.time) return;
-  amount *= e.dmgTakenMul * (e.shock.t > 0 ? 1 + e.shock.eff : 1) * (ail ? 1 : situationalMore(e, inst));
+  amount *= e.dmgTakenMul * (e.guardT > G.time ? 0.5 : 1) * (e.shock.t > 0 ? 1 + e.shock.eff : 1) * (ail ? 1 : situationalMore(e, inst));
   if (e.curse && e.curse.t > G.time && e.curse.type !== 'ele') amount *= 1 + e.curse.eff * 0.6;
   e.hp -= amount;
   if (e.phases && e.phases.length && e.hp < e.maxHp * e.phases[0]) bossPhase(e);
@@ -196,6 +197,14 @@ function killEnemy(e, inst) {
     fxExplosion(e.x, e.y, R, 'fire'); addDecal('scorch', e.x, e.y, R / 30);
     if (dist2(e.x, e.y, P.x, P.y) < (R + P.r) * (R + P.r)) hurtPlayer(e.dmg * (fused ? 1 : rare ? 0.6 : 0.45), fused ? 'Volatile Spawn (ระเบิด)' : rare ? 'Volatile (Rare)' : 'ศพระเบิด (Map mod)', 'area', 'fire');
     Sfx.play('boom');
+  }
+  // Plague Bloater: a lingering poison pool · Broodmother: a swarm of scuttlers
+  if (e.def.deathPool && G.epools.length < 30) {
+    G.epools.push({ x: e.x, y: e.y, r: e.def.deathPool.r * (e.rarity ? 1.25 : 1), t: 0, dur: e.def.deathPool.dur, dps: e.dmg * 1.3, tick: 0.3, src: 'แอ่งพิษ (Plague Bloater)' });
+    emit('bubble', e.x, e.y, 10);
+  }
+  if (e.def.brood && G.enemies.length < MAX_ENEMIES - 10) {
+    for (let i = 0; i < e.def.brood.n + (e.rarity ? 3 : 0); i++) { const s = spawnEnemy(e.def.brood.type, e.x + rand(-25, 25), e.y + rand(-25, 25), 0); s.xp *= 0.5; }
   }
   if (e.deathSplit && G.enemies.length < MAX_ENEMIES) {
     for (let i = 0; i < 4; i++) spawnEnemy('bat', e.x + rand(-20, 20), e.y + rand(-20, 20), 0);
