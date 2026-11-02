@@ -17,16 +17,16 @@ const BIOMES = {
     desc: 'ดินแดนเริ่มต้น มอนสเตอร์ผสมทุกชนิด', mult: {}, add: {} },
   ashen: { name: 'Ashen Wastes', th: 'ทุ่งเถ้าถ่าน', color: '#ff7a3a', minTier: 1, tint: '#ffb08a', dark: '18,4,2',
     desc: 'แผ่นดินไหม้เกรียม Volatile, Brute และ Ash Ghoul ชุกชุม', mult: { volatile: 2.5, brute: 1.4, ghoul: 1.6 }, add: { volatile: 1.5 },
-    boss: 'Cinder Colossus (10:00)', bosses: { 1: bossVariant(1, { id: 'colossus_cinder', name: 'Cinder Colossus', th: 'ยักษ์ถ่านเพลิง', color: '#b8401a', glow: '#ff8a3a', ptype: 'fire', summon: 'volatile' }) } },
+    boss: 'Cinder Colossus (7:30)', bosses: { 1: bossVariant(1, { id: 'colossus_cinder', name: 'Cinder Colossus', th: 'ยักษ์ถ่านเพลิง', color: '#b8401a', glow: '#ff8a3a', ptype: 'fire', summon: 'volatile' }) } },
   frozen: { name: 'Frozen Hollow', th: 'โพรงน้ำแข็ง', color: '#8ad8ff', minTier: 2, tint: '#b8d8ff', dark: '2,8,18',
     desc: 'หุบเขาเยือกแข็ง Frost Wraith ออกล่าตั้งแต่ต้น', mult: { wraith: 2.2, skeleton: 1.4 }, add: { wraith: 2 },
-    boss: 'Rime Herald (15:00)', bosses: { 2: bossVariant(2, { id: 'herald_rime', name: 'Rime Herald', th: 'ผู้ประกาศน้ำค้างแข็ง', color: '#3a8ab8', glow: '#a8ecff', ptype: 'cold', summon: 'wraith' }) } },
+    boss: 'Rime Herald (11:15)', bosses: { 2: bossVariant(2, { id: 'herald_rime', name: 'Rime Herald', th: 'ผู้ประกาศน้ำค้างแข็ง', color: '#3a8ab8', glow: '#a8ecff', ptype: 'cold', summon: 'wraith' }) } },
   marsh: { name: 'Toxic Marsh', th: 'บึงพิษ', color: '#8fdc4a', minTier: 3, tint: '#b8e09a', dark: '4,12,4',
     desc: 'หนองน้ำเน่า ซากศพ Bile Spitter และ Cultist เต็มไปหมด', mult: { zombie: 2, cultist: 1.5, spitter: 2 }, add: { cultist: 0.6, spitter: 1 },
-    boss: 'Bog Leviathan (10:00)', bosses: { 1: bossVariant(1, { id: 'colossus_bog', name: 'Bog Leviathan', th: 'อสูรบึงเน่า', color: '#4a7a2a', glow: '#a8f060', ptype: 'chaos', summon: 'spitter' }) } },
+    boss: 'Bog Leviathan (7:30)', bosses: { 1: bossVariant(1, { id: 'colossus_bog', name: 'Bog Leviathan', th: 'อสูรบึงเน่า', color: '#4a7a2a', glow: '#a8f060', ptype: 'chaos', summon: 'spitter' }) } },
   void: { name: 'Void Sanctum', th: 'วิหารความว่างเปล่า', color: '#b060ff', minTier: 5, tint: '#c8a8ff', dark: '10,2,18', hpMul: 1.15,
     desc: 'ใจกลางความมืด มอนสเตอร์แข็งแกร่งขึ้น 15% · Golem และ Bone Shaman ปรากฏเร็ว', mult: { cultist: 2, golem: 2, shaman: 1.6 }, add: { golem: 0.6, cultist: 1, shaman: 0.8 },
-    boss: 'Herald of the Void (15:00)', bosses: { 2: bossVariant(2, { id: 'herald_void', name: 'Herald of the Void', th: 'ผู้ประกาศความว่างเปล่า', color: '#4a1a7a', glow: '#c070ff', ptype: 'chaos', summon: 'shaman' }) } },
+    boss: 'Herald of the Void (11:15)', bosses: { 2: bossVariant(2, { id: 'herald_void', name: 'Herald of the Void', th: 'ผู้ประกาศความว่างเปล่า', color: '#4a1a7a', glow: '#c070ff', ptype: 'chaos', summon: 'shaman' }) } },
 };
 
 // tier scaling (tier 1 = the base game)
@@ -110,7 +110,7 @@ const ATLAS_TREE = [
   { id: 'ritual', name: 'Ritual', color: '#ff5a5a', icon: 'ᛟ', nodes: [
     { d: 'ได้ Tribute เพิ่ม 20%', a(f) { f.tribute *= 1.2; } },
     { d: 'ได้ Tribute เพิ่ม 20%', a(f) { f.tribute *= 1.2; } },
-    { n: 'Blood Rite', d: 'มี Ritual ครั้งที่ 3 (ช่วง 17:30)', a(f) { f.ritualExtra = true; } }] },
+    { n: 'Blood Rite', d: 'มี Ritual ครั้งที่ 3 (ช่วง 13:00)', a(f) { f.ritualExtra = true; } }] },
   { id: 'deli', name: 'Delirium', color: '#e8eef8', icon: '◐', nodes: [
     { d: 'หมอก Delirium อยู่นานขึ้น 25%', a(f) { f.deliDur *= 1.25; } },
     { d: 'รางวัล Delirium เพิ่มขึ้น 30%', a(f) { f.deliReward *= 1.3; } },

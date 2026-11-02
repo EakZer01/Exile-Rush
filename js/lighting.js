@@ -36,6 +36,7 @@ function renderDarkness(ctx, W, H, camX, camY, z, ox, oy) {
   const L = Lighting.lights;
   if (!G.settings.lighting) { L.length = 0; return; }
   const sc = Lighting.scale, w = Math.ceil(W * sc), h = Math.ceil(H * sc);
+  if (w <= 0 || h <= 0) { L.length = 0; return; }   // window minimised / hidden
   if (!Lighting.c) { Lighting.c = document.createElement('canvas'); Lighting.g = Lighting.c.getContext('2d'); }
   const c = Lighting.c, g = Lighting.g;
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }

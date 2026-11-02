@@ -39,6 +39,11 @@ const WAVES = [
   { t: 17, w: { bat: 4, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1.5, ghoul: 3, spitter: 2.5, shaman: 1.5 } },
 ];
 
+// The run lasts 15 minutes, but monsters scale on "difficulty minutes":
+// 1 real minute = GAME_PACE difficulty minutes, so 15:00 is as hard as the old 20:00.
+const GAME_PACE = 4 / 3;
+const gameMin = () => (G.time / 60) * GAME_PACE;
+
 // Health multiplier over time (minutes)
 // steeper late game: builds come online around 8–12 min, monsters keep pace
 const hpScale = (min) => 1 + min * 0.45 + min * min * 0.08;
@@ -73,13 +78,13 @@ const rareName = () => pick(RARE_PREFIX) + ' ' + pick(RARE_SUFFIX);
 
 // Bosses — patterns used by enemies.js boss AI
 const BOSSES = [
-  { at: 300, id: 'warden', name: 'Infernal Warden', th: 'ผู้คุมนรกเพลิง', hp: 3300, speed: 72, dmg: 22, r: 36,
+  { at: 225, id: 'warden', name: 'Infernal Warden', th: 'ผู้คุมนรกเพลิง', hp: 3300, speed: 72, dmg: 22, r: 36,
     color: '#c43a1a', glow: '#ff7a2a', patterns: ['radial', 'charge', 'ring', 'cone'], ptype: 'fire' },
-  { at: 600, id: 'colossus', name: 'Frostbound Colossus', th: 'ยักษ์น้ำแข็งนิรันดร์', hp: 20000, speed: 60, dmg: 36, r: 44,
+  { at: 450, id: 'colossus', name: 'Frostbound Colossus', th: 'ยักษ์น้ำแข็งนิรันดร์', hp: 20000, speed: 60, dmg: 36, r: 44,
     color: '#3a7fb8', glow: '#9fe0ff', patterns: ['ring', 'radial', 'slam', 'summon', 'donut', 'meteor'], ptype: 'cold' },
-  { at: 900, id: 'herald', name: 'Herald of Storms', th: 'ผู้ประกาศพายุ', hp: 120000, speed: 85, dmg: 44, r: 40,
+  { at: 675, id: 'herald', name: 'Herald of Storms', th: 'ผู้ประกาศพายุ', hp: 120000, speed: 85, dmg: 44, r: 40,
     color: '#b8a03a', glow: '#fff07a', patterns: ['strike', 'radial', 'charge', 'summon', 'beam', 'cone'], ptype: 'lightning' },
-  { at: 1200, id: 'sovereign', name: 'The Void Sovereign', th: 'จักรพรรดิแห่งความว่างเปล่า', hp: 600000, speed: 70, dmg: 50, r: 54,
+  { at: 900, id: 'sovereign', name: 'The Void Sovereign', th: 'จักรพรรดิแห่งความว่างเปล่า', hp: 600000, speed: 70, dmg: 50, r: 54,
     color: '#3a1a5a', glow: '#b060ff', patterns: ['spiral', 'strike', 'ring', 'radial', 'summon', 'charge', 'beam', 'donut', 'meteor'], ptype: 'chaos', final: true },
 ];
 BOSSES[0].phases = [0.5];
@@ -91,7 +96,21 @@ function bossVariant(i, o) { return Object.assign({}, BOSSES[i], o); }
 const PINNACLE = bossVariant(3, { id: 'sovereign_crown', name: 'The Hollow Crown', th: 'มงกุฎกลวง — จ้าวแห่ง Atlas',
   hp: 450000, dmg: 64, r: 60, color: '#6a5a1a', glow: '#ffd84a', ptype: 'fire', summon: 'shaman', phases: [0.75, 0.5, 0.25], pinnacle: true });
 
-const RUN_LENGTH = 1200; // seconds — final boss spawns at 20:00
+const RUN_LENGTH = 900; // seconds — final boss spawns at 15:00, then Endgame (optional)
+
+// Endgame: after the final boss you may stay. Echo bosses arrive every ENDGAME_ECHO seconds,
+// each one stronger than the last, and the reward grows with every minute survived.
+const ENDGAME_ECHO = 100;
+// every Endgame minute compounds monster life and damage on top of the normal curve
+const endMin = () => (G.endless ? (G.time - G.endStart) / 60 : 0);
+const endHp = () => Math.pow(1.18, endMin());
+const endDmg = () => Math.pow(1.12, endMin());
+function echoBoss(k) {
+  const base = BOSSES[k % BOSSES.length];
+  return bossVariant(k % BOSSES.length, { id: base.id, name: 'Echo of ' + base.name, th: `เงาสะท้อนครั้งที่ ${k + 1}`,
+    hp: 260000 * Math.pow(1.4, k), dmg: 52 * (1 + 0.15 * k), final: false, echo: true, phases: [0.5],
+    patterns: base.patterns.concat(['beam', 'donut', 'meteor']).filter((p, i, a) => a.indexOf(p) === i), summon: base.summon || 'shaman' });
+}
 
 // Shrines (PoE style temporary buffs)
 const SHRINES = {

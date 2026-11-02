@@ -676,6 +676,10 @@ function drawHUD(ctx, W, H, P) {
   ctx.fillText(fmtTime(G.time), W / 2, 42);
   ctx.font = '600 13px Sarabun, sans-serif'; ctx.fillStyle = '#b8a888';
   ctx.fillText('☠ ' + G.stats.kills, W / 2, 60);
+  if (G.endless) {
+    ctx.font = '700 13px Cinzel, serif'; ctx.fillStyle = '#ff6a5a';
+    ctx.fillText(`ENDGAME ∞ ${fmtTime(G.time - G.endStart)} · Echo ${G.stats.echoes || 0} · ตัวถัดไป ${Math.max(0, Math.ceil(G.nextEcho - G.time))}s`, W / 2, G.bossRef && !G.bossRef.dead ? 134 : 92);
+  }
   if (G.map.tier > 1 || G.map.biome !== 'graveyard' || G.map.mods.length) {
     ctx.fillStyle = BIOMES[G.map.biome].color; ctx.font = '600 12px Cinzel, Sarabun, serif';
     ctx.fillText(mapLabel(G.map) + (G.map.mods.length ? ` · ${G.map.mods.length} mods` : ''), W / 2, G.bossRef && !G.bossRef.dead ? 116 : 76);

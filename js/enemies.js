@@ -6,15 +6,15 @@
 
 function makeEnemy(type, x, y, rarity) {
   const d = MONSTERS[type];
-  const min = G.time / 60;
+  const min = gameMin();
   const hpMul = hpScale(min) * (rarity === 1 ? 3.2 : rarity === 2 ? 9 : 1);
   const M = G.map, fx = G.mapFx;
   const mapHp = tierHp(M.tier) * fx.monHp * (BIOMES[M.biome].hpMul || 1);
   const e = {
     id: uid(), type, def: d, x, y, kx: 0, ky: 0,
     r: d.r * (rarity === 2 ? 1.4 : rarity === 1 ? 1.15 : 1),
-    hp: d.hp * hpMul * mapHp, maxHp: d.hp * hpMul * mapHp,
-    speed: d.speed * rand(0.9, 1.1) * fx.monSpeed * speedScale(min), dmg: d.dmg * dmgScale(min) * tierDmg(M.tier) * fx.monDmg,
+    hp: d.hp * hpMul * mapHp * endHp(), maxHp: d.hp * hpMul * mapHp * endHp(),
+    speed: d.speed * rand(0.9, 1.1) * fx.monSpeed * speedScale(min), dmg: d.dmg * dmgScale(min) * tierDmg(M.tier) * fx.monDmg * endDmg(),
     color: d.color, shape: d.shape, xp: d.xp * (rarity === 1 ? 4 : rarity === 2 ? 25 : 1),
     rarity, mods: [], name: null, elem: d.elem || 'physical',
     res: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 }, dmgTakenMul: 1, regen: 0,
@@ -50,7 +50,7 @@ function spawnPoint(extra) {
   return [P.x + Math.cos(a) * d, P.y + Math.sin(a) * d];
 }
 function waveType() {
-  const min = G.time / 60, B = BIOMES[G.map.biome];
+  const min = gameMin(), B = BIOMES[G.map.biome];
   let base = WAVES[0].w;
   for (const wv of WAVES) if (min >= wv.t) base = wv.w;
   // the biome reweights the wave and brings its own monsters in early
@@ -67,7 +67,7 @@ function announce(text, sub, color) {
 
 // ---------------- Spawn director ----------------
 function updateSpawner(dt) {
-  const S = G.spawn, min = G.time / 60;
+  const S = G.spawn, min = gameMin();
   const bossAlive = G.enemies.some((e) => e.rarity === 3 && !e.dead);
   const fx = G.mapFx;
   const target = Math.min((28 + min * 25) * fx.spawn, 410 * Math.min(1.2, fx.spawn)) * (bossAlive ? 0.6 : 1);
@@ -84,14 +84,14 @@ function updateSpawner(dt) {
   // magic pack
   S.magicT -= dt;
   if (S.magicT <= 0 && min >= 1) {
-    S.magicT = rand(16, 23) / fx.magicRate;
+    S.magicT = rand(12, 17) / fx.magicRate;
     const [x, y] = spawnPoint(30), type = waveType(), n = randi(3, 5) + (min > 8 ? 2 : 0);
     for (let i = 0; i < n; i++) spawnEnemy(type, x + rand(-40, 40), y + rand(-40, 40), 1);
   }
   // rare monster
   S.rareT -= dt;
   if (S.rareT <= 0 && min >= 1.5) {
-    S.rareT = rand(30, 42) / fx.rareRate;
+    S.rareT = rand(23, 32) / fx.rareRate;
     const [x, y] = spawnPoint(30);
     const e = spawnEnemy(waveType(), x, y, 2);
     for (let i = 0; i < 4; i++) spawnEnemy(e.type, x + rand(-50, 50), y + rand(-50, 50), 0);
@@ -100,7 +100,7 @@ function updateSpawner(dt) {
   // horde ring
   S.hordeT -= dt;
   if (S.hordeT <= 0 && min >= 2 && G.enemies.length < MAX_ENEMIES - 80) {
-    S.hordeT = rand(70, 90);
+    S.hordeT = rand(52, 68);
     const P = G.player, type = pick(['zombie', 'skeleton', 'bat', 'wraith', 'brute']);
     const n = Math.floor(24 + min * 3), R = viewRadius() * 0.85;
     for (let i = 0; i < n; i++) {
@@ -113,7 +113,7 @@ function updateSpawner(dt) {
   // shrines
   S.shrineT -= dt;
   if (S.shrineT <= 0 && !fx.noShrine) {
-    S.shrineT = rand(40, 55);
+    S.shrineT = rand(30, 42);
     const P = G.player, a = rand(0, TAU), d = rand(350, 600);
     G.shrines.push({ x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, kind: pick(Object.keys(SHRINES)), t: 0 });
   }
@@ -122,6 +122,11 @@ function updateSpawner(dt) {
   if (nb && G.time >= nb.at) {
     S.bossIdx++;
     spawnBoss(nb);
+  }
+  // Endgame: a stronger Echo boss every ENDGAME_ECHO seconds
+  if (G.endless && G.time >= G.nextEcho && !bossAlive) {
+    G.nextEcho = G.time + ENDGAME_ECHO;
+    spawnBoss(echoBoss(G.stats.echoes || 0));
   }
 }
 
@@ -147,7 +152,7 @@ function bossPhase(e) {
 }
 function spawnBoss(def) {
   const [x, y] = spawnPoint(-80);
-  const min = G.time / 60;
+  const min = gameMin();
   const e = makeEnemy('golem', x, y, 0);
   Object.assign(e, {
     rarity: 3, bossDef: def, name: def.name, r: def.r, hp: def.hp * bossHpMul(), maxHp: def.hp * bossHpMul(), speed: def.speed,
@@ -167,12 +172,18 @@ function bossDefeated(e) {
   spawnPickup(e.x - 30, e.y, 'fusing');
   spawnPickup(e.x, e.y + 30, 'chaos');
   spawnPickup(e.x, e.y - 30, 'life');
-  for (let i = 0; i < 12; i++) spawnOrb(e.x + rand(-60, 60), e.y + rand(-60, 60), 8 + G.time / 30);
+  for (let i = 0; i < 12; i++) spawnOrb(e.x + rand(-60, 60), e.y + rand(-60, 60), 8 + gameMin() * 2);
   G.stats.bosses++;
   if (G.bossRef === e) G.bossRef = null;
   if (e.bossDef.pinnacle) G.stats.pinnacle = true;
   if (e.final) { G.victoryT = 2.5; announce('ชัยชนะ!', `คุณโค่น ${e.name} ได้แล้ว`, '#ffd84a'); }
-  else {
+  else if (e.bossDef.echo) {
+    G.stats.echoes = (G.stats.echoes || 0) + 1;
+    spawnPickup(e.x + 40, e.y, randomCraftOrb()); spawnPickup(e.x - 40, e.y, randomCraftOrb());
+    dropMapItem(e.x, e.y - 50, G.map.tier + 1);
+    if (Math.random() < 0.5) dropItem(e.x, e.y + 50, 'unique');
+    announce(`${e.name} พ่ายแพ้`, `Echo ${G.stats.echoes} · ตัวถัดไปแข็งแกร่งกว่าเดิม`, '#ffd84a');
+  } else {
     G.pendingAscend++;
     announce('การทดสอบ Ascendancy สำเร็จ!', G.player.asc ? 'ปลดล็อกโหนด Ascendancy ใหม่' : 'เลือกคลาสย่อยของคุณ', '#ffd84a');
   }
@@ -247,7 +258,7 @@ function updateEnemies(dt) {
       if (e.rcd <= 0 && d < R.range * 1.15 && e.freeze <= 0) {
         e.rcd = R.cd * rand(0.85, 1.15);
         const a = Math.atan2(dy, dx), n = R.burst || 1;
-        const dmg = R.dmg * dmgScale(G.time / 60) * tierDmg(G.map.tier) * G.mapFx.monDmg * (e.rarity === 2 ? 1.5 : 1) * (buffed ? 1.2 : 1);
+        const dmg = R.dmg * dmgScale(gameMin()) * endDmg() * tierDmg(G.map.tier) * G.mapFx.monDmg * (e.rarity === 2 ? 1.5 : 1) * (buffed ? 1.2 : 1);
         for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, a + (i - (n - 1) / 2) * 0.18, R.speed, dmg, e.elem === e.def.elem || !e.def.elem && e.elem === 'physical' ? R.color : ELEM_COLOR[e.elem], R.pool ? d : 0, e.elem);
       }
     }
@@ -417,7 +428,7 @@ function updateMapHazards(dt) {
   G.mapHazT = rand(3.5, 5.5);
   const P = G.player, a = rand(0, TAU), d = rand(0, 70);
   addHazard(P.x + Math.cos(a) * d + P.vx * 0.4, P.y + Math.sin(a) * d + P.vy * 0.4, 75, 1.2,
-    (10 + G.time / 20) * tierDmg(G.map.tier), '#ff6a2a', 'พื้นลุกไหม้ (Burning Ground)', 'fire');
+    (10 + G.time * GAME_PACE / 20) * tierDmg(G.map.tier), '#ff6a2a', 'พื้นลุกไหม้ (Burning Ground)', 'fire');
 }
 function updateHazards(dt) {
   const P = G.player;

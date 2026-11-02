@@ -48,7 +48,7 @@ function rollItemDrop(e) {
   if (!d) return;
   // map quantity raises drop chance, higher tiers favour rarer items
   const qty = 1 + mapQuantity(G.map) / 100, t = G.map.tier - 1;
-  if (Math.random() < d.chance * qty * (1 + 0.08 * t) * (e.deli ? 1 + 2 * deliP() : 1) * (G.atlasFx.itemQty || 1)) {
+  if (Math.random() < d.chance * qty * GAME_PACE * (1 + 0.08 * t) * (e.deli ? 1 + 2 * deliP() : 1) * (G.atlasFx.itemQty || 1)) {
     dropItem(e.x, e.y, rollRarity({ magic: d.w.magic, rare: d.w.rare * (1 + 0.1 * t), unique: d.w.unique * (1 + 0.2 * t) }));
   }
 }
@@ -348,7 +348,7 @@ const effEvasion = (P) => (P.evasion + P.flaskFx.evasion) * P.flaskFx.evMul;
 function evadeChance(P) {
   const ev = effEvasion(P);
   if (ev <= 0) return P.mods.evade;
-  const acc = (150 + (G.time / 60) * 35) * (1 + 0.08 * (G.map.tier - 1));
+  const acc = (150 + gameMin() * 35) * (1 + 0.08 * (G.map.tier - 1));
   return Math.min(0.75, P.mods.evade + Math.min(0.6, ev / (ev + acc * 1.5)));
 }
 const armourReduction = (A, dmg) => (A > 0 ? Math.min(0.75, A / (A + 5 * dmg)) : 0);

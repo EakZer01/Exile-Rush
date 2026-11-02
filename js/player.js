@@ -65,10 +65,13 @@ function recomputePlayer() {
   P.mods = m;
   P.weapon = P.equip.weapon ? itemProps(P.equip.weapon) : null;
   P.armour = m.armour; P.evasion = m.evasion; P.block = Math.min(0.5, m.block);
-  P.maxES = m.es * (1 + m.esInc); P.es = Math.min(P.es, P.maxES);
+  const esRatio = P.maxES > 0 ? P.es / P.maxES : 1;
+  P.maxES = m.es * (1 + m.esInc);
   P.maxLife = (P.baseLife + LIFE_PER_LEVEL * (P.level - 1) + m.lifeFlat) * (1 + m.lifeInc) * m.lifeMore;
   // Chaos Inoculation: life becomes Energy Shield, chaos can't touch you
-  if (m.ks.ci) { P.maxES += P.maxLife * 1.1; P.maxLife = 1; }
+  if (m.ks.ci) { P.maxES += P.maxLife * 1.3; P.maxLife = 1; }
+  // keep the same fraction of Energy Shield when the maximum changes (level-ups, gear swaps)
+  P.es = Math.min(P.maxES, esRatio * P.maxES);
   P.life = Math.min(P.maxLife, ratio * P.maxLife);
   // resistances: map tier lowers them (like PoE's act penalty), capped at 75% + max res
   const pen = resPenalty(G.map.tier), capE = 0.75 + m.maxRes - fx.pMaxRes;
@@ -126,12 +129,15 @@ function updatePlayer(dt) {
 
   // regen + leech
   const lowRegen = P.mods.ks.lowRegen && P.life < P.maxLife * 0.35 ? 3 : 1;
-  if (!P.mods.ks.vaalPact) P.life += P.maxLife * P.mods.regen * lowRegen * dt;
+  // under Chaos Inoculation, regeneration and leech refill Energy Shield instead of life
+  const ci = P.mods.ks.ci, pool = ci ? P.maxES : P.maxLife;
+  if (!P.mods.ks.vaalPact) { const r = pool * P.mods.regen * lowRegen * dt; if (ci) P.es = Math.min(P.maxES, P.es + r); else P.life += r; }
   if (P.leechPool > 0) {
-    const cap = P.maxLife * (P.mods.ks.vaalPact ? 0.2 : 0.08) * P.mods.leechCap * dt;
+    const cap = pool * (P.mods.ks.vaalPact ? 0.2 : 0.08) * P.mods.leechCap * dt;
     const amt = Math.min(P.leechPool, cap);
-    P.life += amt; P.leechPool -= amt;
-    P.leechPool = Math.min(P.leechPool, P.maxLife * 0.5);
+    if (ci) P.es = Math.min(P.maxES, P.es + amt); else P.life += amt;
+    P.leechPool -= amt;
+    P.leechPool = Math.min(P.leechPool, pool * 0.5);
   }
   if (P.life > P.maxLife) P.life = P.maxLife;
 

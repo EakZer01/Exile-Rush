@@ -42,7 +42,7 @@ function startGame(cls, map) {
     buffs: { diamond: 0, acceleration: 0, resistance: 0, echoing: 0 }, announce: null,
     pendingLevels: 0, pendingChests: 0, pendingAscend: 0, bossRef: null, victoryT: 0, shake: 0, banned: new Set(),
     decals: [], hitStop: 0, worldSeed: Math.floor(Math.random() * 1e9),
-    spawn: { acc: 0, magicT: 25, rareT: 75, hordeT: 110, shrineT: 25, bossIdx: 0 },
+    spawn: { acc: 0, magicT: 19, rareT: 56, hordeT: 82, shrineT: 19, bossIdx: 0 }, endless: false, endStart: 0, nextEcho: 0,
     stats: { kills: 0, dmg: 0, bosses: 0, salvage: 0 }, settled: false, dmgLog: [], dpsT: 0,
   });
   resetLeagues();
@@ -64,7 +64,7 @@ function startGame(cls, map) {
   G.cam.x = P.x; G.cam.y = P.y;
   G.state = 'play';
   G.lastTs = performance.now();
-  announce('ดินแดนต้องสาป', 'เอาชีวิตรอด 20 นาที และโค่นบอสสุดท้าย', '#e8c870');
+  announce('ดินแดนต้องสาป', 'เอาชีวิตรอด 15 นาที และโค่นบอสสุดท้าย', '#e8c870');
   showTip('start');
 }
 
@@ -116,8 +116,9 @@ function update(dt) {
   G.cam.y = lerp(G.cam.y, P.y, Math.min(1, dt * 10));
 
   if (P.dead && P.revives > 0) secondWind(P);
-  if (P.dead) { setTimeout(() => showGameOver(false), 50); G.state = 'dying'; return; }
-  if (G.victoryT > 0) { G.victoryT -= dt; if (G.victoryT <= 0) { G.state = 'dying'; showGameOver(true); return; } }
+  // dying in the Endgame still counts as a win: the map was already cleared
+  if (P.dead) { setTimeout(() => showGameOver(G.endless), 50); G.state = 'dying'; return; }
+  if (G.victoryT > 0) { G.victoryT -= dt; if (G.victoryT <= 0) { openVictory(); return; } }
 
   if (G.pendingRitual) openRitual();
   else if (G.pendingAscend > 0) openAscend();
@@ -245,6 +246,8 @@ function init() {
   $('btn-resume').onclick = resume;
   $('btn-inv').onclick = openInventory;
   $('btn-ritual-close').onclick = closeRitual;
+  $('btn-vic-leave').onclick = () => { hide('victory'); G.state = 'dying'; showGameOver(true); };
+  $('btn-vic-endless').onclick = startEndgame;
   $('btn-inv-close').onclick = closeInventory;
   $('btn-quit').onclick = () => { hide('pause'); G.state = 'menu'; G.player = null; buildMenu(); show('menu'); };
   // retrying a bought / dropped map sends you back to the Map Device (maps are consumed)
@@ -264,6 +267,19 @@ function init() {
   requestAnimationFrame(frame);
 }
 window.addEventListener('load', init);
+
+// ---- after the final boss: leave with the win, or stay for the Endgame ----
+function openVictory() {
+  G.state = 'victory';
+  $('vic-sub').textContent = `เคลียร์ ${mapLabel(G.map)} ใน ${fmtTime(G.time)} · ออกไปรับรางวัลตอนนี้ หรืออยู่ต่อใน Endgame`;
+  show('victory');
+}
+function startEndgame() {
+  hide('victory');
+  Object.assign(G, { endless: true, endStart: G.time, nextEcho: G.time + 40, state: 'play', lastTs: performance.now() });
+  announce('ENDGAME ∞', 'มอนสเตอร์แข็งขึ้นไม่สิ้นสุด · Echo บอสทุก ' + ENDGAME_ECHO + ' วิ · ตายแล้วยังนับว่าชนะ', '#ff5a5a');
+  Sfx.play('boss');
+}
 
 // Second Wind (meta upgrade): get back up once, blasting enemies away
 function secondWind(P) {

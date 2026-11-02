@@ -157,8 +157,9 @@ function killEnemy(e, inst) {
   flaskGain(P, fc);
 
   // experience
-  const minute = G.time / 60;
-  const xpv = e.xp * (1 + minute * 0.09);
+  // the run is shorter than its difficulty curve, so experience is scaled to match
+  const minute = gameMin();
+  const xpv = e.xp * (1 + minute * 0.09) * GAME_PACE;
   spawnOrb(e.x, e.y, xpv);
 
   // loot
@@ -310,7 +311,7 @@ function onKillAscendancy(e, inst) {
   const souls = e.rarity === 3 ? 30 : e.rarity === 2 ? 5 : 1;
   for (const sk of P.skills) if (sk.evo && sk.souls < vaalSouls()) sk.souls = Math.min(vaalSouls(), sk.souls + souls);
   if (ks.rage) { P.rage = Math.min(30, P.rage + 1); P.rageDecay = 2; }
-  if (m.lifeOnKill) P.life = Math.min(P.maxLife, P.life + P.maxLife * m.lifeOnKill);
+  if (m.lifeOnKill) { if (ks.ci) P.es = Math.min(P.maxES, P.es + P.maxES * m.lifeOnKill); else P.life = Math.min(P.maxLife, P.life + P.maxLife * m.lifeOnKill); }
   if (ks.headsman && e.rarity >= 2) { P.frenzyT = 12; addText(P.x, P.y - 30, 'Arena Champion!', '#ffd84a', 1); }
   // death bursts are delayed a beat so chain reactions ripple outward
   const x = e.x, y = e.y, R = 60 + e.r;

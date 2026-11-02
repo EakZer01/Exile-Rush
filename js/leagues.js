@@ -51,15 +51,15 @@ function rollAffixAtTier(id, tier) {
   return { id, tier, v: Math.max(d.dec ? 1 / p : 1, Math.round((d.lo + Math.random() * (d.hi - d.lo)) * TIER_MULT[tier - 1] * p) / p) };
 }
 
-const LEAGUE = { boxFirst: 65, boxGap: [75, 115], essFirst: 140, essGap: [130, 190], ritualAt: [330, 760], ritualR: 170, ritualDur: 20,
-  deliWin: [150, 520], deliDur: 45 };
+const LEAGUE = { boxFirst: 50, boxGap: [55, 85], essFirst: 105, essGap: [100, 140], ritualAt: [250, 570], ritualR: 170, ritualDur: 20,
+  deliWin: [110, 390], deliDur: 45 };
 
 function resetLeagues() {
   const AF = G.atlasFx || {};
   G.league = {
     boxT: LEAGUE.boxFirst / (AF.boxRate || 1), boxes: [],
     essT: LEAGUE.essFirst / (AF.essRate || 1),
-    rituals: LEAGUE.ritualAt.concat(AF.ritualExtra ? [1050] : []).map((t) => ({ at: t + rand(-30, 30), state: 'wait' })),
+    rituals: LEAGUE.ritualAt.concat(AF.ritualExtra ? [780] : []).map((t) => ({ at: t + rand(-30, 30), state: 'wait' })),
     tribute: 0,
     deli: { state: AF.deliOff ? 'none' : 'wait', at: rand(LEAGUE.deliWin[0], LEAGUE.deliWin[1]), x: 0, y: 0, t: 0, kills: 0, dur: LEAGUE.deliDur * (AF.deliDur || 1) },
   };
@@ -88,7 +88,7 @@ function updateLeagues(dt) {
     } else {
       // three waves of guards, then the loot
       while (b.wave < 3 && b.t >= b.wave * 1.6) {
-        const n = 5 + Math.floor(G.time / 120), type = waveType();
+        const n = 5 + Math.floor(gameMin() / 2), type = waveType();
         for (let k = 0; k < n && G.enemies.length < MAX_ENEMIES; k++) {
           const a = (k / n) * TAU + b.wave, e = spawnEnemy(type, b.x + Math.cos(a) * 110, b.y + Math.sin(a) * 110, k === 0 && b.wave === 2 ? 2 : 1);
           emit('gold', e.x, e.y, 4, { color: STRONGBOXES[b.kind].color });
@@ -101,7 +101,7 @@ function updateLeagues(dt) {
   }
   // ---- essences ----
   L.essT -= dt;
-  if (L.essT <= 0 && !bossUp() && G.time > 60) {
+  if (L.essT <= 0 && !bossUp() && G.time > 45) {
     L.essT = rand(LEAGUE.essGap[0], LEAGUE.essGap[1]) / (AF.essRate || 1);
     const [x, y] = leaguePos(330, 520);
     const e = spawnEnemy(waveType(), x, y, 2);
@@ -162,7 +162,7 @@ function updateRituals(dt) {
       } else if (R.idle > 90 || bossUp()) R.state = 'done';
     } else if (R.state === 'active') {
       R.t -= dt;
-      R.acc += (3.2 + G.time / 120) * dt;
+      R.acc += (3.2 + gameMin() / 2) * dt;
       while (R.acc >= 1 && G.enemies.length < MAX_ENEMIES) {
         R.acc -= 1;
         const a = rand(0, TAU), e = spawnEnemy(waveType(), R.x + Math.cos(a) * LEAGUE.ritualR, R.y + Math.sin(a) * LEAGUE.ritualR, Math.random() < 0.08 ? 1 : 0);

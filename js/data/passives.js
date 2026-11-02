@@ -73,7 +73,7 @@ defPassive({ id: 'shieldwall', name: 'Shield Wall', th: 'กำแพงโล�
 defPassive({ id: 'blade_dance', name: 'Blade Dance', th: 'ระบำดาบ', icon: '⚔', desc: '+15% ดาเมจ Attack · +6% พื้นที่', apply(m) { m.incAttack += 0.15; m.areaInc += 0.06; } });
 
 defKeystone({ id: 'chaos_inoculation', name: 'Chaos Inoculation', th: 'ภูมิคุ้มกันเคออส', icon: '☤',
-  desc: 'ชีวิตสูงสุดเหลือ 1 · ได้ Energy Shield เพิ่ม 110% ของชีวิตเดิม · อมตะต่อดาเมจเคออส (Life Flask เติม ES แทน)', apply(m) { m.ks.ci = true; } });
+  desc: 'ชีวิตสูงสุดเหลือ 1 · ได้ Energy Shield เพิ่ม 130% ของชีวิตเดิม · อมตะต่อดาเมจเคออส · การฟื้นชีวิต, ดูดชีวิต และ Life Flask เติม ES แทน', apply(m) { m.ks.ci = true; } });
 defKeystone({ id: 'perfect_agony', name: 'Perfect Agony', th: 'ทรมานสมบูรณ์', icon: '✶',
   desc: 'Ignite และ Poison จากคริติคอลแรงขึ้น 80% · ดาเมจ Hit 20% less', apply(m) { m.ks.agony = true; } });
 defKeystone({ id: 'arrow_dancing', name: 'Arrow Dancing', th: 'ระบำหลบธนู', icon: '➷',

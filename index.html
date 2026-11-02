@@ -6,7 +6,7 @@
 <title>Exile Survivors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -168,6 +168,18 @@
   </div>
 </div>
 
+<!-- Victory: leave or stay for the Endgame -->
+<div id="victory" class="overlay hidden">
+  <div class="panel">
+    <h2 class="panel-title win">ชัยชนะ!</h2>
+    <div class="panel-sub" id="vic-sub"></div>
+    <div class="cards">
+      <div class="card" id="btn-vic-leave"><div class="card-name">🏆 ออกจากแผนที่</div><div class="card-desc">จบรอบตอนนี้ รับรางวัลชัยชนะ เก็บของเข้า Stash</div></div>
+      <div class="card" id="btn-vic-endless"><div class="card-name" style="color:#ff6a5a">∞ เข้าสู่ Endgame</div><div class="card-desc">อยู่ต่อไม่มีที่สิ้นสุด มอนสเตอร์แข็งขึ้นเรื่อยๆ · Echo บอสทุก 100 วิ (ดรอปแผนที่ Tier ถัดไป, Orb, Unique) · +15 ✦ ต่อนาที +40 ✦ ต่อ Echo · ตายแล้วยังนับว่าชนะ</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- Ritual rewards -->
 <div id="ritual" class="overlay hidden">
   <div class="panel">
@@ -212,37 +224,37 @@
 <div id="tip" class="tip hidden"></div>
 <div id="tooltip" class="tooltip hidden"></div>
 
-<script src="js/util.js?v=16"></script>
-<script src="js/data/skills.js?v=16"></script>
-<script src="js/data/supports.js?v=16"></script>
-<script src="js/data/passives.js?v=16"></script>
-<script src="js/data/monsters.js?v=16"></script>
-<script src="js/data/classes.js?v=16"></script>
-<script src="js/data/ascendancy.js?v=16"></script>
-<script src="js/data/evolutions.js?v=16"></script>
-<script src="js/data/meta.js?v=16"></script>
-<script src="js/data/items.js?v=16"></script>
-<script src="js/data/maps.js?v=16"></script>
-<script src="js/data/sprite_art.js?v=16"></script>
-<script src="js/stats.js?v=16"></script>
-<script src="js/fx.js?v=16"></script>
-<script src="js/combat.js?v=16"></script>
-<script src="js/skills.js?v=16"></script>
-<script src="js/enemies.js?v=16"></script>
-<script src="js/player.js?v=16"></script>
-<script src="js/settings.js?v=16"></script>
-<script src="js/meta.js?v=16"></script>
-<script src="js/items.js?v=16"></script>
-<script src="js/breach.js?v=16"></script>
-<script src="js/lighting.js?v=16"></script>
-<script src="js/world.js?v=16"></script>
-<script src="js/icons.js?v=16"></script>
-<script src="js/sprites.js?v=16"></script>
-<script src="js/render.js?v=16"></script>
-<script src="js/ui.js?v=16"></script>
-<script src="js/leagues.js?v=16"></script>
-<script src="js/stash.js?v=16"></script>
-<script src="js/codex.js?v=16"></script>
-<script src="js/game.js?v=16"></script>
+<script src="js/util.js?v=19"></script>
+<script src="js/data/skills.js?v=19"></script>
+<script src="js/data/supports.js?v=19"></script>
+<script src="js/data/passives.js?v=19"></script>
+<script src="js/data/monsters.js?v=19"></script>
+<script src="js/data/classes.js?v=19"></script>
+<script src="js/data/ascendancy.js?v=19"></script>
+<script src="js/data/evolutions.js?v=19"></script>
+<script src="js/data/meta.js?v=19"></script>
+<script src="js/data/items.js?v=19"></script>
+<script src="js/data/maps.js?v=19"></script>
+<script src="js/data/sprite_art.js?v=19"></script>
+<script src="js/stats.js?v=19"></script>
+<script src="js/fx.js?v=19"></script>
+<script src="js/combat.js?v=19"></script>
+<script src="js/skills.js?v=19"></script>
+<script src="js/enemies.js?v=19"></script>
+<script src="js/player.js?v=19"></script>
+<script src="js/settings.js?v=19"></script>
+<script src="js/meta.js?v=19"></script>
+<script src="js/items.js?v=19"></script>
+<script src="js/breach.js?v=19"></script>
+<script src="js/lighting.js?v=19"></script>
+<script src="js/world.js?v=19"></script>
+<script src="js/icons.js?v=19"></script>
+<script src="js/sprites.js?v=19"></script>
+<script src="js/render.js?v=19"></script>
+<script src="js/ui.js?v=19"></script>
+<script src="js/leagues.js?v=19"></script>
+<script src="js/stash.js?v=19"></script>
+<script src="js/codex.js?v=19"></script>
+<script src="js/game.js?v=19"></script>
 </body>
 </html>

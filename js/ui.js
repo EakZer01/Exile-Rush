@@ -435,7 +435,7 @@ function buildViewHtml(final) {
     const a = ASCENDANCY[P.asc];
     h += `<div class="bv-box bv-asc" style="--cc:${a.color}"><div class="bv-title">${a.icon} ${a.name} <span class="muted">${a.th}</span></div>` +
       P.ascNodes.map((id) => `<b>${ASC_NODES[id].name}</b><br><span class="muted">${ASC_NODES[id].desc}</span>`).join('<br>') + '</div>';
-  } else if (!final) h += '<div class="bv-box"><div class="bv-title">Ascendancy</div><span class="muted">โค่นบอสตัวแรก (5:00) เพื่อเลือกคลาสย่อย</span></div>';
+  } else if (!final) h += '<div class="bv-box"><div class="bv-title">Ascendancy</div><span class="muted">โค่นบอสตัวแรก (3:45) เพื่อเลือกคลาสย่อย</span></div>';
   const ks = Object.keys(P.keystones);
   if (ks.length) h += '<div class="bv-box bv-key"><div class="bv-title">Keystone</div>' + ks.map((id) => `<b>${KEYSTONES[id].name}</b><br><span class="muted">${KEYSTONES[id].desc}</span>`).join('<br>') + '</div>';
   h += '</div>';
@@ -514,7 +514,8 @@ function resume() {
 function showGameOver(win) {
   G.state = 'over';
   const P = G.player;
-  $('over-title').textContent = win ? 'ชัยชนะ! คุณรอดจากดินแดนต้องสาป' : 'คุณตายแล้ว';
+  const endT = G.endless ? G.time - G.endStart : 0;
+  $('over-title').textContent = G.endless ? `Endgame จบแล้ว — รอดเพิ่ม ${fmtTime(endT)} · Echo ${G.stats.echoes || 0}` : win ? 'ชัยชนะ! คุณรอดจากดินแดนต้องสาป' : 'คุณตายแล้ว';
   $('over-title').className = 'panel-title ' + (win ? 'win' : 'dead');
   const rec = { time: G.time, level: P.level, kills: G.stats.kills, cls: P.asc ? ASCENDANCY[P.asc].name : P.cls.name, win };
   if (!G.daily) saveBest(rec);
@@ -526,7 +527,7 @@ function showGameOver(win) {
     overPick = null;
     const jewels = P.backpack.filter((it) => it.slot === 'jewel');
     const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle,
-      hc: G.hc, daily: G.daily, maps: G.runMaps, jewels }, rec));
+      hc: G.hc, daily: G.daily, maps: G.runMaps, jewels, endless: endT, echoes: G.stats.echoes || 0 }, rec));
     metaHtml = `<div class="over-meta"><div class="over-shards">+${res.reward.total} ✦ Ancient Shards</div>
       <div class="muted">${res.reward.parts.filter((p) => p[1] !== 0).map((p) => `${p[0]} ${p[1] > 0 ? '+' : ''}${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
       ${res.maps || res.jewels ? `<div class="over-unlock">🗺 ได้แผนที่ ${res.maps} ใบ${res.jewels ? ` · ⬡ Jewel ${res.jewels} ชิ้นเข้า Stash` : ''}</div>` : ''}
@@ -536,7 +537,7 @@ function showGameOver(win) {
   }
   $('over-stats').innerHTML = `<div class="over-summary">
       ⏱ รอด <b>${fmtTime(G.time)}</b> · Lv <b>${P.level}</b> · ☠ ฆ่า <b>${G.stats.kills}</b> · บอส <b>${G.stats.bosses}</b> · ดาเมจรวม <b>${fmtNum(G.stats.dmg)}</b>
-      ${!win && P.killedBy ? `<br><span class="muted">ถูกฆ่าโดย: ${P.killedBy}</span>` : ''}</div>` + (win ? '' : deathRecapHtml()) + metaHtml + buildViewHtml(true);
+      ${!win && P.killedBy ? `<br><span class="muted">ถูกฆ่าโดย: ${P.killedBy}</span>` : ''}</div>` + (P.dead ? deathRecapHtml() : '') + metaHtml + buildViewHtml(true);
   renderOverStash(runR);
   show('gameover');
   if (!G.daily && !G.hc) showTip('stash');

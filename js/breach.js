@@ -6,7 +6,7 @@
 //  kill buys a little more time. When it closes, survivors vanish and
 //  the haul (orbs, items, a chest) drops at the centre.
 // ============================================================
-const BREACH = { first: 110, gap: [130, 180], open: 11, maxAge: 24, perKill: 0.2, r0: 70, rMax: 440, grow: 34 };
+const BREACH = { first: 85, gap: [100, 135], open: 11, maxAge: 24, perKill: 0.2, r0: 70, rMax: 440, grow: 34 };
 
 function resetBreach() { G.breach = { state: 'wait', t: BREACH.first / G.atlasFx.breachRate, x: 0, y: 0, r: 0, kills: 0, age: 0, acc: 0, idle: 0 }; }
 
@@ -33,7 +33,7 @@ function updateBreach(dt) {
     B.t -= dt; B.age += dt;
     B.r = Math.min(BREACH.rMax, B.r + BREACH.grow * dt);
     // pour monsters out of the rift
-    B.acc += (5 + (G.time / 60) * 0.45) * dt;
+    B.acc += (5 + gameMin() * 0.45) * dt;
     while (B.acc >= 1) {
       B.acc -= 1;
       if (G.enemies.length >= MAX_ENEMIES) break;

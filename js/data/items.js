@@ -99,7 +99,7 @@ const FLASK_COLOR = { life: '#d0302a', quick: '#9ad2ff', granite: '#a89a80', jad
   ruby: '#ff4a3a', sapphire: '#3a7aff', topaz: '#ffd83a', amethyst: '#b04aff' };
 
 // item level: rises through the run and with map tier — gates affix tiers
-function itemLevel(time, tier) { return Math.max(1, Math.min(86, Math.floor(1 + (time / 60) * 3.2 + ((tier || 1) - 1) * 5))); }
+function itemLevel(time, tier) { return Math.max(1, Math.min(86, Math.floor(1 + (time / 60) * GAME_PACE * 3.2 + ((tier || 1) - 1) * 5))); }
 const defScale = (ilvl) => 1 + ilvl / 35;
 const pdScale = (ilvl) => 1 + ilvl / 60;
 
