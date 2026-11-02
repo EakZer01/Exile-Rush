@@ -78,3 +78,18 @@ test('Gem Mastery levels, unlocks alternate qualities and adds damage', () => {
   run(`gemSetAlt('fireball', 'anomalous'); recomputePlayer();`);
   assert.equal(run('G.player.skills[0].st.proj'), 2);
 });
+
+test('runs start with 4 skill slots; late Milestones can open up to 2 more', () => {
+  const { run } = game();
+  run(`startGame(CLASSES[0]); P3 = G.player; while (P3.skills.length < 4) P3.skills.push(newSkillInstance(['ice_nova', 'arc', 'spark', 'frostbolt'][P3.skills.length - 1])); recomputePlayer();`);
+  assert.equal(run(`(() => { for (let i = 0; i < 100; i++) if (regularChoices(4).some(c => c.type === 'skill')) return true; return false; })()`), false);
+  // no slot card before level 30
+  run(`P3.level = 20; G.pendingLevels = 1;`);
+  assert.equal(run(`(() => { for (let i = 0; i < 100; i++) if (milestoneChoices(4).some(c => c.type === 'slot')) return true; return false; })()`), false);
+  run(`P3.level = 30;`);
+  assert.equal(run(`(() => { for (let i = 0; i < 100; i++) if (milestoneChoices(4).some(c => c.type === 'slot')) return true; return false; })()`), true);
+  run(`G.choices = [{ type: 'slot' }, { type: 'slot' }]; G.levelIsChest = false; G.pendingLevels = 2; chooseCard(0); chooseCard(1);`);
+  assert.equal(run('MAX_SKILLS + P3.mods.skillSlots'), 6);
+  assert.equal(run(`(() => { for (let i = 0; i < 200; i++) if (milestoneChoices(4).some(c => c.type === 'slot')) return true; return false; })()`), false);
+  assert.equal(run(`(() => { for (let i = 0; i < 100; i++) if (regularChoices(4).some(c => c.type === 'skill')) return true; return false; })()`), true);
+});

@@ -133,7 +133,9 @@ function milestoneChoices(n) {
   for (const inst of P.skills) for (const sid of activeSupports(inst).active) if (!inst.awakened.includes(sid)) aw.push({ type: 'awaken', inst, id: sid });
   for (const a of weightedSample(aw, Math.min(2, aw.length), () => 1)) pool.push(a);
   for (const inst of P.skills.slice().sort((a, b) => b.dmgDealt - a.dmgDealt).slice(0, 2)) if (inst.level < MAX_GEM_LEVEL) pool.push({ type: 'empower', inst });
-  const out = weightedSample(pool, Math.min(n, pool.length), (c) => (c.type === 'keystone' ? 2 : 1));
+  // late Milestones can open a 5th / 6th skill slot instead
+  if (P.level - G.pendingLevels + 1 >= MILESTONE_SLOT_LEVEL && P.extraSlots < MILESTONE_SLOT_MAX) pool.push({ type: 'slot' });
+  const out = weightedSample(pool, Math.min(n, pool.length), (c) => (c.type === 'keystone' || c.type === 'slot' ? 2 : 1));
   const evo = P.skills.find(evolveRecipeMet);
   if (evo) { if (out.length >= n) out.pop(); out.unshift({ type: 'evolve', inst: evo }); }
   if (mastery.length) return mastery.concat(out);
@@ -262,6 +264,12 @@ function cardHtml(c, idx) {
       <div class="card-head"><span class="node">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">Passive · ระดับ ${r} → ${to}/${d.max}</div></div></div>
       ${star}<div class="card-desc">${to - r > 1 ? `×${to - r}: ` : ''}${d.desc}</div>${pid ? pathNoteHtml(P, pid, to - r) : ''}</div>`;
   }
+  if (c.type === 'slot') {
+    const cap = MAX_SKILLS + P.mods.skillSlots;
+    return `<div class="card card-keystone card-ms">${key}
+      <div class="card-head"><span class="node node-key">✚</span><div><div class="card-name">Expanded Arsenal</div><div class="card-th">ช่องสกิล +1</div></div><div class="badge badge-key">SLOT</div></div>
+      <div class="card-desc">มีสกิลได้สูงสุด ${cap} → <b>${cap + 1}</b> สกิล</div><div class="card-note">เลือกได้อีก ${MILESTONE_SLOT_MAX - P.extraSlots} ครั้งในรอบนี้ · สกิลเยอะ = การ์ดเลเวลและ Support กระจายมากขึ้น</div></div>`;
+  }
   if (c.type === 'mastery') {
     const o = MASTERY_OPT[c.id], path = RUN_PATHS[o.path], other = path.mastery.find((x) => x.id !== o.id);
     return `<div class="card card-mastery card-ms" style="--cc:${path.color}">${key}
@@ -322,7 +330,7 @@ function openLevelUp(isChest) {
   else if (G.choices.some((c) => c.type === 'support')) showTip('support');
   else showTip('levelup');
   $('levelup-title').textContent = isChest ? 'หีบสมบัติของบอส!' : G.milestone ? `★ MILESTONE — เลเวล ${lv} ★` : 'LEVEL UP!';
-  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่าง' : G.milestone ? (G.choices.some((c) => c.type === 'mastery') ? 'Mastery พร้อมแล้ว — เลือกทางใดทางหนึ่ง หรือรับการ์ด Milestone อื่นแทน' : 'การ์ดพิเศษทุก 10 เลเวล — Keystone, Awaken, Empower · อ่านให้ดี!')
+  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่าง' : G.milestone ? (G.choices.some((c) => c.type === 'mastery') ? 'Mastery พร้อมแล้ว — เลือกทางใดทางหนึ่ง หรือรับการ์ด Milestone อื่นแทน' : 'การ์ดพิเศษทุก 10 เลเวล — Keystone, Awaken, Empower, ช่องสกิล · อ่านให้ดี!')
     : `เลเวล ${lv} — เลือก 1 อย่าง${G.pendingLevels > 1 ? ` (เหลืออีก ${G.pendingLevels - 1})` : ''} · ★ = เข้ากับบิลด์`;
   renderCards();
   Sfx.play('levelup');
@@ -395,6 +403,7 @@ function chooseCard(i) {
   else if (c.type === 'empower') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + 3); recomputePlayer(); finishChoice(); }
   else if (c.type === 'passive') { P.passives[c.id] = Math.min(PASSIVES[c.id].max, (P.passives[c.id] || 0) + PASSIVE_RANKS); recomputePlayer(); finishChoice(); }
   else if (c.type === 'keystone') { P.keystones[c.id] = 1; recomputePlayer(); finishChoice(); }
+  else if (c.type === 'slot') { P.extraSlots++; recomputePlayer(); finishChoice(); }
   else if (c.type === 'mastery') {
     const o = MASTERY_OPT[c.id];
     P.masteries.push(c.id); if (o.take) o.take(P); recomputePlayer();

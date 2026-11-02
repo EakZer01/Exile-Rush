@@ -47,7 +47,7 @@ function createPlayer(cls) {
     currency: { chaos: 3, jeweller3: 0, jeweller4: 0, jeweller5: 0, jeweller6: 0, regal: 0, exalt: 0, divine: 0, annul: 0, whetstone: 0, scrap: 0, vaal: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
     // ascendancy state
     asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
-    critT: 0, frenzyT: 0, revives: 0, masteries: [],
+    critT: 0, frenzyT: 0, revives: 0, masteries: [], extraSlots: 0,
     essences: {},
     equip: { weapon: null, offhand: null, helm: null, body: null, gloves: null, boots: null, belt: null, amulet: null, ring: null, ring2: null }, backpack: [], newItems: 0,
   };
@@ -62,6 +62,7 @@ function buildPlayerMods(equip) {
   for (const id in P.keystones) KEYSTONES[id].apply(m);
   for (const id of P.ascNodes) ASC_NODES[id].apply(m);
   for (const id of P.masteries) MASTERY_OPT[id].apply(m);
+  m.skillSlots += P.extraSlots;
   for (const slot of ITEM_SLOTS) if (equip[slot]) applyItem(equip[slot], m);
   const fx = G.mapFx;
   m.lifeMore *= fx.pLife; m.regen *= fx.pRegen; m.leechCap *= fx.pRegen; m.flaskGainMore *= fx.pFlask;

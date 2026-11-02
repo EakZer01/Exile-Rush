@@ -130,7 +130,7 @@ defAsc({ id: 'paragon', cls: 'scion', name: 'Paragon', th: 'ผู้สมบ�
 defAsc({ id: 'wayfarer', cls: 'scion', name: 'Wayfarer', th: 'ผู้พเนจร', color: '#a8c8ff', icon: '✈',
   desc: 'สายเจม สกิลเยอะ ช่วยเพิ่มช่อง Support',
   nodes: [
-    { id: 'wanderlust', name: 'Wanderlust', icon: '✈', desc: 'ช่องสกิล +1 (มีได้ 7 สกิล) · +8% ความเร็วเคลื่อนที่', apply(m) { m.skillSlots += 1; m.moveInc += 0.08; } },
+    { id: 'wanderlust', name: 'Wanderlust', icon: '✈', desc: 'ช่องสกิล +1 · +8% ความเร็วเคลื่อนที่', apply(m) { m.skillSlots += 1; m.moveInc += 0.08; } },
     { id: 'gem_prodigy', name: 'Gem Prodigy', icon: '◆', desc: 'เจมสกิลทุกอันเลเวล +2 ทันที', instant: 'gems2', apply() {} },
     { id: 'linkmaster', name: 'Gemsmith', icon: '⬡', desc: "ได้ Jeweller's Orb 3 ×2 · เลเวล Skill Gem ทุกอัน +1", instant: 'jeweller3x2', apply(m) { m.gemLevel += 1; } },
     { id: 'fortune', name: 'Fortune', icon: '✪', desc: 'ตัวเลือกตอนเลเวลอัพ +1 ใบ · ได้ Chaos Orb 3 ลูก', instant: 'chaos3', apply(m) { m.extraChoices += 1; } },
