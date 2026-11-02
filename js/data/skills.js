@@ -296,3 +296,65 @@ defSkill({
   levelNote: 'ทุก 3 เลเวล: +1 โครงกระดูกสูงสุด',
   color: '#e8dcc0', core: '#ffffff',
 });
+
+// ---------------- expansion 2: movement, melee hybrids, more spells ----------------
+defSkill({
+  id: 'flicker_strike', name: 'Flicker Strike', th: 'ฟาดวาร์ป', gem: 'g', icon: '⚡',
+  tags: ['Attack', 'Melee', 'AoE', 'Movement', 'Physical'],
+  desc: 'วาร์ปไปหาศัตรูแล้วฟาดเป็นวงทันที — ตัวละครจะถูกพาเข้ากลางฝูงเอง (ชอบเล็ง Rare) · อมตะชั่วครู่ทุกครั้งที่วาร์ป',
+  behavior: 'flicker',
+  base: { dmg: 19, types: { physical: 1 }, cd: 0.8, range: 430, area: 70, crit: 0.06, knock: 15, flickers: 1 },
+  scale(s, l) { s.flickers += Math.floor(l / 7); s.area *= 1 + 0.015 * (l - 1); },
+  levelNote: 'ทุก 7 เลเวล: วาร์ปต่อเนื่อง +1 ครั้ง',
+  color: '#d0f0ff', core: '#ffffff',
+});
+defSkill({
+  id: 'smite', name: 'Smite', th: 'ทัณฑ์สายฟ้า', gem: 'r', icon: 'ϟ',
+  tags: ['Attack', 'Melee', 'AoE', 'Lightning'],
+  desc: 'ฟาดศัตรูที่ใกล้ที่สุด แล้วเรียกสายฟ้าลงใส่ศัตรูรอบๆ เป้าหมาย 3 ตัว',
+  behavior: 'strike',
+  base: { dmg: 14, types: { physical: 0.5, lightning: 1 }, cd: 0.6, range: 120, balls: 0, bolts: 3, boltR: 220, area: 30, shock: 0.25 },
+  scale(s, l) { s.bolts += Math.floor(l / 5); },
+  levelNote: 'ทุก 5 เลเวล: +1 สายฟ้า',
+  color: '#fff27a', core: '#ffffff',
+});
+defSkill({
+  id: 'frost_blades', name: 'Frost Blades', th: 'ใบมีดน้ำแข็ง', gem: 'g', icon: '❆',
+  tags: ['Attack', 'Melee', 'Projectile', 'Cold'],
+  desc: 'ฟันศัตรูที่ใกล้ที่สุด แล้วใบมีดน้ำแข็งพุ่งทะลุต่อจากเป้าหมาย (Support กระสุนเพิ่มจำนวนใบมีด)',
+  behavior: 'strike',
+  base: { dmg: 13, types: { physical: 0.4, cold: 1 }, cd: 0.6, range: 120, balls: 0, blades: 3, speed: 620, life: 0.6, size: 6, spread: 0.3, pierce: 1 },
+  scale(s, l) { s.blades += Math.floor(l / 6); s.pierce += Math.floor(l / 5); },
+  levelNote: 'ทุก 6 เลเวล: +1 ใบมีด · ทุก 5 เลเวล: ทะลุ +1',
+  color: '#9fe0ff', core: '#ffffff',
+});
+defSkill({
+  id: 'kinetic_blast', name: 'Kinetic Blast', th: 'ระเบิดจลน์', gem: 'g', icon: '✺',
+  tags: ['Attack', 'Projectile', 'AoE', 'Physical'],
+  desc: 'ยิงกระสุนพลังงานที่ระเบิดเมื่อกระทบ แล้วแตกเป็นระเบิดย่อยรอบๆ อีก 2 ลูก',
+  behavior: 'projectile',
+  base: { dmg: 10, types: { physical: 1 }, cd: 0.9, proj: 1, speed: 560, life: 0.75, size: 7, spread: 0.2, area: 46, explode: true, cluster: 2, aim: 'nearest' },
+  scale(s, l) { s.cluster += Math.floor(l / 6); },
+  levelNote: 'ทุก 6 เลเวล: +1 ระเบิดย่อย',
+  color: '#c8a0ff', core: '#f8f0ff',
+});
+defSkill({
+  id: 'glacial_cascade', name: 'Glacial Cascade', th: 'ธารน้ำแข็งถล่ม', gem: 'b', icon: '⩙',
+  tags: ['Spell', 'AoE', 'Cold', 'Physical'],
+  desc: 'แท่งน้ำแข็งพุ่งขึ้นจากพื้นเป็นแนวตรงไปหาศัตรู ลูกสุดท้ายแรงที่สุด',
+  behavior: 'ground',
+  base: { dmg: 13, types: { cold: 1, physical: 0.4 }, cd: 1.2, count: 5, area: 40, range: 340, duration: 0.5, line: true },
+  scale(s, l) { s.count += Math.floor(l / 5); s.area *= 1 + 0.015 * (l - 1); },
+  levelNote: 'ทุก 5 เลเวล: +1 แท่งน้ำแข็ง',
+  color: '#a8e8ff', core: '#ffffff',
+});
+defSkill({
+  id: 'shock_nova', name: 'Shock Nova', th: 'โนวาช็อก', gem: 'b', icon: '◎',
+  tags: ['Spell', 'AoE', 'Lightning', 'Nova'],
+  desc: 'ปล่อยวงสายฟ้ากว้างรอบตัว มีโอกาส Shock สูง',
+  behavior: 'nova',
+  base: { dmg: 14, types: { lightning: 1 }, cd: 2.1, area: 130, shock: 0.4 },
+  scale(s, l) { s.area *= 1 + 0.02 * (l - 1); },
+  levelNote: 'ทุกเลเวล: วงกว้างขึ้น',
+  color: '#fff27a', core: '#ffffff',
+});

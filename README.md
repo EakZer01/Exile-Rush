@@ -6,17 +6,22 @@
 ## วิธีเล่น
 - ดับเบิลคลิก `index.html` เพื่อเปิดในเบราว์เซอร์ หรือรันเซิร์ฟเวอร์: `python -m http.server 8765` แล้วเปิด http://localhost:8765
 - **WASD / ลูกศร** เดิน · **Space** Flame Dash (อมตะชั่วครู่) · **1–5** ใช้ฟลาสก์ช่อง 1–5 (**Q** / **E** = ช่อง 1 / 2)
-- **V** ใช้ท่าไม้ตาย Vaal (เมื่อวิญญาณเต็ม) · **I** กระเป๋า/อุปกรณ์ · **Tab / Esc** หยุดเกมและดูบิว · **1–5** เลือกการ์ด · **R** ใช้ Chaos Orb สุ่มการ์ดใหม่ · **M** ปิดเสียง · **N** ปิดตัวเลขดาเมจ
+- **V** ใช้ท่าไม้ตาย Vaal (เมื่อวิญญาณเต็ม) · **I** กระเป๋า/อุปกรณ์ · **C / Tab / Esc** หน้าสถิติตัวละคร (หยุดเกม) · **1–5** เลือกการ์ด · **R** ใช้ Chaos Orb สุ่มการ์ดใหม่ · **M** ปิดเสียง · **N** ปิดตัวเลขดาเมจ
 - **L** เปิด/ปิดระบบแสงเงา · **F** เปิด/ปิดอนุภาคและเอฟเฟกต์ (ใช้เมื่อเครื่องช้า)
 - มือถือ: ลากนิ้วเพื่อเดิน, แตะสองครั้งเพื่อ Dash, แตะขวดที่มุมซ้ายล่างเพื่อใช้ Flask, แตะแถบสกิลเพื่อใช้ Vaal
 - เมนูหลักมี **📖 Codex** (ข้อมูลเจม/Passive/Ascendancy/Unique/Map Mods ทั้งหมด + คอมโบแนะนำ ค้นหาและกรองแท็กได้) และ **⚙ ตั้งค่า** (เสียง, เพลง, แสง, เอฟเฟกต์, จอสั่น, คุณภาพกราฟิก) ส่วนรอบแรกจะมี Tips แนะนำระบบต่างๆ
 
 ## ระบบหลัก
-- **Skill Gem 27 อัน** ร่ายอัตโนมัติ (สูงสุด 6 สกิล, เลเวล 1–20) มีรูปแบบ Projectile, Nova, Chain, Orbit, Ground, Aura, Minion, Spin, **Brand** (ประทับตราบนศัตรู), **Strike**, **Slam + Aftershock**, **Beam** (Channelling) และ **Herald** (ทำงานตอนศัตรูตาย)
-- **Support Gem 44 อัน** ใส่ในซ็อกเก็ตของสกิล (เริ่ม 3-Link, ใช้ Orb of Fusing ขยายได้ถึง 6-Link) ใช้ระบบแท็กแบบ PoE รวมถึงคำสาป (Hextouch), Penetration, Elemental Proliferation, Spell Cascade, Multistrike, Ruthless, Brutality, Deadly Ailments, Returning Projectiles
-- **Passive 26 อัน + Keystone 12 อัน** (เช่น Elemental Overload, Avatar of Fire, Elemental Equilibrium, Runebinder, Hex Master)
+- **Skill Gem 33 อัน** ร่ายอัตโนมัติ (สูงสุด 6 สกิล, เลเวล 1–20) มีรูปแบบ Projectile, Nova, Chain, Orbit, Ground, Aura, Minion, Spin, **Brand** (ประทับตราบนศัตรู), **Strike**, **Slam + Aftershock**, **Beam** (Channelling), **Herald** (ทำงานตอนศัตรูตาย) และ **Flicker Strike** (วาร์ปเข้าหาศัตรูแล้วฟาด) · สกิลใหม่: Smite, Frost Blades, Kinetic Blast, Glacial Cascade, Shock Nova
+- **Support Gem 55 อัน** ใส่ในซ็อกเก็ตของสกิล (เริ่ม 3-Link, ใช้ Orb of Fusing ขยายได้ถึง 6-Link) ใช้ระบบแท็กแบบ PoE รวมถึงคำสาป (Hextouch), Penetration, Elemental Proliferation, Spell Cascade, Multistrike, Ruthless, Brutality, Deadly Ailments, Returning Projectiles, Fortify, Close Combat, Impale, Trinity, Arcane Surge, Unleash, Barrage, Pulverise
+- **Passive 34 อัน + Keystone 15 อัน** (เช่น Elemental Overload, Avatar of Fire, Elemental Equilibrium, Runebinder, Hex Master, **Chaos Inoculation**, Perfect Agony, Arrow Dancing)
 - **คอมโบตัวอย่าง**: Herald of Ice + Ice Nova/Freezing Pulse (ศัตรูแช่แข็งแตกระเบิดต่อเนื่อง) · Contagion + Essence Drain (พิษแพร่ทั้งฝูง) · Storm/Armageddon Brand + Runebinder · คำสาป + Penetration ทะลุ map mod Warded · Elemental Equilibrium + สกิลหลายธาตุ
 - **Ailment**: Ignite, Chill, Freeze, Shock, Poison
+- **ค่าต้านทาน (Resistance)**: มอนสเตอร์บางชนิด/บอส/map mod โจมตีเป็นไฟ น้ำแข็ง สายฟ้า หรือเคออส ผู้เล่นมีค่าต้านทานสูงสุด 75% (+max res) และ **แผนที่ Tier สูงลดค่าต้านทาน -8% ต่อ Tier** (T8 = -56%) — หาได้จาก mod ไอเทม (of the Drake / Penguin / Squall / Prism / Lost), แหวน Ruby/Sapphire/Topaz/Amethyst, ฟลาสก์ Ruby/Sapphire/Topaz/Amethyst, Passive, Jewel และ Legacy Tree
+- **หน้าสถิติ (C)**: ค่าต้านทานทุกธาตุ, Hit ใหญ่สุดที่รับได้ต่อธาตุ, DPS จริงของแต่ละสกิล (10 วิล่าสุด) · **สรุปก่อนตาย**: ดาเมจที่รับใน 6 วิสุดท้ายแยกตามแหล่งและธาตุ พร้อมคำแนะนำ
+- **บอสมีสัญญาณเตือน**: วงกลม, แนวลำแสง (line), กรวย (cone), วงแหวน (ยืนใกล้บอสถึงรอด) และอุกกาบาตตามตัว — หลบได้ทุกท่า
+- **League mechanics**: **Breach** · **Strongbox** (ยืนข้างกล่อง ผู้พิทักษ์ออกมา 3 ระลอก แล้วได้ของตามชนิดกล่อง) · **Essence** (Rare ถูกผนึกในคริสตัล เดินเข้าไปปลดผนึก ฆ่าแล้วได้ Essence ใช้สร้าง Rare ที่การันตี mod) · **Ritual** (ยืนในวงพิธี 20 วิ ฆ่าเก็บ Tribute แล้วแลกรางวัล) · **Delirium** (แตะกระจก หมอกตามตัว 45 วิ มอนสเตอร์แกร่งขึ้นเรื่อยๆ แต่ของดีขึ้นเรื่อยๆ)
+- **Crafting Bench**: เพิ่ม mod ที่เลือกเองได้ 1 อันต่อไอเทม (เช่น +30 ชีวิต, +20% ต้านทาน) จ่ายด้วย Orb · **Loot Filter** ในหน้าตั้งค่า (ซ่อน Normal / Rare ขึ้นไป / เข้มงวด — ของที่ซ่อนย่อยเป็น Shard อัตโนมัติ) และไฮไลต์ไอเทมที่มีค่าต้านทาน
 - **Ascendancy**: โค่นบอสตัวแรก (5:00) แล้วเลือกคลาสย่อย 1 ใน 2 แบบ (มี 14 แบบ คลาสละ 4 โหนด) บอสตัวถัดไปให้ปลดล็อกโหนดเพิ่ม · Scion สาย Paragon จะสุ่มโหนดจากคลาสอื่นมาให้เลือก
 - **Gem Evolution (Vaal)**: เจมเลเวล 10 ขึ้นไปที่ลิงก์ Support ตามสูตรจะได้การ์ด EVOLVE กลายเป็นร่าง Vaal ที่แรงขึ้น พร้อมท่าไม้ตาย: ฆ่าศัตรูเก็บวิญญาณ 90 ดวง แล้วกด V เพื่อระเบิดรอบตัวและร่ายเร็ว 2.5 เท่านาน 6 วิ (ดูสูตรได้ในการ์ดและหน้าบิว)
 - **Awakened Support** (เลเวล 12 ขึ้นไป): ปลุกพลัง Support ที่ใส่อยู่ ได้ดาเมจ 20% more พร้อมโบนัสเฉพาะตัว
@@ -31,11 +36,18 @@
   - **Currency**: Regal, Exalted, Divine, Annulment, Chaos (ปรับ mod) · Jeweller's (จำนวน Socket), Fusing (Link), Chromatic (สี Socket) · Whetstone / Armourer's Scrap (Quality สูงสุด 20%) · **Vaal Orb** (Corrupt: ได้ implicit พิเศษ / ไม่เปลี่ยน / สุ่ม mod ใหม่ / 6 Socket / mod หาย — แล้วแก้ไขไม่ได้อีก)
   - Rare/Unique มีลำแสงบนพื้น ไอเทมเก็บอัตโนมัติเมื่อเดินผ่าน (ถ้าช่องว่างจะสวมให้ทันที) ย่อยไอเทมเป็น Ancient Shards ได้
   - คลัง Unique ที่เคยค้นพบบันทึกถาวรและดูได้ที่ Altar of Legacy
+  - **Unique 31 ชิ้น** รวม Ward of the Tempest (โล่ต้านธาตุ) และ Stillwater Vestment (ES / ต้านเคออส — เข้ากับ Chaos Inoculation)
+- **Stash (เก็บของข้ามรอบ)**: จบรอบเลือกไอเทมเก็บได้ (ตาย 2 ชิ้น, ชนะ 4 ชิ้น) Jewel เก็บอัตโนมัติ · ที่ Map Device เลือกพกของจาก Stash เข้ารอบได้ 2 ชิ้น (จ่าย Shards ตามความหายาก) · ดู/ย่อยของได้ที่ปุ่ม 📦 Stash ในเมนูหลัก
+- **Jewel**: Crimson / Viridian / Cobalt ดรอปจากบอส, Rare, Strongbox, Ritual, Delirium ใส่ใน **Jewel Socket 6 ช่องบน Legacy Tree** (ช่องละสาย) เพื่อรับ mod ทุกรอบ
 - **Atlas / Map Device**: หลังเลือกคลาสจะเข้าหน้า Map Device เพื่อเลือกแผนที่
   - **5 พื้นที่**: Cursed Graveyard, Ashen Wastes (Volatile/Brute), Frozen Hollow (Frost Wraith, ปลดล็อกที่ Tier 2), Toxic Marsh (ซากศพ/Cultist, Tier 3), Void Sanctum (มอนสเตอร์แข็งขึ้น 15%, Tier 5) แต่ละพื้นที่มีสีพื้น แสง และชนิดมอนสเตอร์ต่างกัน
   - **Tier 1–10**: Tier 1 คือเกมปกติ ทุก Tier เพิ่มชีวิตมอนสเตอร์ +25% ดาเมจ +8% และรางวัล Shards +15% ชนะแผนที่เพื่อปลดล็อก Tier ถัดไป
   - **Map Mods 16 แบบ** เช่น Hardened, Elite, Burning Ground, Withering Air, Lightless กด Alchemy เพื่อสุ่ม mod ฟรี (3–5 อันตาม Tier) หรือสุ่มใหม่ด้วย 3 ✦ ทุก mod เพิ่ม Item Quantity และโบนัส Shards
   - ผ่านแผนที่ใหม่แต่ละอัน (พื้นที่+Tier) ได้ **+1 แต้ม Legacy Tree** ถาวร (สูงสุด +15)
+  - **แผนที่เป็นไอเทม**: ดรอปจากบอส (บอสสุดท้ายให้แผนที่ Tier ถัดไปแน่นอน), Rare, Strongbox, Ritual, Delirium เก็บไว้ในคลังแผนที่ (40 ใบ) · Tier 1 เล่นฟรี · Tier สูงกว่าต้องใช้แผนที่ หรือซื้อด้วย Shards (8 ✦ × Tier)
+  - **Atlas Passive Tree**: 6 สาย (Strongbox, Essence, Ritual, Delirium, Breach, Cartography) ปรับว่า league content ไหนเกิดบ่อย/ให้ของมาก แต้ม = แผนที่ที่ผ่าน + บอสสะสมทุก 8 ตัว คืนแต้มฟรี
+  - **☠ Hardcore**: ตาย = เสีย Shard แผนที่ Jewel ของรอบนั้น และเก็บของเข้า Stash ไม่ได้ · ชนะ = Shard ×1.5 และเก็บของได้ +2 ชิ้น
+- **📅 Daily Challenge**: ทุกวันได้คลาส แผนที่ Tier และ mod ชุดเดียวกัน (สุ่มแบบ seed ตามวันที่) บันทึกสถิติดีที่สุดของวัน
 - **Meta-progression**: จบทุกรอบจะได้ **Ancient Shards ✦** (ตามเวลารอด, จำนวนฆ่า, บอส, เลเวล, ชนะ +100) เอาไปใช้ที่ **Altar of Legacy** ในเมนูหลัก
   - **Legacy Tree** แบบ passive tree ของ PoE มี 66 โหนด แบ่งเป็น 6 สาย: Arcane (เวท/ธาตุ), Shadow (คริ/เคออส), Hunt (Projectile/ความเร็ว), Bastion (ชีวิต/ป้องกัน/ฟลาสก์), Warfare (Attack/กายภาพ/AoE), Occult (มินเนียน/เผาไหม้/XP)
   - แต่ละสายมีโหนดเล็ก, Notable 3 อัน และ **Keystone** ที่เปลี่ยนแนวบิวที่ปลายสาย ได้แก่ Specialist, Glass Cannon, Collector, Born Ascendant, Gem Savant, Minion Lord มีโหนดเชื่อมระหว่างสายเป็นวงใน ทำให้เดินได้หลายเส้นทาง
@@ -63,6 +75,8 @@
 | `js/data/meta.js` | Legacy Tree (โหนด, Keystone, ราคา, จำนวนแต้มสูงสุด), เงื่อนไขปลดล็อก, สูตรคำนวณ Shards |
 | `js/meta.js` | บันทึก/โหลดข้อมูลถาวร, จัดสรร/คืนแต้มโหนด, สรุปรางวัลตอนจบรอบ |
 | `js/breach.js` | Breach event (เกิด, เปิด, ขยายวง, รางวัลตอนปิด) |
+| `js/leagues.js` | Strongbox, Essence, Ritual (+หน้าต่างแลกรางวัล), Delirium |
+| `js/stash.js` | แผนที่/Jewel ที่ดรอป, Stash, ของที่พกเข้ารอบ, Atlas Tree, Jewel Socket, Daily Challenge |
 | `js/settings.js` | ตั้งค่า (บันทึกถาวร), เพลงประกอบแบบสังเคราะห์, ลดคุณภาพอัตโนมัติ, Tips |
 | `js/codex.js` | หน้า Codex, คอมโบแนะนำ, หน้าตั้งค่า |
 | `js/data/maps.js` | พื้นที่ (Biome), การเพิ่มความยากตาม Tier, Map Mods, จำนวนแต้มจาก Atlas |

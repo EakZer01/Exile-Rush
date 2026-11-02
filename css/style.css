@@ -355,3 +355,43 @@ canvas#game { display: block; position: fixed; inset: 0; touch-action: none; }
 
 .craft-row { margin-top: 6px; }
 .craft-btn { color: var(--oc); border-color: color-mix(in srgb, var(--oc) 60%, #000); margin-left: 0; }
+
+/* ---- death recap / resist ---- */
+.death-recap { margin: 10px auto; max-width: 640px; padding: 10px 12px; background: rgba(60,10,10,.35); border: 1px solid #6a2a20; text-align: left; font-size: 14px; line-height: 1.6; }
+.dr-bar { display: flex; height: 10px; margin: 6px 0; border: 1px solid #3a2a20; }
+.dr-bar span { display: block; height: 100%; }
+.dr-tip { margin-top: 6px; color: #ffd8a0; }
+
+/* ---- jewel sockets on the Legacy Tree ---- */
+#tree-svg .tn-jewel .body { stroke-dasharray: 4 3; }
+#tree-svg .tn.jw-R .body { fill: #d03040; } #tree-svg .tn.jw-G .body { fill: #30b050; } #tree-svg .tn.jw-B .body { fill: #3a6ae0; }
+/* ---- stash / loadout / map items ---- */
+.stash-grid { display: grid; grid-template-columns: repeat(auto-fill, 46px); gap: 4px; align-content: start; min-width: 0; }
+.stash-grid.small { grid-template-columns: repeat(auto-fill, 38px); margin: 6px 0; }
+.stash-cell { height: 46px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.45); border: 1px solid #3a2e1c; cursor: pointer; }
+.stash-grid.small .stash-cell { height: 38px; }
+.stash-cell img { image-rendering: pixelated; max-width: 85%; max-height: 85%; pointer-events: none; }
+.stash-cell.sel { outline: 2px solid #fff; background: rgba(120,100,40,.45); }
+.over-stash { margin: 8px auto; max-width: 720px; text-align: left; }
+.map-owned { display: flex; gap: 6px; flex-wrap: wrap; max-height: 150px; overflow-y: auto; }
+.map-item { padding: 5px 8px; border: 1px solid var(--cc); background: #120e0a; cursor: pointer; font-size: 13px; min-width: 120px; }
+.map-item.sel { outline: 2px solid #fff; background: #2a2014; }
+.map-item.r-magic { box-shadow: inset 0 0 0 1px #8a8cff; } .map-item.r-rare { box-shadow: inset 0 0 0 1px #ffe866; }
+/* ---- atlas tree ---- */
+.atlas-tree { margin-top: 10px; padding: 10px; border: 1px solid var(--border); background: #0e0b08; }
+.atlas-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.atlas-col { display: flex; flex-direction: column; gap: 5px; }
+.atlas-h { color: var(--cc); font-weight: 700; text-align: center; }
+.atlas-node { background: #15110c; color: #b8a888; border: 1px solid #3e3322; padding: 6px; font: 12px Sarabun, sans-serif; cursor: pointer; text-align: left; }
+.atlas-node:disabled { opacity: .4; cursor: default; }
+.atlas-node.on { border-color: var(--cc); color: #f0e6d0; background: #2a2014; box-shadow: inset 3px 0 0 var(--cc); }
+.atlas-node.notable { border-width: 2px; }
+/* ---- ritual / bench / crafted ---- */
+.ritual-offer.bought { opacity: .45; }
+.ritual-offer.poor { opacity: .6; }
+.ritual-offer .card-th { color: #ff8a7a; }
+details.bench { margin-top: 6px; }
+details.bench summary { cursor: pointer; color: #d8c8a0; }
+.pt-crafted { color: #b8e0ff !important; }
+#stash .inv-main { grid-template-columns: minmax(200px, 340px) 1fr; }
+@media (max-width: 760px) { #stash .inv-main { grid-template-columns: 1fr; } }

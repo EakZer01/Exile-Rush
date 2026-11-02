@@ -219,6 +219,30 @@ const SYMBOLS = {
     g.fillStyle = '#1a1a2a';
     g.beginPath(); g.arc(-3, -8, 2.2, 0, TAU); g.arc(3, -8, 2.2, 0, TAU); g.fill();
   },
+  flicker_strike(g) {
+    g.lineWidth = 2.5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-16, 12); g.lineTo(-6, 2); g.lineTo(-10, -2); g.lineTo(4, -12); g.stroke();
+    g.beginPath(); g.moveTo(2, 14); g.lineTo(16, -14); g.stroke();
+    g.fillRect(4, 6, 8, 3);
+  },
+  smite(g) {
+    g.fillRect(-14, -14, 14, 8); g.fillRect(-9, -6, 4, 18);
+    g.beginPath(); g.moveTo(10, -16); g.lineTo(4, -2); g.lineTo(10, -2); g.lineTo(4, 14); g.lineTo(16, -6); g.lineTo(10, -6); g.closePath(); g.fill();
+  },
+  frost_blades(g) {
+    for (const k of [-1, 1]) { g.beginPath(); g.moveTo(-14 * k, 14); g.lineTo(10 * k, -14); g.lineTo(14 * k, -10); g.lineTo(-10 * k, 16); g.closePath(); g.fill(); }
+  },
+  kinetic_blast(g) {
+    g.beginPath(); g.arc(0, 0, 8, 0, TAU); g.fill();
+    for (let i = 0; i < 4; i++) { const a = (i / 4) * TAU + 0.6; g.beginPath(); g.arc(Math.cos(a) * 15, Math.sin(a) * 15, 4, 0, TAU); g.fill(); }
+  },
+  glacial_cascade(g) {
+    for (const [x, h] of [[-12, 10], [-2, 16], [9, 22]]) { g.beginPath(); g.moveTo(x - 4, 14); g.lineTo(x, 14 - h - 4); g.lineTo(x + 4, 14); g.closePath(); g.fill(); }
+  },
+  shock_nova(g) {
+    g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 15, 0, TAU); g.stroke();
+    g.beginPath(); g.moveTo(2, -10); g.lineTo(-4, 1); g.lineTo(1, 1); g.lineTo(-2, 10); g.lineTo(5, -2); g.lineTo(0, -2); g.closePath(); g.fill();
+  },
   support(g) {
     // two linked sockets — "support"
     g.lineWidth = 3;

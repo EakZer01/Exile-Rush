@@ -12,6 +12,21 @@ const ITEM_DROP = {
 };
 const DROP_SLOT_W = { weapon: 1.3, offhand: 0.7, helm: 1, body: 1, gloves: 1, boots: 1, belt: 0.8, amulet: 0.6, ring: 1.2, flask: 1.1 };
 
+// Loot filter: hidden drops are salvaged straight into shards.
+// 5+ links, uniques, jewels and maps always show.
+const LOOT_FILTERS = [
+  { name: 'แสดงทั้งหมด', desc: 'เห็นทุกไอเทม', show: () => true },
+  { name: 'ซ่อน Normal', desc: 'ซ่อนไอเทมสีขาว', show: (it) => it.rarity !== 'normal' },
+  { name: 'Rare ขึ้นไป', desc: 'ซ่อน Normal และ Magic (ยกเว้นฟลาสก์ Magic)', show: (it) => it.rarity === 'rare' || it.rarity === 'unique' || it.slot === 'flask' && it.rarity === 'magic' },
+  { name: 'เข้มงวด', desc: 'เฉพาะ Rare ที่มีค่าต้านทาน / ชีวิต หรือ 4 Socket ขึ้นไป', show: (it) => it.rarity === 'unique' || it.rarity === 'rare' && (hasResMod(it) || it.affixes.some((a) => a.id === 'lifeflat' || a.id === 'life') || (it.sockets || []).length >= 4) },
+];
+const RES_MODS = ['fireres', 'coldres', 'lightres', 'allres', 'chaosres'];
+const hasResMod = (it) => (it.affixes || []).some((a) => RES_MODS.includes(a.id)) || !!(it.implicit && RES_MODS.includes(it.implicit.id));
+function lootVisible(it) {
+  if (it.unique || it.slot === 'jewel' || (it.links && it.links.length && Math.max(...it.links) >= 5)) return true;
+  return LOOT_FILTERS[G.settings.lootFilter || 0].show(it);
+}
+
 function rollRarity(w) {
   return weightedSample(Object.keys(w).filter((k) => w[k] > 0), 1, (k) => w[k])[0];
 }
@@ -19,6 +34,7 @@ function dropItem(x, y, rarity, slot) {
   slot = slot || weightedSample(Object.keys(DROP_SLOT_W), 1, (k) => DROP_SLOT_W[k])[0];
   if (slot === 'flask' && rarity === 'unique') slot = 'ring';
   const item = makeItem(rarity, slot, G.time, G.map.tier);
+  if (!lootVisible(item)) { G.stats.salvage += SALVAGE_SHARDS[item.rarity] || 0; G.stats.filtered = (G.stats.filtered || 0) + 1; return; }
   G.items.push({ x: x + rand(-14, 14), y: y + rand(-14, 14), item, t: 0 });
   if (rarity === 'unique') Sfx.play('boss');
 }
@@ -32,7 +48,7 @@ function rollItemDrop(e) {
   if (!d) return;
   // map quantity raises drop chance, higher tiers favour rarer items
   const qty = 1 + mapQuantity(G.map) / 100, t = G.map.tier - 1;
-  if (Math.random() < d.chance * qty * (1 + 0.08 * t)) {
+  if (Math.random() < d.chance * qty * (1 + 0.08 * t) * (e.deli ? 1 + 2 * deliP() : 1) * (G.atlasFx.itemQty || 1)) {
     dropItem(e.x, e.y, rollRarity({ magic: d.w.magic, rare: d.w.rare * (1 + 0.1 * t), unique: d.w.unique * (1 + 0.2 * t) }));
   }
 }
@@ -77,6 +93,7 @@ const bagOrDrop = (it) => { if (!bagAdd(it)) dropAtPlayer(it); };
 const equipSlotOf = (key) => (key === 'ring2' ? 'ring' : key);
 function canEquip(it, key) {
   const P = G.player;
+  if (it.slot === 'jewel') return 'Jewel ใส่ที่ Legacy Tree';
   if (it.slot === 'flask') return 'ฟลาสก์ใส่ในช่องฟลาสก์';
   if (equipSlotOf(key) !== it.slot) return `ใส่ในช่อง${SLOT_NAME[key]}ไม่ได้`;
   if (key === 'offhand') {
@@ -284,7 +301,7 @@ const anyFlaskActive = (P) => P.flasks.some((f) => f && f.active > 0);
 // combined buffs of all active flasks, refreshed every frame
 function updateFlasks(dt) {
   const P = G.player, inp = G.input, eff = 1 + P.mods.flaskEff;
-  const fx = { move: 0, speed: 0, armour: 0, armourMul: 1, evasion: 0, evMul: 1, dmgMore: 1, critMul: 1 };
+  const fx = { move: 0, speed: 0, armour: 0, armourMul: 1, evasion: 0, evMul: 1, dmgMore: 1, critMul: 1, res: { fire: 0, cold: 0, lightning: 0, chaos: 0 }, maxResT: {} };
   for (let i = 0; i < FLASK_SLOTS; i++) {
     const f = P.flasks[i];
     if (inp['flask' + i]) { inp['flask' + i] = false; if (f) f.wantUse = true; }
@@ -296,13 +313,22 @@ function updateFlasks(dt) {
     }
     if (f.active <= 0) continue;
     f.active -= dt;
-    if (st.kind === 'life') { P.life += (P.maxLife * 0.55 * eff / st.dur) * dt; if (Math.random() < 0.4) emit('heal', P.x, P.y, 1, { jitter: 12 }); }
+    if (st.kind === 'life') {
+      // under Chaos Inoculation the life flask refills Energy Shield instead
+      if (P.mods.ks.ci) P.es = Math.min(P.maxES, P.es + (P.maxES * 0.4 * eff / st.dur) * dt);
+      else P.life += (P.maxLife * 0.55 * eff / st.dur) * dt;
+      if (Math.random() < 0.4) emit('heal', P.x, P.y, 1, { jitter: 12 });
+    }
     else if (st.kind === 'quick') fx.move += 0.4 * eff;
     else if (st.kind === 'granite') { fx.armourMul += 1 * eff; fx.armour += 300 * eff; }
     else if (st.kind === 'jade') { fx.evMul += 1 * eff; fx.evasion += 300 * eff; }
     else if (st.kind === 'silver') fx.speed += 0.2 * eff;
     else if (st.kind === 'sulphur') fx.dmgMore *= 1 + 0.25 * eff;
     else if (st.kind === 'diamond') fx.critMul *= 2;
+    else if (st.kind === 'ruby' || st.kind === 'sapphire' || st.kind === 'topaz') {
+      const t = { ruby: 'fire', sapphire: 'cold', topaz: 'lightning' }[st.kind];
+      fx.res[t] += 0.4 * eff; fx.maxResT[t] = 0.05;
+    } else if (st.kind === 'amethyst') fx.res.chaos += 0.35 * eff;
     const a = st.a;
     if (a.fending) fx.armour += a.fending;
     if (a.reflexes) fx.evasion += a.reflexes;
@@ -331,6 +357,7 @@ const armourReduction = (A, dmg) => (A > 0 ? Math.min(0.75, A / (A + 5 * dmg)) :
 function itemSpriteId(it) {
   const b = BASES[it.base];
   if (b.flask) return 'item_flask_' + b.flask.kind;
+  if (b.jewel) return 'item_jewel_' + b.jewel;
   if (b.w) return { bow: 'item_bow', staff: 'item_staff', wand: 'item_wand', sceptre: 'item_wand' }[b.w.type] || 'item_sword';
   if (b.quiver) return 'item_quiver';
   if (it.slot === 'offhand') return 'item_shield';
@@ -360,7 +387,8 @@ function drawGroundItems(ctx, inView) {
     ctx.font = '700 12px Sarabun, sans-serif'; ctx.textAlign = 'center';
     const tw = ctx.measureText(it.name).width + 10;
     ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(g.x - tw / 2, g.y - 34, tw, 16);
-    ctx.strokeStyle = hexA(col, 0.8); ctx.lineWidth = 1; ctx.strokeRect(g.x - tw / 2, g.y - 34, tw, 16);
+    const hl = G.settings.hlRes && hasResMod(it);
+    ctx.strokeStyle = hl ? '#5aff7a' : hexA(col, 0.8); ctx.lineWidth = hl ? 2 : 1; ctx.strokeRect(g.x - tw / 2, g.y - 34, tw, 16);
     ctx.fillStyle = col; ctx.fillText(it.name, g.x, g.y - 22);
   }
 }

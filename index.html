@@ -6,7 +6,7 @@
 <title>Exile Survivors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=16">
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -18,11 +18,11 @@
     <div class="subtitle">เอาตัวรอดในดินแดนต้องสาป · สร้างบิวด้วย Skill Gem + Support Gem</div>
     <h2 class="section-title">เลือกคลาส</h2>
     <div id="class-list" class="class-list"></div>
-    <div class="meta-bar"><span id="meta-shards" class="meta-shards"></span><button id="btn-altar" class="btn">⛩ แท่นบูชามรดก (Altar of Legacy)</button><button id="btn-codex" class="btn">📖 Codex</button><button id="btn-settings" class="btn btn-dim">⚙ ตั้งค่า</button></div>
+    <div class="meta-bar"><span id="meta-shards" class="meta-shards"></span><button id="btn-altar" class="btn">⛩ แท่นบูชามรดก (Altar of Legacy)</button><button id="btn-stash" class="btn">📦 Stash</button><button id="btn-daily" class="btn">📅 Daily</button><button id="btn-codex" class="btn">📖 Codex</button><button id="btn-settings" class="btn btn-dim">⚙ ตั้งค่า</button></div>
     <div id="best-run" class="best-run"></div>
     <div class="controls-help">
       <b>WASD / ลูกศร</b> เดิน · <b>Space</b> Flame Dash · <b>Q</b> Life Flask · <b>E</b> Quicksilver Flask ·
-      <b>V</b> ท่าไม้ตาย Vaal · <b>I</b> กระเป๋า · <b>Tab</b> ดูบิว · <b>Esc</b> หยุดเกม · <b>M</b> ปิดเสียง · <b>L</b> เปิด/ปิดแสงเงา · <b>F</b> เปิด/ปิดเอฟเฟกต์
+      <b>V</b> ท่าไม้ตาย Vaal · <b>I</b> กระเป๋า · <b>C / Tab</b> หน้าสถิติ · <b>Esc</b> หยุดเกม · <b>M</b> ปิดเสียง · <b>L</b> เปิด/ปิดแสงเงา · <b>F</b> เปิด/ปิดเอฟเฟกต์
     </div>
   </div>
 </div>
@@ -32,7 +32,9 @@
   <div class="panel build-panel map-panel">
     <h2 class="panel-title">Map Device</h2>
     <div class="panel-sub" id="map-class"></div>
-    <h3 class="altar-h">พื้นที่</h3>
+    <h3 class="altar-h">แผนที่ในคลัง <span class="muted" id="map-owned-n"></span></h3>
+    <div id="map-owned" class="map-owned"></div>
+    <h3 class="altar-h">พื้นที่ <span class="muted">(Tier 1 ฟรี · Tier สูงกว่าต้องใช้แผนที่ หรือซื้อด้วย Shards)</span></h3>
     <div id="map-biomes" class="map-biomes"></div>
     <h3 class="altar-h">Tier <span class="muted">(ชนะแผนที่เพื่อปลดล็อก Tier ถัดไป)</span></h3>
     <div id="map-tiers" class="map-tiers"></div>
@@ -48,9 +50,21 @@
       </div>
       <div id="map-summary" class="bv-box map-summary"></div>
     </div>
+    <div class="map-row">
+      <div class="map-modbox">
+        <h3 class="altar-h">พกของจาก Stash <span class="muted" id="map-loadout-n"></span></h3>
+        <div id="map-loadout" class="stash-grid small"></div>
+      </div>
+      <div class="bv-box map-summary">
+        <label class="set-row"><input type="checkbox" id="map-hc"> ☠ <b>Hardcore</b></label>
+        <div class="muted">ตาย = เสีย Shard, แผนที่และ Jewel ของรอบนั้น และเก็บของเข้า Stash ไม่ได้ · ชนะ = Shard ×1.5 และเก็บของได้ +2 ชิ้น</div>
+      </div>
+    </div>
     <div id="map-atlas" class="altar-life muted"></div>
+    <div id="map-atlastree" class="atlas-tree hidden"></div>
     <div class="levelup-actions">
       <button id="btn-map-start" class="btn">🗺 เปิดแผนที่</button>
+      <button id="btn-map-atlas" class="btn btn-dim">🌐 Atlas Tree</button>
       <button id="btn-map-back" class="btn btn-dim">กลับ</button>
     </div>
   </div>
@@ -145,11 +159,32 @@
 <div id="gameover" class="overlay hidden">
   <div class="panel build-panel">
     <h2 class="panel-title" id="over-title">คุณตายแล้ว</h2>
+    <div id="over-stash" class="over-stash"></div>
     <div id="over-stats" class="build-view"></div>
     <div class="levelup-actions">
       <button id="btn-retry" class="btn">เล่นอีกครั้ง</button>
       <button id="btn-menu" class="btn btn-dim">เมนูหลัก</button>
     </div>
+  </div>
+</div>
+
+<!-- Ritual rewards -->
+<div id="ritual" class="overlay hidden">
+  <div class="panel">
+    <h2 class="panel-title" style="color:#ff6a5a">Ritual — แลกรางวัลด้วย Tribute</h2>
+    <div class="panel-sub" id="ritual-tribute"></div>
+    <div id="ritual-offers" class="cards"></div>
+    <div class="levelup-actions"><button id="btn-ritual-close" class="btn">เสร็จสิ้น</button></div>
+  </div>
+</div>
+
+<!-- Stash -->
+<div id="stash" class="overlay hidden">
+  <div class="panel build-panel">
+    <h2 class="panel-title">Stash</h2>
+    <div class="panel-sub" id="stash-sub"></div>
+    <div class="inv-main"><div id="stash-grid" class="stash-grid"></div><div id="stash-detail" class="inv-detail"></div></div>
+    <div class="levelup-actions"><button id="btn-stash-close" class="btn">กลับ</button></div>
   </div>
 </div>
 
@@ -177,35 +212,37 @@
 <div id="tip" class="tip hidden"></div>
 <div id="tooltip" class="tooltip hidden"></div>
 
-<script src="js/util.js?v=13"></script>
-<script src="js/data/skills.js?v=13"></script>
-<script src="js/data/supports.js?v=13"></script>
-<script src="js/data/passives.js?v=13"></script>
-<script src="js/data/monsters.js?v=13"></script>
-<script src="js/data/classes.js?v=13"></script>
-<script src="js/data/ascendancy.js?v=13"></script>
-<script src="js/data/evolutions.js?v=13"></script>
-<script src="js/data/meta.js?v=13"></script>
-<script src="js/data/items.js?v=13"></script>
-<script src="js/data/maps.js?v=13"></script>
-<script src="js/data/sprite_art.js?v=13"></script>
-<script src="js/stats.js?v=13"></script>
-<script src="js/fx.js?v=13"></script>
-<script src="js/combat.js?v=13"></script>
-<script src="js/skills.js?v=13"></script>
-<script src="js/enemies.js?v=13"></script>
-<script src="js/player.js?v=13"></script>
-<script src="js/settings.js?v=13"></script>
-<script src="js/meta.js?v=13"></script>
-<script src="js/items.js?v=13"></script>
-<script src="js/breach.js?v=13"></script>
-<script src="js/lighting.js?v=13"></script>
-<script src="js/world.js?v=13"></script>
-<script src="js/icons.js?v=13"></script>
-<script src="js/sprites.js?v=13"></script>
-<script src="js/render.js?v=13"></script>
-<script src="js/ui.js?v=13"></script>
-<script src="js/codex.js?v=13"></script>
-<script src="js/game.js?v=13"></script>
+<script src="js/util.js?v=16"></script>
+<script src="js/data/skills.js?v=16"></script>
+<script src="js/data/supports.js?v=16"></script>
+<script src="js/data/passives.js?v=16"></script>
+<script src="js/data/monsters.js?v=16"></script>
+<script src="js/data/classes.js?v=16"></script>
+<script src="js/data/ascendancy.js?v=16"></script>
+<script src="js/data/evolutions.js?v=16"></script>
+<script src="js/data/meta.js?v=16"></script>
+<script src="js/data/items.js?v=16"></script>
+<script src="js/data/maps.js?v=16"></script>
+<script src="js/data/sprite_art.js?v=16"></script>
+<script src="js/stats.js?v=16"></script>
+<script src="js/fx.js?v=16"></script>
+<script src="js/combat.js?v=16"></script>
+<script src="js/skills.js?v=16"></script>
+<script src="js/enemies.js?v=16"></script>
+<script src="js/player.js?v=16"></script>
+<script src="js/settings.js?v=16"></script>
+<script src="js/meta.js?v=16"></script>
+<script src="js/items.js?v=16"></script>
+<script src="js/breach.js?v=16"></script>
+<script src="js/lighting.js?v=16"></script>
+<script src="js/world.js?v=16"></script>
+<script src="js/icons.js?v=16"></script>
+<script src="js/sprites.js?v=16"></script>
+<script src="js/render.js?v=16"></script>
+<script src="js/ui.js?v=16"></script>
+<script src="js/leagues.js?v=16"></script>
+<script src="js/stash.js?v=16"></script>
+<script src="js/codex.js?v=16"></script>
+<script src="js/game.js?v=16"></script>
 </body>
 </html>

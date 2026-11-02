@@ -16,7 +16,7 @@ function makeEnemy(type, x, y, rarity) {
     hp: d.hp * hpMul * mapHp, maxHp: d.hp * hpMul * mapHp,
     speed: d.speed * rand(0.9, 1.1) * fx.monSpeed * speedScale(min), dmg: d.dmg * dmgScale(min) * tierDmg(M.tier) * fx.monDmg,
     color: d.color, shape: d.shape, xp: d.xp * (rarity === 1 ? 4 : rarity === 2 ? 25 : 1),
-    rarity, mods: [], name: null,
+    rarity, mods: [], name: null, elem: d.elem || 'physical',
     res: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 }, dmgTakenMul: 1, regen: 0,
     ign: { dps: 0, t: 0, src: null }, chill: { eff: 0, t: 0 }, freeze: 0, shock: { eff: 0, t: 0 }, poison: [],
     hitCd: {}, contactCd: 0, flash: 0, dotAcc: 0, dotShowT: 0, rcd: rand(1, 2.5), wob: rand(0, TAU), dead: false,
@@ -24,6 +24,7 @@ function makeEnemy(type, x, y, rarity) {
   if (fx.eleResAdd) e.res.fire = e.res.cold = e.res.lightning = fx.eleResAdd;
   if (fx.physResAdd) e.res.physical = fx.physResAdd;
   if (fx.deathBoomAdd && Math.random() < fx.deathBoomAdd) e.deathBoom = true;
+  if (fx.eleConvert && e.elem === 'physical' && Math.random() < 0.5) e.elem = pick(['fire', 'cold', 'lightning']);
   if (rarity === 1) {
     addMod(e, pick(MAGIC_MODS));
   } else if (rarity === 2) {
@@ -38,6 +39,7 @@ function addMod(e, k) { e.mods.push(k); MONSTER_MODS[k].apply(e); }
 const MAX_ENEMIES = 520;
 function spawnEnemy(type, x, y, rarity) {
   const e = makeEnemy(type, x, y, rarity || 0);
+  deliriumBuff(e);
   G.enemies.push(e);
   return e;
 }
@@ -69,7 +71,7 @@ function updateSpawner(dt) {
   const bossAlive = G.enemies.some((e) => e.rarity === 3 && !e.dead);
   const fx = G.mapFx;
   const target = Math.min((28 + min * 25) * fx.spawn, 410 * Math.min(1.2, fx.spawn)) * (bossAlive ? 0.6 : 1);
-  const rate = (2.2 + min * 1.4) * fx.spawn * (bossAlive ? 0.5 : 1);
+  const rate = (2.2 + min * 1.4) * fx.spawn * (bossAlive ? 0.5 : 1) * (1 + 0.6 * deliP());
   if (G.enemies.length < target) {
     S.acc += rate * dt * (G.enemies.length < target * 0.4 ? 3 : 1);
     while (S.acc >= 1) {
@@ -139,7 +141,9 @@ function bossPhase(e) {
   Sfx.play('boss'); G.shake = Math.max(G.shake, 8);
   const type = e.bossDef.summon || 'volatile';
   for (let i = 0; i < 10 && G.enemies.length < MAX_ENEMIES; i++) { const a = (i / 10) * TAU; spawnEnemy(type, e.x + Math.cos(a) * 90, e.y + Math.sin(a) * 90, i % 5 ? 0 : 1); }
-  for (let k = 0; k < 16; k++) enemyShoot(e.x, e.y, (k / 16) * TAU, 210, e.dmg * 0.6, e.bossDef.glow);
+  for (let k = 0; k < 16; k++) enemyShoot(e.x, e.y, (k / 16) * TAU, 210, e.dmg * 0.6, e.bossDef.glow, 0, e.elem);
+  // and a ring of death the player must dodge into the boss to survive
+  addHazard(e.x, e.y, 380, 1.8, e.dmg * 1.4, e.bossDef.glow, e.name, e.elem, { shape: 'ring', r0: 120 });
 }
 function spawnBoss(def) {
   const [x, y] = spawnPoint(-80);
@@ -148,7 +152,7 @@ function spawnBoss(def) {
   Object.assign(e, {
     rarity: 3, bossDef: def, name: def.name, r: def.r, hp: def.hp * bossHpMul(), maxHp: def.hp * bossHpMul(), speed: def.speed,
     dmg: def.dmg * (1 + min * 0.03) * tierDmg(G.map.tier) * G.mapFx.monDmg * G.mapFx.bossDmg,
-    color: def.color, shape: 'boss', xp: 400, final: !!def.final, deathBoom: false, phases: (def.phases || []).slice(), immuneT: 0,
+    color: def.color, shape: 'boss', xp: 400, final: !!def.final, deathBoom: false, phases: (def.phases || []).slice(), immuneT: 0, elem: def.ptype || 'physical',
     boss: { cd: 2.5, state: 'chase', st: 0, spiral: 0, spiralA: 0, cvx: 0, cvy: 0 },
   });
   G.enemies.push(e);
@@ -180,6 +184,7 @@ function updateEnemies(dt) {
   const P = G.player, far = viewRadius() * 1.6;
   for (const e of G.enemies) {
     if (e.dead) continue;
+    if (e.encased) { e.immuneT = G.time + 0.2; continue; }   // sealed Essence monster
     // ailments
     if (e.ign.t > 0) { e.ign.t -= dt; dotDamage(e, e.ign.dps * dt, e.ign.src, '#ff8a3d', true); if (e.dead) continue; }
     if (e.poison.length) {
@@ -203,7 +208,7 @@ function updateEnemies(dt) {
     const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy) || 1;
 
     // relocate stragglers (survivor-genre convention) — breach monsters stay in their rift
-    if (d > far && e.rarity < 3 && !e.breach) {
+    if (d > far && e.rarity < 3 && !e.breach && !e.ritual) {
       const [nx, ny] = spawnPoint();
       e.x = nx; e.y = ny; continue;
     }
@@ -243,7 +248,7 @@ function updateEnemies(dt) {
         e.rcd = R.cd * rand(0.85, 1.15);
         const a = Math.atan2(dy, dx), n = R.burst || 1;
         const dmg = R.dmg * dmgScale(G.time / 60) * tierDmg(G.map.tier) * G.mapFx.monDmg * (e.rarity === 2 ? 1.5 : 1) * (buffed ? 1.2 : 1);
-        for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, a + (i - (n - 1) / 2) * 0.18, R.speed, dmg, R.color, R.pool ? d : 0);
+        for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, a + (i - (n - 1) / 2) * 0.18, R.speed, dmg, e.elem === e.def.elem || !e.def.elem && e.elem === 'physical' ? R.color : ELEM_COLOR[e.elem], R.pool ? d : 0, e.elem);
       }
     }
     if (e.def.flutter) { e.wob += dt * 8; mx += Math.cos(e.wob) * 0.5; my += Math.sin(e.wob) * 0.5; }
@@ -270,7 +275,7 @@ function updateEnemies(dt) {
     const cr = e.r + P.r - 2;
     if (d < cr && e.contactCd <= 0 && e.freeze <= 0) {
       if (e.def.explode && e.rarity < 3) { if (!e.fuse) e.fuse = 0.55; continue; }
-      hurtPlayer(e.dmg * (buffed ? 1.2 : 1), e.name || e.def.name);
+      hurtPlayer(e.dmg * (buffed ? 1.2 : 1), e.name || e.def.name, 'phys', e.elem);
       e.contactCd = e.rarity === 3 ? 0.6 : 0.8;
     }
   }
@@ -281,8 +286,8 @@ function updateEnemies(dt) {
 }
 
 // pool > 0: a lobbed blob that bursts into a poison pool where the player stood
-function enemyShoot(x, y, a, speed, dmg, color, pool) {
-  G.eproj.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: pool ? 8 : 6, dmg, color, t: 0, life: pool ? pool / speed : 4, pool: !!pool });
+function enemyShoot(x, y, a, speed, dmg, color, pool, elem) {
+  G.eproj.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: pool ? 8 : 6, dmg, color, t: 0, life: pool ? pool / speed : 4, pool: !!pool, elem: elem || 'physical' });
 }
 function updatePools(dt) {
   const P = G.player;
@@ -291,7 +296,7 @@ function updatePools(dt) {
     p.t += dt; p.tick -= dt;
     if (p.t >= p.dur) { G.epools.splice(i, 1); continue; }
     if (Math.random() < 0.15) emit('bubble', p.x + rand(-p.r, p.r) * 0.7, p.y + rand(-p.r, p.r) * 0.4, 1);
-    if (p.tick <= 0 && dist2(p.x, p.y, P.x, P.y) < p.r * p.r) { p.tick = 0.35; hurtPlayer(p.dps * 0.35, 'แอ่งพิษ (Bile Spitter)', 'area'); }
+    if (p.tick <= 0 && dist2(p.x, p.y, P.x, P.y) < p.r * p.r) { p.tick = 0.35; hurtPlayer(p.dps * 0.35, 'แอ่งพิษ (Bile Spitter)', 'area', 'chaos'); }
   }
 }
 function updateEnemyProjectiles(dt) {
@@ -300,7 +305,7 @@ function updateEnemyProjectiles(dt) {
     const p = G.eproj[i];
     p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
     const rr = p.r + P.r - 3;
-    if (dist2(p.x, p.y, P.x, P.y) < rr * rr) { hurtPlayer(p.dmg, 'กระสุนศัตรู', 'proj'); p.t = 99; }
+    if (dist2(p.x, p.y, P.x, P.y) < rr * rr) { hurtPlayer(p.dmg, p.src || 'กระสุนศัตรู', 'proj', p.elem); p.t = 99; }
     if (p.t > p.life) {
       if (p.pool && G.epools.length < 30) G.epools.push({ x: p.x, y: p.y, r: 55, t: 0, dur: 4, dps: p.dmg * 1.2, tick: 0 });
       G.eproj[i] = G.eproj[G.eproj.length - 1]; G.eproj.pop();
@@ -319,7 +324,7 @@ function updateBoss(e, dt, d, mx, my) {
     b.spiral -= dt; b.spiralT = (b.spiralT || 0) - dt;
     if (b.spiralT <= 0) {
       b.spiralT = 0.07; b.spiralA += 0.33;
-      for (let k = 0; k < 3; k++) enemyShoot(e.x, e.y, b.spiralA + (k * TAU) / 3, 180, e.dmg * 0.5, glow);
+      for (let k = 0; k < 3; k++) enemyShoot(e.x, e.y, b.spiralA + (k * TAU) / 3, 180, e.dmg * 0.5, glow, 0, e.elem);
     }
   }
   if (b.state === 'windup') {
@@ -337,40 +342,72 @@ function updateBoss(e, dt, d, mx, my) {
   if (b.cd <= 0) {
     b.cd = rand(2.3, 3.4) * (fin ? 0.75 : 1);
     const pat = pick(def.patterns);
-    const dmg = e.dmg;
+    const dmg = e.dmg, el = e.elem, src = e.name;
+    const shoot = (a, sp, k) => enemyShoot(e.x, e.y, a, sp, dmg * k, glow, 0, el);
+    const toP = Math.atan2(P.y - e.y, P.x - e.x);
     if (pat === 'radial') {
       const n = fin ? 28 : 18, off = rand(0, TAU);
-      for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, off + (i * TAU) / n, 210, dmg * 0.55, glow);
+      for (let i = 0; i < n; i++) shoot(off + (i * TAU) / n, 210, 0.55);
     } else if (pat === 'ring') {
       const n = fin ? 8 : 6;
       for (let i = 0; i < n; i++) {
         const a = (i / n) * TAU, rr = rand(0, 140);
-        addHazard(P.x + Math.cos(a) * rr, P.y + Math.sin(a) * rr, 60, 1.0, dmg * 0.9, glow);
+        addHazard(P.x + Math.cos(a) * rr, P.y + Math.sin(a) * rr, 60, 1.0, dmg * 0.9, glow, src, el);
       }
-      addHazard(P.x, P.y, 60, 1.0, dmg * 0.9, glow);
+      addHazard(P.x, P.y, 60, 1.0, dmg * 0.9, glow, src, el);
     } else if (pat === 'charge') {
       b.state = 'windup'; b.st = 0.7;
+      // the charge lane is telegraphed so it can be side-stepped
+      addHazard(e.x, e.y, e.r * 0.9, 0.7, 0, glow, src, el, { shape: 'line', a: toP, len: 380, ghost: true });
     } else if (pat === 'slam') {
-      addHazard(e.x, e.y, 190, 1.0, dmg * 1.4, glow);
+      addHazard(e.x, e.y, 190, 1.0, dmg * 1.4, glow, src, el);
     } else if (pat === 'strike') {
       const n = fin ? 7 : 5;
       for (let i = 0; i < n; i++) {
         const px = P.x + P.vx * 0.5 * (i / n) + rand(-40, 40), py = P.y + P.vy * 0.5 * (i / n) + rand(-40, 40);
-        addHazard(px, py, 55, 0.8 + i * 0.2, dmg * 0.9, glow);
+        addHazard(px, py, 55, 0.8 + i * 0.2, dmg * 0.9, glow, src, el);
       }
     } else if (pat === 'summon' && G.enemies.length < MAX_ENEMIES - 20) {
       const type = def.summon || (def.ptype === 'cold' ? 'wraith' : def.ptype === 'lightning' ? 'cultist' : 'volatile');
       for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; spawnEnemy(type, e.x + Math.cos(a) * 70, e.y + Math.sin(a) * 70, 0); }
     } else if (pat === 'spiral') {
       b.spiral = 2.2;
+    } else if (pat === 'beam') {
+      // three sweeping beams: a fan aimed at the player
+      for (let k = -1; k <= 1; k++) addHazard(e.x, e.y, 26, 1.1 + Math.abs(k) * 0.25, dmg * 1.1, glow, src, el, { shape: 'line', a: toP + k * 0.5, len: 620 });
+    } else if (pat === 'cone') {
+      // frontal cleave, then a second one behind
+      addHazard(e.x, e.y, 260, 0.9, dmg * 1.3, glow, src, el, { shape: 'cone', a: toP, arc: 1.4 });
+      addHazard(e.x, e.y, 260, 1.7, dmg * 1.3, glow, src, el, { shape: 'cone', a: toP + Math.PI, arc: 1.4 });
+    } else if (pat === 'donut') {
+      // safe only close to the boss: a wide ring of death
+      addHazard(e.x, e.y, 420, 1.4, dmg * 1.5, glow, src, el, { shape: 'ring', r0: 130 });
+    } else if (pat === 'meteor') {
+      // a huge marker that follows the player, then drops
+      addHazard(P.x, P.y, 120, 1.6, dmg * 2, glow, src, el, { follow: true });
     }
   }
   return [mx, my, e.speed * enr];
 }
 
 function bossHpMul() { return tierHp(G.map.tier) * G.mapFx.bossHp * (BIOMES[G.map.biome].hpMul || 1); }
-function addHazard(x, y, r, warn, dmg, color, src) {
-  G.hazards.push({ x, y, r, warn, t: 0, dmg, color, src });
+// shape: circle (default) | line {a, len} | cone {a, arc} | ring {r0} (safe inside r0)
+function addHazard(x, y, r, warn, dmg, color, src, elem, shape) {
+  G.hazards.push(Object.assign({ x, y, r, warn, t: 0, dmg, color, src, elem: elem || 'physical', shape: 'circle' }, shape));
+}
+function inHazard(h, px, py, pr) {
+  const dx = px - h.x, dy = py - h.y, d = Math.hypot(dx, dy);
+  if (h.shape === 'line') {
+    const ax = Math.cos(h.a), ay = Math.sin(h.a), along = dx * ax + dy * ay;
+    return along > -pr && along < h.len + pr && Math.abs(dx * ay - dy * ax) < h.r + pr * 0.5;
+  }
+  if (h.shape === 'cone') {
+    if (d > h.r + pr * 0.5) return false;
+    const da = Math.abs(((Math.atan2(dy, dx) - h.a + Math.PI * 3) % TAU) - Math.PI);
+    return da < h.arc / 2;
+  }
+  if (h.shape === 'ring') return d > h.r0 - pr * 0.5 && d < h.r + pr * 0.5;
+  return d < h.r + pr * 0.5;
 }
 // Burning Ground map mod: fire patches erupt near the player
 function updateMapHazards(dt) {
@@ -380,17 +417,19 @@ function updateMapHazards(dt) {
   G.mapHazT = rand(3.5, 5.5);
   const P = G.player, a = rand(0, TAU), d = rand(0, 70);
   addHazard(P.x + Math.cos(a) * d + P.vx * 0.4, P.y + Math.sin(a) * d + P.vy * 0.4, 75, 1.2,
-    (10 + G.time / 20) * tierDmg(G.map.tier), '#ff6a2a', 'พื้นลุกไหม้ (Burning Ground)');
+    (10 + G.time / 20) * tierDmg(G.map.tier), '#ff6a2a', 'พื้นลุกไหม้ (Burning Ground)', 'fire');
 }
 function updateHazards(dt) {
   const P = G.player;
   for (let i = G.hazards.length - 1; i >= 0; i--) {
     const h = G.hazards[i];
     h.t += dt;
+    if (h.follow && h.t < h.warn - 0.45) { h.x += (P.x - h.x) * Math.min(1, dt * 2.2); h.y += (P.y - h.y) * Math.min(1, dt * 2.2); }
+    if (h.ghost && h.t >= h.warn) { G.hazards.splice(i, 1); continue; }
     if (h.t >= h.warn) {
-      const rr = h.r + P.r * 0.5;
-      if (dist2(h.x, h.y, P.x, P.y) < rr * rr) hurtPlayer(h.dmg, h.src || 'การโจมตีของบอส', 'area');
-      addEffect({ kind: 'boom', x: h.x, y: h.y, r: h.r, t: 0, dur: 0.35, color: h.color });
+      if (inHazard(h, P.x, P.y, P.r)) hurtPlayer(h.dmg, h.src || 'การโจมตีของบอส', 'area', h.elem);
+      if (h.shape === 'circle') addEffect({ kind: 'boom', x: h.x, y: h.y, r: h.r, t: 0, dur: 0.35, color: h.color });
+      else addEffect({ kind: 'hzfire', h, t: 0, dur: 0.35, color: h.color });
       G.hazards.splice(i, 1);
     }
   }

@@ -35,6 +35,7 @@ function socketsHtml(inst) {
 
 // ---------------- Class select ----------------
 function buildMenu() {
+  restoreRandom();
   const list = $('class-list');
   list.innerHTML = '';
   const M = loadMeta();
@@ -57,7 +58,7 @@ function buildMenu() {
   }
   $('meta-shards').innerHTML = `✦ Ancient Shards: <b>${M.shards}</b>`;
   const best = loadBest();
-  $('best-run').innerHTML = best ? `สถิติดีที่สุด: รอด <b>${fmtTime(best.time)}</b> · Lv ${best.level} · ฆ่า ${best.kills} (${best.cls})${best.win ? ' · <span class="win">ชนะ!</span>' : ''}` : '';
+  $('best-run').innerHTML = (best ? `สถิติดีที่สุด: รอด <b>${fmtTime(best.time)}</b> · Lv ${best.level} · ฆ่า ${best.kills} (${best.cls})${best.win ? ' · <span class="win">ชนะ!</span>' : ''}<br>` : '') + dailyMenuHtml();
 }
 function loadBest() { try { return JSON.parse(localStorage.getItem('exile_best') || 'null'); } catch (e) { return null; } }
 function saveBest(rec) {
@@ -409,7 +410,7 @@ function buildViewHtml(final) {
       <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
       <div class="bv-stats">${describeStats(s).join(' · ')}</div>
       ${inst.evo ? `<div class="bv-vaal">Vaal: วิญญาณ ${inst.souls}/${vaalSouls()}${inst.souls >= vaalSouls() ? ' — <b>พร้อม! กด V</b>' : ''}</div>` : evolveHintHtml(inst.id)}
-      <div class="bv-dmg"><div class="bar"><div style="width:${(inst.dmgDealt / total) * 100}%"></div></div>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills}</div>
+      <div class="bv-dmg"><div class="bar"><div style="width:${(inst.dmgDealt / total) * 100}%"></div></div>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills} · <b>DPS ${fmtNum(skillDps(inst))}</b> <span class="muted">(10 วิล่าสุด) · Hit เฉลี่ยรวมคริ ${fmtNum(avgHit(s))}</span></div>
     </div>`;
   }
   h += '</div><div class="bv-side">';
@@ -419,6 +420,8 @@ function buildViewHtml(final) {
     ✚ ฟื้นฟู ${(m.regen * 100).toFixed(1)}%/วิ${m.ks.vaalPact ? ' (ปิดโดย Vaal Pact)' : ''}<br>
     ⛨ Armour ${Math.round(P.armour)} · Evasion ${Math.round(P.evasion)} (หลบ ${pct(evadeChance(P))})<br>
     ◇ Energy Shield ${Math.round(P.maxES)}${P.block ? ' · Block ' + pct(P.block) : ''} · รับดาเมจ ×${m.dmgTaken.toFixed(2)}<br>
+    ☯ ต้านทาน: ${resLineHtml(P)}${G.map.tier > 1 ? ` <span class="muted">(Tier ${G.map.tier}: -${Math.round(resPenalty(G.map.tier) * 100)}%)</span>` : ''}<br>
+    <span class="muted">Hit ใหญ่สุดที่รับได้: ${maxHitHtml(P)}</span><br>
     ⚔ อาวุธ: ${P.weapon ? WEAPON_TYPE[P.weapon.wtype] + ' ×' + weaponPower(P.weapon).toFixed(2) + ' (สกิล Attack)' : 'มือเปล่า ×0.60'}<br>
     ✪ Chaos ${P.currency.chaos} · ◈ Fusing ${P.currency.fusing}${m.ks.rage ? '<br>✊ Rage ' + Math.floor(P.rage) + '/30' : ''}</div>`;
   const ps = Object.keys(P.passives);
@@ -437,6 +440,55 @@ function buildViewHtml(final) {
   if (ks.length) h += '<div class="bv-box bv-key"><div class="bv-title">Keystone</div>' + ks.map((id) => `<b>${KEYSTONES[id].name}</b><br><span class="muted">${KEYSTONES[id].desc}</span>`).join('<br>') + '</div>';
   h += '</div>';
   return h;
+}
+
+// ---- character sheet helpers (PoB-style numbers) ----
+const RES_KEYS = [['fire', 'ไฟ'], ['cold', 'น้ำแข็ง'], ['lightning', 'สายฟ้า'], ['chaos', 'เคออส']];
+function resLineHtml(P) {
+  return RES_KEYS.map(([t, n]) => {
+    if (t === 'chaos' && P.mods.ks.ci) return `<span style="color:${ELEM_COLOR[t]}">${n} อมตะ</span>`;
+    const v = effRes(P, t), raw = P.resRaw[t] + ((P.flaskFx.res && P.flaskFx.res[t]) || 0), over = raw - P.resCap[t];
+    return `<span style="color:${ELEM_COLOR[t]}" title="ค่าดิบ ${Math.round(raw * 100)}% · สูงสุด ${Math.round(P.resCap[t] * 100)}%">${n} <b class="${v < 0 ? 'bad' : ''}">${Math.round(v * 100)}%</b>${over > 0 ? `<small class="muted">(+${Math.round(over * 100)})</small>` : ''}</span>`;
+  }).join(' · ');
+}
+function maxHitHtml(P) {
+  const pool = P.maxLife + P.maxES, dt = P.mods.dmgTaken;
+  return [['physical', 'กายภาพ']].concat(RES_KEYS).map(([t, n]) => {
+    if (t === 'chaos' && P.mods.ks.ci) return `${n} ∞`;
+    const k = t === 'physical' ? 1 : 1 - effRes(P, t);
+    return `<span style="color:${ELEM_COLOR[t]}">${n} ${fmtNum(pool / Math.max(0.01, dt * k))}</span>`;
+  }).join(' · ');
+}
+// measured DPS: damage dealt over the last 10 one-second samples
+function skillDps(inst) { const h = inst.rt.dh; return h && h.length > 1 ? (h[h.length - 1] - h[0]) / (h.length - 1) : 0; }
+const avgHit = (s) => s.hitTotal * (1 + s.critChance * (s.critMulti - 1));
+
+// what killed you: the last few seconds of damage, by source and element
+function deathRecapHtml() {
+  const P = G.player, L = (G.dmgLog || []).filter((h) => h.t > G.time - 6);
+  if (!L.length) return '';
+  const bySrc = {}, byEl = {}; let tot = 0, avoided = 0;
+  for (const h of L) {
+    if (h.how !== 'hit') { if (h.how !== 'immune') avoided++; continue; }
+    const k = h.src || '?';
+    (bySrc[k] = bySrc[k] || { n: 0, d: 0, el: h.elem }).n++; bySrc[k].d += h.taken;
+    byEl[h.elem] = (byEl[h.elem] || 0) + h.taken; tot += h.taken;
+  }
+  const rows = Object.entries(bySrc).sort((a, b) => b[1].d - a[1].d).slice(0, 5)
+    .map(([k, v]) => `<div>${k} <span style="color:${ELEM_COLOR[v.el]}">(${ELEM_TH[v.el]})</span> ×${v.n} — <b>${fmtNum(v.d)}</b></div>`).join('');
+  const els = Object.entries(byEl).sort((a, b) => b[1] - a[1]);
+  const bar = els.map(([e, d]) => `<span style="width:${(d / tot) * 100}%;background:${ELEM_COLOR[e]}" title="${ELEM_TH[e]} ${Math.round((d / tot) * 100)}%"></span>`).join('');
+  let tip = '';
+  if (els.length) {
+    const [top, d] = els[0], share = d / tot;
+    if (top !== 'physical' && share > 0.4) {
+      const r = effRes(P, top);
+      tip = `ดาเมจ${ELEM_TH[top]} ${Math.round(share * 100)}% · ค่าต้านทาน${ELEM_TH[top]}ของคุณ ${Math.round(r * 100)}%` + (r < 0.5 ? ` → หาไอเทม/ฟลาสก์ที่มีต้านทาน${ELEM_TH[top]}` : '');
+    } else if (top === 'physical' && share > 0.5) tip = `ดาเมจกายภาพ ${Math.round(share * 100)}% → เพิ่ม Armour / Evasion / Block หรือ Granite Flask`;
+  }
+  return `<div class="death-recap"><div class="bv-title">☠ สรุปก่อนตาย (6 วิสุดท้าย)</div>
+    <div class="dr-bar">${bar}</div><div class="muted">รับดาเมจ ${fmtNum(tot)} · หลบ/Block ได้ ${avoided} ครั้ง</div>${rows}
+    ${tip ? `<div class="dr-tip">💡 ${tip}</div>` : ''}</div>`;
 }
 
 function openPause() {
@@ -465,26 +517,34 @@ function showGameOver(win) {
   $('over-title').textContent = win ? 'ชัยชนะ! คุณรอดจากดินแดนต้องสาป' : 'คุณตายแล้ว';
   $('over-title').className = 'panel-title ' + (win ? 'win' : 'dead');
   const rec = { time: G.time, level: P.level, kills: G.stats.kills, cls: P.asc ? ASCENDANCY[P.asc].name : P.cls.name, win };
-  saveBest(rec);
+  if (!G.daily) saveBest(rec);
+  const runR = { win, hc: G.hc, daily: G.daily };
   showTip('codex');
   let metaHtml = '';
   if (!G.settled) {
     G.settled = true;
-    const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle }, rec));
+    overPick = null;
+    const jewels = P.backpack.filter((it) => it.slot === 'jewel');
+    const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle,
+      hc: G.hc, daily: G.daily, maps: G.runMaps, jewels }, rec));
     metaHtml = `<div class="over-meta"><div class="over-shards">+${res.reward.total} ✦ Ancient Shards</div>
-      <div class="muted">${res.reward.parts.filter((p) => p[1] > 0).map((p) => `${p[0]} +${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
+      <div class="muted">${res.reward.parts.filter((p) => p[1] !== 0).map((p) => `${p[0]} ${p[1] > 0 ? '+' : ''}${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
+      ${res.maps || res.jewels ? `<div class="over-unlock">🗺 ได้แผนที่ ${res.maps} ใบ${res.jewels ? ` · ⬡ Jewel ${res.jewels} ชิ้นเข้า Stash` : ''}</div>` : ''}
+      ${G.daily && Meta.daily ? `<div class="over-unlock">📅 Daily: ${Meta.daily.newBest ? 'สถิติใหม่ของวันนี้!' : `ดีที่สุดวันนี้ ${fmtTime(Math.min(Meta.daily.best, RUN_LENGTH))}`}</div>` : ''}
       ${res.atlas ? `<div class="over-unlock">🗺 ผ่านแผนที่ ${mapLabel(G.map)}${res.atlas.first ? ' ครั้งแรก! (+1 แต้ม Legacy Tree)' : ''}${res.atlas.tierUp ? ` · ปลดล็อก Tier ${res.atlas.maxTier}` : ''}</div>` : ''}
       ${res.newly.map((u) => `<div class="over-unlock">🔓 ปลดล็อก${u.kind === 'class' ? 'คลาส' : 'เจม'}: <b>${unlockLabel(u)}</b></div>`).join('')}</div>`;
   }
   $('over-stats').innerHTML = `<div class="over-summary">
       ⏱ รอด <b>${fmtTime(G.time)}</b> · Lv <b>${P.level}</b> · ☠ ฆ่า <b>${G.stats.kills}</b> · บอส <b>${G.stats.bosses}</b> · ดาเมจรวม <b>${fmtNum(G.stats.dmg)}</b>
-      ${!win && P.killedBy ? `<br><span class="muted">ถูกฆ่าโดย: ${P.killedBy}</span>` : ''}</div>` + metaHtml + buildViewHtml(true);
+      ${!win && P.killedBy ? `<br><span class="muted">ถูกฆ่าโดย: ${P.killedBy}</span>` : ''}</div>` + (win ? '' : deathRecapHtml()) + metaHtml + buildViewHtml(true);
+  renderOverStash(runR);
   show('gameover');
+  if (!G.daily && !G.hc) showTip('stash');
 }
 
 // ---------------- Altar of Legacy: the Legacy Tree ----------------
-const TREE_KIND = { start: 'จุดเริ่มต้น', small: 'โหนดเล็ก', notable: 'Notable', keystone: 'Keystone' };
-const TREE_R = { start: 20, small: 11, notable: 18, keystone: 25 };
+const TREE_KIND = { start: 'จุดเริ่มต้น', small: 'โหนดเล็ก', notable: 'Notable', keystone: 'Keystone', jewel: 'Jewel Socket' };
+const TREE_R = { start: 20, small: 11, notable: 18, keystone: 25, jewel: 14 };
 let altarSel = null;
 
 function openAltar() {
@@ -532,7 +592,8 @@ function renderTree() {
       edges += `<line class="edge${on && on2 ? ' on' : on || on2 ? ' reach' : ''}" x1="${n.x.toFixed(1)}" y1="${n.y.toFixed(1)}" x2="${m.x.toFixed(1)}" y2="${m.y.toFixed(1)}"/>`;
     }
     const r = TREE_R[n.kind], st = treeNodeState(id);
-    nodes += `<g class="tn tn-${n.kind} ${st}${altarSel === id ? ' sel' : ''}" data-id="${id}" style="--c:${n.color}" transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})">
+    const jw = n.kind === 'jewel' && Meta.jewels[id] && treeAllocated(id) ? BASES[Meta.jewels[id].base].jewel : '';
+    nodes += `<g class="tn tn-${n.kind} ${st}${jw ? ' jw-' + jw : ''}${altarSel === id ? ' sel' : ''}" data-id="${id}" style="--c:${n.color}" transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})">
       <circle class="hit" r="${Math.max(r + 8, 22)}"/>
       ${n.kind === 'keystone' ? `<circle class="outer" r="${r + 6}"/>` : ''}
       <circle class="body" r="${r}"/>
@@ -581,16 +642,19 @@ function renderTreeInfo() {
   }
   box.innerHTML = `<div class="bv-title" style="color:${n.color}">${n.icon} ${title}</div>
     <div class="muted">${TREE_KIND[n.kind]}${n.branch ? ' · ' + n.branch.th : ''}${n.th ? ' · ' + n.th : ''}</div>
-    <div class="tree-desc${n.kind === 'keystone' ? ' ks' : ''}">${n.desc}</div><div>${action}</div>`;
+    <div class="tree-desc${n.kind === 'keystone' ? ' ks' : ''}">${n.desc}</div><div>${action}</div>${n.kind === 'jewel' ? jewelSocketInfoHtml(id) : ''}`;
   const b = $('tree-act');
   if (b) b.onclick = () => treeAct(id);
+  if (n.kind === 'jewel') bindJewelSocket(id);
 }
 
 function renderTreeSummary() {
   const M = loadMeta(), keys = [], nots = [], smalls = {};
   for (const id in M.alloc) {
     const n = TREE_NODES[id];
-    if (n.kind === 'keystone') keys.push(n); else if (n.kind === 'notable') nots.push(n); else smalls[n.desc] = (smalls[n.desc] || 0) + 1;
+    if (n.kind === 'keystone') keys.push(n); else if (n.kind === 'notable') nots.push(n);
+    else if (n.kind === 'jewel') { if (M.jewels[id]) for (const a of M.jewels[id].affixes) { const t = '⬡ ' + affixText(a); smalls[t] = (smalls[t] || 0) + 1; } }
+    else smalls[n.desc] = (smalls[n.desc] || 0) + 1;
   }
   let h = '<div class="bv-title">โบนัสที่ได้รับ</div>';
   if (!keys.length && !nots.length && !Object.keys(smalls).length) h += '<span class="muted">ยังไม่ได้จัดสรรโหนด</span>';
@@ -617,7 +681,7 @@ function socketsVisualHtml(it, small) {
   }
   return h + '</div>';
 }
-const tierTag = (a) => (G.showTiers && !a.flask && AFFIXES[a.id].type ? ` <span class="pt-tier">${AFFIXES[a.id].type === 'P' ? 'Prefix' : 'Suffix'} T${a.tier}</span>` : '');
+const tierTag = (a) => (a.crafted ? ' <span class="pt-tier">(crafted)</span>' : G.showTiers && !a.flask && !a.jewel && AFFIXES[a.id].type ? ` <span class="pt-tier">${AFFIXES[a.id].type === 'P' ? 'Prefix' : 'Suffix'} T${a.tier}</span>` : '');
 
 // PoE-style item box: header, properties, item level, sockets, implicit, mods
 function itemCardHtml(it, label) {
@@ -650,7 +714,8 @@ function itemCardHtml(it, label) {
   if (it.implicit) h += `<div class="pt-sep"></div><div class="pt-imp">${affixText(it.implicit)}</div>`;
   if (it.corruptMod !== undefined) h += `<div class="pt-corrupt-imp">${CORRUPT_MODS[it.corruptMod].t}</div>`;
   const lines = u ? u.lines.map((l) => ({ t: l })) : it.affixes.map((a) => ({ t: affixText(a), a }));
-  if (lines.length) h += '<div class="pt-sep"></div>' + lines.map((l) => `<div class="pt-mod">${l.t}${l.a ? tierTag(l.a) : ''}</div>`).join('');
+  if (lines.length) h += '<div class="pt-sep"></div>' + lines.map((l) => `<div class="pt-mod${l.a && l.a.crafted ? ' pt-crafted' : ''}">${l.t}${l.a ? tierTag(l.a) : ''}</div>`).join('');
+  if (it.slot === 'jewel') h += '<div class="pt-flavor">ใส่ใน Jewel Socket ของ Legacy Tree</div>';
   if (u) h += `<div class="pt-flavor">"${u.flavor}"</div>`;
   if (it.corrupted) h += '<div class="pt-corrupted">Corrupted</div>';
   return h + '</div></div>';
@@ -684,7 +749,7 @@ function openInventory() {
   $('inv-currency').innerHTML = CURRENCY_ORDER.map((k) => {
     const d = CRAFT_ORBS[k] || PICKUPS[k];
     return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}">${d.icon} ${P.currency[k] || 0}</span>`;
-  }).join('');
+  }).join('') + Object.keys(P.essences).filter((k) => P.essences[k] > 0).map((k) => `<span class="cur" style="color:${ESSENCES[k].color}" title="${ESSENCES[k].name}: การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')}">◆ ${P.essences[k]}</span>`).join('');
   $('inv-links').innerHTML = linksPanelHtml();
   $('inv-msg').textContent = invMsg; invMsg = '';
   // drag sources
@@ -722,13 +787,21 @@ function renderInvDetail() {
   if (!w) { invSel = null; box.innerHTML = '<div class="muted inv-help">คลิกไอเทมเพื่อดูรายละเอียด · <b>ลาก</b>ไอเทมไปวางที่ตัวละคร / ช่องฟลาสก์ / กระเป๋า<br>Socket บนไอเทมกำหนดว่าสกิลใส่ Support ได้กี่อันและสีอะไร (ดูแผง "ลิงก์สกิล")</div>'; return; }
   let h = itemCardHtml(it, w.equip ? 'สวมใส่อยู่' : w.flask !== undefined ? `ฟลาสก์ช่อง ${w.flask + 1}` : 'ในกระเป๋า');
   h += '<div class="inv-actions">';
-  if (w.bag) h += it.slot === 'flask' ? '<button class="btn btn-small" data-act="flask">ใส่ช่องฟลาสก์</button>' : '<button class="btn btn-small" data-act="equip">สวมใส่</button>';
+  if (it.slot === 'jewel') h += '<span class="muted">Jewel: เก็บเข้า Stash อัตโนมัติเมื่อจบรอบ แล้วใส่ที่ Legacy Tree</span>';
+  else if (w.bag) h += it.slot === 'flask' ? '<button class="btn btn-small" data-act="flask">ใส่ช่องฟลาสก์</button>' : '<button class="btn btn-small" data-act="equip">สวมใส่</button>';
   else h += '<button class="btn btn-small" data-act="unequip">ถอดเก็บ</button>';
   h += `<button class="btn btn-small btn-dim" data-act="salvage">ย่อย (+${SALVAGE_SHARDS[it.rarity]} ✦)</button></div>`;
   h += '<div class="inv-actions craft-row">' + Object.entries(CRAFT).filter(([, c]) => c.can(it)).map(([k]) => {
     const n = P.currency[k] || 0;
     return `<button class="btn btn-small craft-btn" data-craft="${k}" ${n > 0 ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '').replace("'s", '')} ×${n}</button>`;
-  }).join('') + '</div>';
+  }).join('') + Object.keys(P.essences).filter((k) => P.essences[k] > 0 && essenceCan(k, it)).map((k) =>
+    `<button class="btn btn-small craft-btn" data-ess="${k}" style="--oc:${ESSENCES[k].color}" title="${ESSENCES[k].name}: สร้าง Rare ใหม่ การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')} (Tier 3+)">◆ ${ESSENCES[k].name.replace('Essence of ', '')} ×${P.essences[k]}</button>`).join('') + '</div>';
+  const bench = BENCH.filter((b) => benchCan(b, it));
+  if (bench.length || it.affixes && it.affixes.some((a) => a.crafted)) {
+    h += `<details class="bench"${G.benchOpen ? ' open' : ''}><summary>🔨 Crafting Bench <span class="muted">(เพิ่ม mod ได้ 1 อันต่อไอเทม)</span></summary><div class="inv-actions craft-row">` +
+      bench.map((b, i) => `<button class="btn btn-small" data-bench="${BENCH.indexOf(b)}" ${benchAfford(b, P.currency) ? '' : 'disabled'}>${AFFIXES[b.id].t.replace('{v}', b.v)} — ${Object.entries(b.cost).map(([k, n]) => `${CRAFT_ORBS[k].icon}×${n}`).join(' ')}</button>`).join('') +
+      (it.affixes.some((a) => a.crafted) ? '<button class="btn btn-small btn-dim" data-bench="rm">ลบ mod ที่คราฟต์ (ฟรี)</button>' : '') + '</div></details>';
+  }
   // compare with what is worn in that slot
   if (w.bag && it.slot !== 'flask') {
     const keys = it.slot === 'ring' ? ['ring', 'ring2'] : [it.slot];
@@ -743,6 +816,26 @@ function renderInvDetail() {
       else if (a === 'unequip') { const ok = w.equip ? unequipItem(w.equip) : unequipFlask(w.flask); if (!ok) invMsg = 'กระเป๋าเต็ม'; }
       else if (a === 'salvage') { salvageItem(it); invSel = null; Sfx.play('pickup'); }
       Sfx.play('flask'); openInventory();
+    };
+  });
+  const bd = box.querySelector('details.bench');
+  if (bd) bd.ontoggle = () => { G.benchOpen = bd.open; };
+  box.querySelectorAll('[data-ess]').forEach((b) => {
+    b.onclick = () => {
+      const k = b.dataset.ess;
+      if (!(P.essences[k] > 0) || !essenceCan(k, it)) return;
+      P.essences[k]--; essenceUse(k, it);
+      if (w.equip) recomputePlayer();
+      Sfx.play('currency'); emit('gold', P.x, P.y, 10, { color: ESSENCES[k].color });
+      openInventory();
+    };
+  });
+  box.querySelectorAll('[data-bench]').forEach((b) => {
+    b.onclick = () => {
+      if (b.dataset.bench === 'rm') it.affixes = it.affixes.filter((a) => !a.crafted);
+      else { const B = BENCH[+b.dataset.bench]; if (!benchCan(B, it) || !benchAfford(B, P.currency)) return; benchUse(B, it, P.currency); }
+      if (w.equip) recomputePlayer();
+      Sfx.play('currency'); openInventory();
     };
   });
   box.querySelectorAll('[data-craft]').forEach((b) => {
@@ -841,7 +934,7 @@ function openMapDevice(cls) {
   const minT = BIOMES[mapCfg.biome].minTier;
   let tiers = '';
   for (let t = 1; t <= MAX_MAP_TIER; t++) {
-    const ok = t <= A.maxTier && t >= minT, done = A.done[mapCfg.biome + '_' + t];
+    const ok = (t <= A.maxTier && t >= minT) || (mapCfg.itemUid && t === mapCfg.tier), done = A.done[mapCfg.biome + '_' + t];
     tiers += `<button class="tier-btn${mapCfg.tier === t ? ' sel' : ''}${done ? ' done' : ''}" data-tier="${t}" ${ok ? '' : 'disabled'}>${t}</button>`;
   }
   $('map-tiers').innerHTML = tiers;
@@ -849,17 +942,19 @@ function openMapDevice(cls) {
   $('map-mods').innerHTML = (mapCfg.mods.length ? mapCfg.mods.map((id) => `<div class="map-mod"><b>${MAP_MODS[id].name}</b> — ${MAP_MODS[id].th} <span class="muted">(+${MAP_MODS[id].qty}%)</span></div>`).join('')
     : '<div class="muted">แผนที่ธรรมดา (Normal) — ไม่มี mod · ใช้ Alchemy เพื่อเพิ่มความยากและรางวัล</div>');
   $('map-summary').innerHTML = `มอนสเตอร์: ชีวิต ×${(tierHp(mapCfg.tier) * (BIOMES[mapCfg.biome].hpMul || 1)).toFixed(2)} · ดาเมจ ×${tierDmg(mapCfg.tier).toFixed(2)}<br>
+    ค่าต้านทานผู้เล่น -${Math.round(resPenalty(mapCfg.tier) * 100)}% · ${mapCfg.itemUid ? '<span class="ok">ใช้แผนที่จากคลัง</span>' : mapCfg.tier > 1 ? `ซื้อแผนที่ ${mapBuyCost(mapCfg.tier)} ✦` : 'Tier 1 ฟรี'}<br>
     รางวัล: Item Quantity +${qty}% · Shards ×${mult.toFixed(2)}${A.done[mapCfg.biome + '_' + mapCfg.tier] ? '' : '<br><span class="ok">ยังไม่เคยผ่าน — ชนะเพื่อรับ +1 แต้ม Legacy Tree' + (mapCfg.tier >= A.maxTier && A.maxTier < MAX_MAP_TIER ? ` และปลดล็อก Tier ${mapCfg.tier + 1}` : '') + '</span>'}`;
   $('map-atlas').textContent = `Atlas: ผ่านแล้ว ${atlasDoneCount()} แผนที่ · Tier สูงสุด ${A.maxTier} · แต้ม Legacy Tree จาก Atlas +${atlasBonusPoints()}/${ATLAS_POINT_CAP} · ✦ ${M.shards}`;
   $('btn-map-alch').disabled = mapCfg.mods.length > 0;
   $('btn-map-chaos').disabled = !mapCfg.mods.length || M.shards < MAP_REROLL_COST;
   $('btn-map-chaos').textContent = `สุ่ม mod ใหม่ (${MAP_REROLL_COST} ✦)`;
   $('btn-map-clear').disabled = !mapCfg.mods.length;
+  renderMapExtras();
   $('mapdev').querySelectorAll('[data-biome]').forEach((el) => {
     el.onclick = () => {
       const id = el.dataset.biome;
       if (!biomeOpen(id)) return;
-      mapCfg.biome = id; mapCfg.tier = Math.max(mapCfg.tier, BIOMES[id].minTier);
+      mapCfg.itemUid = null; mapCfg.biome = id; mapCfg.tier = Math.max(Math.min(mapCfg.tier, A.maxTier), BIOMES[id].minTier);
       openMapDevice();
     };
   });
@@ -868,25 +963,19 @@ function openMapDevice(cls) {
       const t = +el.dataset.tier;
       // more mods roll on higher tiers: re-roll so the count matches
       if (mapCfg.mods.length && mapModCount(t) !== mapModCount(mapCfg.tier)) mapCfg.mods = rollMapMods(t);
-      mapCfg.tier = t; openMapDevice();
+      mapCfg.itemUid = null; mapCfg.tier = t; openMapDevice();
     };
   });
   show('mapdev');
 }
-function mapAlchemy() { mapCfg.mods = rollMapMods(mapCfg.tier); Sfx.play('currency'); openMapDevice(); }
+function mapAlchemy() { mapCfg.mods = rollMapMods(mapCfg.tier); syncMapItem(); Sfx.play('currency'); openMapDevice(); }
 function mapChaos() {
   const M = loadMeta();
   if (M.shards < MAP_REROLL_COST) return;
   M.shards -= MAP_REROLL_COST; saveMeta();
-  mapCfg.mods = rollMapMods(mapCfg.tier); Sfx.play('currency'); openMapDevice();
+  mapCfg.mods = rollMapMods(mapCfg.tier); syncMapItem(); Sfx.play('currency'); openMapDevice();
 }
-function mapClear() { mapCfg.mods = []; openMapDevice(); }
-function mapStart() {
-  const M = loadMeta();
-  M.lastMap = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice() }; saveMeta();
-  hide('mapdev');
-  startGame(mapCls, mapCfg);
-}
+function mapClear() { mapCfg.mods = []; syncMapItem(); openMapDevice(); }
 function mapBack() { hide('mapdev'); buildMenu(); show('menu'); }
 
 // Attack skill cards: how hard the skill hits with the weapon you hold now

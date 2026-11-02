@@ -6,6 +6,12 @@
 const COMBOS = [
   { name: 'Shatter Chain', parts: ['herald_of_ice', 'ice_nova', 'hypothermia', 'elemental_prolif'],
     desc: 'Ice Nova แช่แข็งฝูง → Herald of Ice ทำให้ศพแตกระเบิดต่อกันเป็นทอดๆ · Elemental Proliferation กระจาย Chill ให้ทั่ว' },
+  { name: 'Flicker Frenzy', parts: ['flicker_strike', 'multistrike', 'close_combat', 'fortify'],
+    desc: 'วาร์ปเข้าฝูงแล้วฟันซ้ำ 3 ครั้ง · Close Combat แรงขึ้นตอนประชิด · Fortify ลดดาเมจที่รับ' },
+  { name: 'Prismatic Smite', parts: ['smite', 'added_cold', 'trinity', 'elemental_prolif'],
+    desc: 'Smite มีทั้งกายภาพ/สายฟ้า + Added Cold = 2 ธาตุ → Trinity 35% more · Prolif แพร่ Shock/Chill' },
+  { name: 'Shard Storm', parts: ['frost_blades', 'gmp', 'pierce', 'herald_of_ice'],
+    desc: 'ใบมีดน้ำแข็งพุ่งทะลุฝูงจนติด Chill → ฆ่าแล้ว Herald of Ice ระเบิดต่อเป็นลูกโซ่' },
   { name: 'Plague Bearer', parts: ['contagion', 'essence_drain', 'deadly_ailments', 'void_manipulation'],
     desc: 'Contagion แปะเชื้อ ศัตรูตายแล้วแพร่ต่อ · Essence Drain ทำพิษแรงและดูดเลือด · Deadly Ailments ขยายดาเมจพิษ' },
   { name: 'Rune Lord', parts: ['storm_brand', 'armageddon_brand', 'chain', 'inc_duration'],
@@ -125,11 +131,15 @@ function openSettings(from) {
   $('settings-body').innerHTML = slider('sfx', '🔊 เสียงเอฟเฟกต์') + slider('music', '🎵 เพลง') +
     check('lighting', 'ระบบแสงเงา (L)') + check('fx', 'อนุภาคและเอฟเฟกต์ (F)') + check('dmgNumbers', 'ตัวเลขดาเมจ (N)') + check('shake', 'จอสั่น') +
     `<label class="set-row">คุณภาพกราฟิก <select data-sq="1">${[['auto', 'อัตโนมัติ (ลดเองเมื่อเครื่องช้า)'], ['high', 'สูง'], ['low', 'ต่ำ (ประหยัด)']].map(([v, t]) => `<option value="${v}"${S.quality === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
-    <div class="set-row"><button class="btn btn-small" id="btn-tips-reset">แสดงคำแนะนำ (Tips) อีกครั้ง</button></div>`;
+    <label class="set-row">Loot Filter <select data-sf="1">${LOOT_FILTERS.map((f, i) => `<option value="${i}"${S.lootFilter === i ? ' selected' : ''}>${f.name}</option>`).join('')}</select></label>
+    <div class="muted set-row">${LOOT_FILTERS[S.lootFilter].desc} · ของที่ถูกซ่อนจะย่อยเป็น Shard อัตโนมัติ</div>` +
+    check('hlRes', 'ไฮไลต์ไอเทมที่มีค่าต้านทาน (กรอบเขียว)') +
+    `<div class="set-row"><button class="btn btn-small" id="btn-tips-reset">แสดงคำแนะนำ (Tips) อีกครั้ง</button></div>`;
   const root = $('settings');
   root.querySelectorAll('[data-sk]').forEach((el) => { el.onchange = () => { G.settings[el.dataset.sk] = el.checked; applySettings(); saveSettings(); }; });
   root.querySelectorAll('[data-sv]').forEach((el) => { el.oninput = () => { G.settings[el.dataset.sv] = el.value / 100; $('sv-' + el.dataset.sv).textContent = el.value + '%'; applySettings(); saveSettings(); }; });
   root.querySelector('[data-sq]').onchange = (ev) => { G.settings.quality = ev.target.value; saveSettings(); };
+  root.querySelector('[data-sf]').onchange = (ev) => { G.settings.lootFilter = +ev.target.value; saveSettings(); openSettings(settingsFrom); };
   $('btn-tips-reset').onclick = () => { resetTips(); $('btn-tips-reset').textContent = 'รีเซ็ตแล้ว ✓'; };
   show('settings');
 }

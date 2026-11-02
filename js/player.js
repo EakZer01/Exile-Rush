@@ -23,6 +23,8 @@ function defaultMods() {
     brandAdd: 0, brandSpeed: 0, heraldMore: 1, beamRange: 0, beamMore: 1, summonAdd: 0, poisonMore: 1, aftershockAdd: 0,
     // gear defences
     lifeFlat: 0, armour: 0, evasion: 0, es: 0, esInc: 0, block: 0, esRechargeInc: 0,
+    // resistances (fractions) and their caps
+    resFire: 0, resCold: 0, resLight: 0, resChaos: 0, maxRes: 0, maxResChaos: 0,
   };
 }
 
@@ -37,10 +39,12 @@ function createPlayer(cls) {
     flasks: [null, null, null, null, null],
     flaskFx: { move: 0, speed: 0, armour: 0, armourMul: 1, evasion: 0, evMul: 1, dmgMore: 1, critMul: 1 },
     armour: 0, evasion: 0, es: 0, maxES: 0, esDelay: 0, block: 0, weapon: null, hosts: {},
+    resRaw: { fire: 0, cold: 0, lightning: 0, chaos: 0 }, resCap: { fire: 0.75, cold: 0.75, lightning: 0.75, chaos: 0.75 },
     currency: { chaos: 3, fusing: 0, regal: 0, exalt: 0, divine: 0, annul: 0, jeweller: 0, chroma: 0, whetstone: 0, scrap: 0, vaal: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
     // ascendancy state
     asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
     critT: 0, frenzyT: 0, revives: 0,
+    essences: {},
     equip: { weapon: null, offhand: null, helm: null, body: null, gloves: null, boots: null, belt: null, amulet: null, ring: null, ring2: null }, backpack: [], newItems: 0,
   };
 }
@@ -63,7 +67,13 @@ function recomputePlayer() {
   P.armour = m.armour; P.evasion = m.evasion; P.block = Math.min(0.5, m.block);
   P.maxES = m.es * (1 + m.esInc); P.es = Math.min(P.es, P.maxES);
   P.maxLife = (P.baseLife + LIFE_PER_LEVEL * (P.level - 1) + m.lifeFlat) * (1 + m.lifeInc) * m.lifeMore;
+  // Chaos Inoculation: life becomes Energy Shield, chaos can't touch you
+  if (m.ks.ci) { P.maxES += P.maxLife * 1.1; P.maxLife = 1; }
   P.life = Math.min(P.maxLife, ratio * P.maxLife);
+  // resistances: map tier lowers them (like PoE's act penalty), capped at 75% + max res
+  const pen = resPenalty(G.map.tier), capE = 0.75 + m.maxRes - fx.pMaxRes;
+  P.resRaw = { fire: m.resFire - pen, cold: m.resCold - pen, lightning: m.resLight - pen, chaos: m.resChaos - pen };
+  P.resCap = { fire: capE, cold: capE, lightning: capE, chaos: 0.75 + m.maxResChaos - fx.pMaxRes };
   P.moveSpeed = 200 * (1 + m.moveInc) * m.moveMore;
   P.pickupR = 90 * (1 + m.pickupInc);
   for (const inst of P.skills) inst.st = buildSkillStats(inst, P);
@@ -160,14 +170,14 @@ function updatePickups(dt) {
       it.x += ((P.x - it.x) / d) * 380 * dt; it.y += ((P.y - it.y) / d) * 380 * dt;
     }
     if (d2 < (P.r + 12) * (P.r + 12)) {
-      collectPickup(it.kind, it.x, it.y);
+      collectPickup(it.kind, it.x, it.y, it);
       G.pickups.splice(i, 1);
     }
   }
 }
 
-function collectPickup(kind, x, y) {
-  const P = G.player, def = PICKUPS[kind];
+function collectPickup(kind, x, y, it) {
+  const P = G.player, def = it ? pickupDef(it) : PICKUPS[kind];
   Sfx.play('currency');
   addText(x, y - 20, def.name, def.color, 1.1);
   emit('gold', x, y, 14, { color: def.color });
@@ -177,6 +187,8 @@ function collectPickup(kind, x, y) {
   else if (kind === 'life') P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3);
   else if (kind === 'magnet') for (const o of G.orbs) o.pull = true;
   else if (kind === 'chest') G.pendingChests++;
+  else if (kind === 'map') collectMap(it.map);
+  else if (kind === 'essence') { P.essences[it.ess] = (P.essences[it.ess] || 0) + 1; lootLog(def.name, def.color); showTip('essence'); }
 }
 
 function gainXp(v) {

@@ -143,4 +143,8 @@ recolorSprite('colossus_bog', 'colossus', { hue: 95, satMin: 0.35 });
 recolorSprite('herald_void', 'herald', { hue: 275, satMin: 0.45 });
 recolorSprite('sovereign_crown', 'sovereign', { hue: 45, satMin: 0.55, light: 1.2 });
 // flasks: one sprite per kind, only the liquid colour changes
+// jewels: a cut gem in three colours
+SPRITE_ART.item_jewel = { px: 2, sym: true, emit: 'gG', pal: { a: '#2a1a10', g: '#c02838', G: '#ff8090' }, body: ['..a', '.ag', 'agG', 'aGG', 'agg', '.ag', '..a'] };
+for (const [k, g, G2] of [['R', '#c02838', '#ff8090'], ['G', '#2a9a40', '#8aff9a'], ['B', '#2a5ad0', '#8ab8ff']])
+  SPRITE_ART['item_jewel_' + k] = Object.assign({}, SPRITE_ART.item_jewel, { pal: { a: '#2a1a10', g, G: G2 }, _frames: undefined });
 for (const kind in FLASK_COLOR) SPRITE_ART['item_flask_' + kind] = Object.assign({}, SPRITE_ART.item_flask, { pal: Object.assign({}, SPRITE_ART.item_flask.pal, { L: FLASK_COLOR[kind] }), _frames: undefined });

@@ -33,6 +33,8 @@ const BIOMES = {
 const tierHp = (t) => 1 + 0.25 * (t - 1);
 const tierDmg = (t) => 1 + 0.08 * (t - 1);
 const tierReward = (t) => 1 + 0.15 * (t - 1);
+// resistance penalty: -8% per tier above 1 (Tier 8 = -56%), gear has to make it up
+const resPenalty = (t) => Math.min(0.6, 0.08 * (t - 1));
 
 // fx keys are combined by mapFx(): numbers multiply (or add for *Add), booleans OR
 const MAP_MODS = {
@@ -52,11 +54,13 @@ const MAP_MODS = {
   h_ground:  { name: 'Burning Ground', th: 'พื้นลุกเป็นไฟใกล้ผู้เล่นเป็นระยะ', qty: 12, fx: { hazard: true } },
   h_dark:    { name: 'Lightless', th: 'ความมืดหนาขึ้นมาก', qty: 6, fx: { darkAdd: 0.07 } },
   h_shrine:  { name: 'Desecrated', th: 'ไม่มีศาลเจ้า (Shrine) เกิด', qty: 6, fx: { noShrine: true } },
+  p_maxres:  { name: 'Smothering', th: 'ผู้เล่นค่าต้านทานสูงสุด -10%', qty: 10, fx: { pMaxRes: 0.1 } },
+  m_elem:    { name: 'Elemental Fury', th: 'มอนสเตอร์กายภาพครึ่งหนึ่งโจมตีเป็นธาตุแทน', qty: 10, fx: { eleConvert: true } },
 };
 
 const MAP_FX_DEFAULT = {
   monHp: 1, monDmg: 1, monSpeed: 1, spawn: 1, rareRate: 1, magicRate: 1, eleResAdd: 0, physResAdd: 0, deathBoomAdd: 0,
-  bossHp: 1, bossDmg: 1, pRegen: 1, pFlask: 1, pLife: 1, hazard: false, darkAdd: 0, noShrine: false,
+  bossHp: 1, bossDmg: 1, pRegen: 1, pFlask: 1, pLife: 1, hazard: false, darkAdd: 0, noShrine: false, pMaxRes: 0, eleConvert: false,
 };
 
 // mods rolled by "Alchemy": 3 at tier 1–3, 4 at tier 4–7, 5 at tier 8+
@@ -69,7 +73,7 @@ function mapFx(cfg) {
   for (const id of cfg.mods) {
     for (const [k, v] of Object.entries(MAP_MODS[id].fx)) {
       if (typeof v === 'boolean') fx[k] = fx[k] || v;
-      else if (k.endsWith('Add')) fx[k] += v;
+      else if (k.endsWith('Add') || k === 'pMaxRes') fx[k] += v;
       else fx[k] *= v;
     }
   }
@@ -79,4 +83,47 @@ function mapFx(cfg) {
 function mapQuantity(cfg) { return cfg.mods.reduce((a, id) => a + MAP_MODS[id].qty, 0); }
 function mapRewardMult(cfg) { return tierReward(cfg.tier) * (1 + mapQuantity(cfg) / 100); }
 function mapLabel(cfg) { return `${BIOMES[cfg.biome].name} · T${cfg.tier}`; }
+
+// ---------------- map items: dropped in runs, kept between runs ----------------
+const MAP_ITEM_CAP = 40;
+function makeMapItem(tier, biome, rarity) {
+  tier = Math.max(1, Math.min(MAX_MAP_TIER, tier));
+  biome = biome || pick(Object.keys(BIOMES).filter((b) => BIOMES[b].minTier <= tier));
+  rarity = rarity || weightedSample(['normal', 'magic', 'rare'], 1, (r) => ({ normal: 45, magic: 35, rare: 20 })[r])[0];
+  const mods = rarity === 'rare' ? rollMapMods(tier) : rarity === 'magic' ? shuffle(Object.keys(MAP_MODS)).slice(0, randi(1, 2)) : [];
+  return { uid: uid(), kind: 'map', biome, tier, rarity, mods, name: BIOMES[biome].name + ' Map' };
+}
+// the cost to make a map without owning one (only tiers you've reached)
+const mapBuyCost = (tier) => (tier <= 1 ? 0 : 8 * tier);
+
+// ---------------- Atlas passive tree: steer which league content shows up ----------------
+// each branch is a chain: take nodes in order. Points = maps cleared + 1 per 8 bosses killed.
+const ATLAS_TREE = [
+  { id: 'box', name: 'Strongbox', color: '#c8b08a', icon: '▣', nodes: [
+    { d: 'Strongbox เกิดบ่อยขึ้น 25%', a(f) { f.boxRate *= 1.25; } },
+    { d: 'Strongbox เกิดบ่อยขึ้น 25%', a(f) { f.boxRate *= 1.25; } },
+    { n: 'Fortune Favours', d: 'Strongbox ดรอปของเพิ่ม · เกิดบ่อยขึ้น 15%', a(f) { f.boxBonus = true; f.boxRate *= 1.15; } }] },
+  { id: 'ess', name: 'Essence', color: '#c0a0ff', icon: '◆', nodes: [
+    { d: 'Essence เกิดบ่อยขึ้น 25%', a(f) { f.essRate *= 1.25; } },
+    { d: 'Essence เกิดบ่อยขึ้น 25%', a(f) { f.essRate *= 1.25; } },
+    { n: 'Crystal Resonance', d: 'มอนสเตอร์ Essence 35% มี Essence 2 อัน', a(f) { f.essDouble = true; } }] },
+  { id: 'ritual', name: 'Ritual', color: '#ff5a5a', icon: 'ᛟ', nodes: [
+    { d: 'ได้ Tribute เพิ่ม 20%', a(f) { f.tribute *= 1.2; } },
+    { d: 'ได้ Tribute เพิ่ม 20%', a(f) { f.tribute *= 1.2; } },
+    { n: 'Blood Rite', d: 'มี Ritual ครั้งที่ 3 (ช่วง 17:30)', a(f) { f.ritualExtra = true; } }] },
+  { id: 'deli', name: 'Delirium', color: '#e8eef8', icon: '◐', nodes: [
+    { d: 'หมอก Delirium อยู่นานขึ้น 25%', a(f) { f.deliDur *= 1.25; } },
+    { d: 'รางวัล Delirium เพิ่มขึ้น 30%', a(f) { f.deliReward *= 1.3; } },
+    { n: 'Shattered Mirror', d: 'กระจก Delirium ปรากฏอีกครั้งหลังหมอกจาง', a(f) { f.deliTwice = true; } }] },
+  { id: 'breach', name: 'Breach', color: '#c070ff', icon: '◎', nodes: [
+    { d: 'Breach เกิดบ่อยขึ้น 20%', a(f) { f.breachRate *= 1.2; } },
+    { d: 'Breach เกิดบ่อยขึ้น 20%', a(f) { f.breachRate *= 1.2; } },
+    { n: 'Rift Hoard', d: 'รางวัล Breach เพิ่ม 50%', a(f) { f.breachLoot *= 1.5; } }] },
+  { id: 'carto', name: 'Cartography', color: '#8ad8a8', icon: '▦', nodes: [
+    { d: 'ดรอปแผนที่เพิ่มขึ้น 35%', a(f) { f.mapDrop *= 1.35; } },
+    { d: 'ดรอปแผนที่เพิ่มขึ้น 35% · ไอเทมดรอปเพิ่ม 5%', a(f) { f.mapDrop *= 1.35; f.itemQty *= 1.05; } },
+    { n: 'Wanderer', d: 'เก็บของเข้า Stash ได้ +1 ชิ้น · พกเข้ารอบได้ +1 ชิ้น · ไอเทมดรอปเพิ่ม 10%', a(f) { f.stashAdd += 1; f.itemQty *= 1.1; } }] },
+];
+const ATLAS_FX_DEFAULT = { boxRate: 1, boxBonus: false, essRate: 1, essDouble: false, tribute: 1, ritualExtra: false, deliDur: 1, deliReward: 1, deliTwice: false,
+  breachRate: 1, breachLoot: 1, mapDrop: 1, itemQty: 1, stashAdd: 0 };
 const DEFAULT_MAP = { biome: 'graveyard', tier: 1, mods: [] };

@@ -9,7 +9,7 @@
 // ============================================================
 const META_KEY = 'exile_meta';
 const TREE_POINTS = 40;                                   // max nodes allocated (start node is free)
-const TREE_COST = { small: 12, notable: 35, keystone: 70 };
+const TREE_COST = { small: 12, notable: 35, keystone: 70, jewel: 25 };
 // a node costs its base price + 1 per node already allocated
 const treeNodeCost = (n, allocated) => TREE_COST[n.kind] + allocated;
 
@@ -49,8 +49,9 @@ const TREE_BRANCHES = [
   { id: 'warden', name: 'Bastion', th: 'สายป้อมปราการ', color: '#e05a4a', icon: '❤', angle: 90,
     trunk: [tSmall('+5% ชีวิตสูงสุด', (m) => { m.lifeInc += 0.05; }), tSmall('+5% ชีวิตสูงสุด', (m) => { m.lifeInc += 0.05; })],
     hub: tNotable('Vitality', 'พลังชีวิต', '+12% ชีวิตสูงสุด · ฟื้นชีวิต +0.3%/วิ', (m) => { m.lifeInc += 0.12; m.regen += 0.003; }),
-    armA: [tSmall('รับดาเมจ 2% less', (m) => { m.dmgTaken *= 0.98; }), tSmall('รับดาเมจ 2% less', (m) => { m.dmgTaken *= 0.98; })],
-    notA: tNotable('Bulwark', 'กำแพงเหล็ก', 'รับดาเมจ 6% less · +5% ชีวิตสูงสุด', (m) => { m.dmgTaken *= 0.94; m.lifeInc += 0.05; }),
+    armA: [tSmall('+6% ต้านทานธาตุทั้งหมด · รับดาเมจ 1% less', (m) => { m.resFire += 0.06; m.resCold += 0.06; m.resLight += 0.06; m.dmgTaken *= 0.99; }),
+      tSmall('+8% ต้านทานเคออส · รับดาเมจ 1% less', (m) => { m.resChaos += 0.08; m.dmgTaken *= 0.99; })],
+    notA: tNotable('Bulwark', 'กำแพงเหล็ก', 'รับดาเมจ 5% less · +1% ต้านทานธาตุสูงสุด · +4% ชีวิตสูงสุด', (m) => { m.dmgTaken *= 0.95; m.maxRes += 0.01; m.lifeInc += 0.04; }),
     armB: [tSmall('ฟลาสก์ได้ชาร์จ +12%', (m) => { m.flaskCharge += 0.12; }), tSmall('ฟลาสก์ฟื้นฟูมากขึ้น 12% · เริ่มรอบด้วยฟลาสก์เต็ม', (m) => { m.flaskEff += 0.12; }, (P) => { for (const f of P.flasks) if (f) f.charges = flaskStats(f).max; })],
     notB: tNotable('Second Wind', 'ลมหายใจที่สอง', 'เมื่อตาย ฟื้นคืนชีพ 1 ครั้งต่อรอบ (ชีวิต 50%)', null, (P) => { P.revives = 1; }),
     key: tKey('Born Ascendant', 'กำเนิดผู้ยิ่งใหญ่', 'เลือก Ascendancy ได้ตั้งแต่เริ่มรอบ (บอสทุกตัวให้โหนดเพิ่ม) · ชีวิตสูงสุด 15% less', (m) => { m.ks.bornAscendant = true; m.lifeMore *= 0.85; }) },
@@ -95,6 +96,8 @@ const TREE_START = 'origin';
       link(hub, a1); link(a1, a2); link(a2, nt);
     }
     add(p + '_key', B.key, 465, t, B);
+    add(p + '_jewel', { kind: 'jewel', name: 'Jewel Socket', th: 'ช่องใส่ Jewel', desc: 'ใส่ Jewel จาก Stash เพื่อรับ mod ของ Jewel ในทุกรอบ' }, 292, t, B);
+    link(hub, p + '_jewel');
     link(p + '_na', p + '_key'); link(p + '_nb', p + '_key');
   }
   // inner ring bridges between neighbouring hubs
@@ -104,7 +107,7 @@ const TREE_START = 'origin';
       m.incSpell += 0.04; m.incAttack += 0.04; m.incMinion += 0.04; m.lifeInc += 0.03; }), 215, B.angle + 30, null);
     link(B.id + '_hub', id); link(id, C.id + '_hub');
   });
-  for (const id in TREE_NODES) { const n = TREE_NODES[id]; n.icon = n.kind === 'start' ? '✦' : n.branch ? n.branch.icon : '◇'; n.color = n.branch ? n.branch.color : '#c8a860'; }
+  for (const id in TREE_NODES) { const n = TREE_NODES[id]; n.icon = n.kind === 'start' ? '✦' : n.kind === 'jewel' ? '⬡' : n.branch ? n.branch.icon : '◇'; n.color = n.branch ? n.branch.color : '#c8a860'; }
 })();
 
 // r = finished run record, life = lifetime totals (already including r)

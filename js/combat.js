@@ -38,6 +38,8 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   m *= e.dmgTakenMul;
 
   if (inst && inst.rt.ruthT > G.time) m *= 2;
+  if (s.closeCombat && dist2(e.x, e.y, P.x, P.y) < 160 * 160) m *= 1.35;
+  if (s.fortify && !s.proc) P.fortifyT = G.time + 4;
   const curse = e.curse && e.curse.t > G.time ? e.curse : null;
   const eeType = ks.ee && e.ee && e.ee.t > G.time ? e.ee.type : null;
   let total = 0, fire = 0, cold = 0, light = 0, chaos = 0, mainType = 'physical', mainAmt = 0;
@@ -59,9 +61,9 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
 
   // ailments
   if (!s.noAilment && !e.ailImmune) {
-    const boss = isBoss(e);
+    const boss = isBoss(e), agony = crit && ks.agony ? 1.8 : 1;
     if (fire > 0 && (crit || Math.random() < s.ignite)) {
-      const dps = fire * 0.75 * s.burnMore * s.dotMul * (s.ailMore || 1);
+      const dps = fire * 0.75 * s.burnMore * s.dotMul * (s.ailMore || 1) * agony;
       if (e.ign.t <= 0 || dps >= e.ign.dps) { e.ign.dps = dps; e.ign.src = inst; }
       e.ign.t = 4 * s.ailmentDur;
     }
@@ -78,7 +80,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
       e.shock.eff = Math.min(0.5, (boss ? 0.15 : 0.25) * (s.shockEff || 1)); e.shock.t = 3 * s.ailmentDur;
     }
     if (chaos > 0 && Math.random() < s.poison) {
-      if (e.poison.length < 40) e.poison.push({ dps: chaos * 0.3 * s.dotMul * (s.ailMore || 1) * P.mods.poisonMore, t: 2.5 * s.ailmentDur, src: inst });
+      if (e.poison.length < 40) e.poison.push({ dps: chaos * 0.3 * s.dotMul * (s.ailMore || 1) * P.mods.poisonMore * agony, t: 2.5 * s.ailmentDur, src: inst });
     }
   }
 
@@ -97,7 +99,8 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (s.leech) P.leechPool += total * s.leech;
   fxHit(e, mainType, crit, fromX, fromY);
   dealDamage(e, total, inst, crit, mainType);
-  if (ks.impale && !e.dead && !s.proc && s.hit.physical && Math.random() < 0.3) {
+  const impC = Math.max(ks.impale ? 0.3 : 0, s.impale || 0);
+  if (impC && !e.dead && !s.proc && s.hit.physical && Math.random() < impC) {
     const amt = s.hit.physical * m * (1 - e.res.physical) * 0.6;
     G.delayed.push({ t: 0.4, fn: () => { if (!e.dead) { emit('phys', e.x, e.y, 4); dealDamage(e, amt, inst, false, 'physical'); } } });
   }
@@ -164,6 +167,7 @@ function killEnemy(e, inst) {
   else if (e.rarity === 2 && Math.random() < 0.2) spawnPickup(e.x - 10, e.y + 10, randomCraftOrb());
   else if ((e.rarity === 1 || e.breach) && Math.random() < 0.012) spawnPickup(e.x, e.y, randomCraftOrb());
   onBreachKill(e);
+  onLeagueKill(e);
   if (e.rarity === 2) {
     spawnPickup(e.x + 10, e.y, 'chest');
     if (Math.random() < 0.35) spawnPickup(e.x - 12, e.y + 6, 'fusing');
@@ -179,6 +183,7 @@ function killEnemy(e, inst) {
   }
   if (e.rarity === 3) bossDefeated(e);
   rollItemDrop(e);
+  rollLeagueDrops(e);
   onKillAscendancy(e, inst);
   onKillSkills(e);
 
@@ -188,7 +193,7 @@ function killEnemy(e, inst) {
     const rare = e.rarity === 2, R = fused || !rare ? 60 : 85;
     addEffect({ kind: 'boom', x: e.x, y: e.y, r: R, t: 0, dur: 0.35, color: '#ff7a2a' });
     fxExplosion(e.x, e.y, R, 'fire'); addDecal('scorch', e.x, e.y, R / 30);
-    if (dist2(e.x, e.y, P.x, P.y) < (R + P.r) * (R + P.r)) hurtPlayer(e.dmg * (fused ? 1 : rare ? 0.6 : 0.45), fused ? 'Volatile Spawn (ระเบิด)' : rare ? 'Volatile (Rare)' : 'ศพระเบิด (Map mod)', 'area');
+    if (dist2(e.x, e.y, P.x, P.y) < (R + P.r) * (R + P.r)) hurtPlayer(e.dmg * (fused ? 1 : rare ? 0.6 : 0.45), fused ? 'Volatile Spawn (ระเบิด)' : rare ? 'Volatile (Rare)' : 'ศพระเบิด (Map mod)', 'area', 'fire');
     Sfx.play('boom');
   }
   if (e.deathSplit && G.enemies.length < MAX_ENEMIES) {
@@ -199,17 +204,31 @@ function killEnemy(e, inst) {
 
 // ---- Player damage ----
 // kind: 'phys' (melee / contact), 'proj' (projectiles), 'area' (explosions, ground)
+// elem: physical | fire | cold | lightning | chaos
 // Block and Evasion stop attacks (not area damage), Armour reduces physical
-// hits (better against small hits), Energy Shield soaks damage before life.
-function hurtPlayer(amount, src, kind) {
+// hits (better against small hits), resistances reduce elemental / chaos,
+// Energy Shield soaks damage before life.
+function effRes(P, t) {
+  const fx = P.flaskFx;
+  if (t === 'chaos' && P.mods.ks.ci) return 1;
+  return Math.min(P.resCap[t] + (fx.maxResT ? fx.maxResT[t] || 0 : 0), P.resRaw[t] + (fx.res ? fx.res[t] || 0 : 0));
+}
+function logHurt(src, elem, raw, taken, how) {
+  const L = G.dmgLog || (G.dmgLog = []);
+  L.push({ t: G.time, src, elem, raw, taken, how });
+  if (L.length > 60) L.shift();
+}
+function hurtPlayer(amount, src, kind, elem) {
   const P = G.player;
-  kind = kind || 'phys';
+  kind = kind || 'phys'; elem = elem || 'physical';
   if (P.dead || P.iframes > 0) return;
   if (kind !== 'area') {
+    let ev = evadeChance(P);
+    if (P.mods.ks.arrowDance) ev = kind === 'proj' ? Math.min(0.9, ev + 0.4) : ev * 0.5;
     if (P.block > 0 && Math.random() < P.block) {
-      addText(P.x, P.y - 24, 'Block', '#e8d8a8', 0.8); P.iframes = Math.max(P.iframes, 0.1); return;
+      addText(P.x, P.y - 24, 'Block', '#e8d8a8', 0.8); P.iframes = Math.max(P.iframes, 0.1); logHurt(src, elem, amount, 0, 'block'); return;
     }
-    if (Math.random() < evadeChance(P)) { addText(P.x, P.y - 24, 'Evade', '#9ad2ff', 0.8); return; }
+    if (Math.random() < ev) { addText(P.x, P.y - 24, 'Evade', '#9ad2ff', 0.8); logHurt(src, elem, amount, 0, 'evade'); return; }
   }
   const ks = P.mods.ks;
   if (P.aegis) {
@@ -217,28 +236,33 @@ function hurtPlayer(amount, src, kind) {
     addText(P.x, P.y - 24, 'Aegis', '#ffe9a0', 0.9);
     addEffect({ kind: 'ring', x: P.x, y: P.y, r: 40, t: 0, dur: 0.3, color: '#ffe9a0' });
     P.iframes = Math.max(P.iframes, 0.25);
+    logHurt(src, elem, amount, 0, 'aegis');
     return;
   }
   let d = amount * P.mods.dmgTaken;
-  if (kind === 'phys') d *= 1 - armourReduction(effArmour(P), d);
+  if (elem === 'physical') { if (kind !== 'area') d *= 1 - armourReduction(effArmour(P), d); }
+  else d *= 1 - effRes(P, elem);
   if (G.buffs.resistance > 0) d *= 0.4;
   if (ks.minionGuard && G.minions.length >= 3) d *= 0.85;
   if (ks.flaskGuard && anyFlaskActive(P)) d *= 0.7;
-  if (P.mods.dmgCap) d = Math.min(d, P.maxLife * P.mods.dmgCap);
+  if (P.fortifyT > G.time) d *= 0.8;
+  if (P.skills.some((sk) => sk.st.channelGuard && sk.rt.beamT > G.time)) d *= 0.9;
+  if (P.mods.dmgCap) d = Math.min(d, (P.maxLife + P.maxES) * P.mods.dmgCap);
+  if (d <= 0) { logHurt(src, elem, amount, 0, 'immune'); return; }
+  logHurt(src, elem, amount, d, 'hit');
   P.esDelay = 2;
   if (P.es > 0) { const a = Math.min(P.es, d); P.es -= a; d -= a; }
-  if (P.skills.some((sk) => sk.st.channelGuard && sk.rt.beamT > G.time)) d *= 0.9;
   if (ks.retaliate && P.retaliateCd <= 0) {
     P.retaliateCd = 1;
     burstAt(P.x, P.y, 160, procStats('retaliate'), null, '#ffe9a0');
   }
   P.life -= d;
   P.iframes = Math.max(P.iframes, 0.12);
-  emit('blood', P.x, P.y, 6, { color: '#b01818', speed: 1.2 });
+  emit('blood', P.x, P.y, 6, { color: elem === 'physical' ? '#b01818' : ELEM_COLOR[elem], speed: 1.2 });
   P.hurtFlash = 0.18;
   G.shake = Math.min(8, G.shake + 2 + d * 0.05);
   Sfx.play('hurt');
-  if (P.life <= 0) { P.life = 0; P.dead = true; P.killedBy = src; }
+  if (P.life <= 0) { P.life = 0; P.dead = true; P.killedBy = src; P.killedElem = elem; }
 }
 
 // ---- Floating text & effects ----
@@ -272,7 +296,9 @@ const PICKUPS = {
   scrap:  { name: "Armourer's Scrap", color: '#c8c0b0', icon: '⛨', craft: true },
   vaal:   { name: 'Vaal Orb', color: '#e04040', icon: '◉', craft: true },
 };
-function spawnPickup(x, y, kind) { G.pickups.push({ x, y, kind, t: 0 }); }
+function spawnPickup(x, y, kind, extra) { G.pickups.push(Object.assign({ x, y, kind, t: 0 }, extra)); }
+const pickupDef = (it) => (it.kind === 'essence' ? { name: ESSENCES[it.ess].name, color: ESSENCES[it.ess].color, icon: '◆' }
+  : it.kind === 'map' ? { name: `แผนที่ T${it.map.tier}`, color: RARITY_COLOR[it.map.rarity], icon: '▦' } : PICKUPS[it.kind]);
 
 // ---- Ascendancy on-kill effects + Vaal souls ----
 function burstAt(x, y, r, s, inst, color) {

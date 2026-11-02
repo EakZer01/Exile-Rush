@@ -3,7 +3,7 @@
 //  Settings (saved), background music, adaptive quality, tips
 // ============================================================
 const SETTINGS_KEY = 'exile_settings';
-const SETTINGS_DEFAULT = { sfx: 0.7, music: 0.45, lighting: true, fx: true, dmgNumbers: true, shake: true, quality: 'auto' };
+const SETTINGS_DEFAULT = { sfx: 0.7, music: 0.45, lighting: true, fx: true, dmgNumbers: true, shake: true, quality: 'auto', lootFilter: 0, hlRes: true };
 
 function loadSettings() {
   let s = {};
@@ -102,6 +102,9 @@ const TIPS = {
   breach: 'Breach เปิดแล้ว! เดินเข้าไปในวงม่วง ฆ่ามอนสเตอร์ Breach ให้มากที่สุดก่อนวงปิด เพื่อรับรางวัลใหญ่',
   craft: 'ได้ Orb คราฟต์ไอเทม! กด I เลือกไอเทมแล้วใช้ Regal / Exalted / Divine / Annulment / Chaos ปรับ mod',
   codex: 'ดูข้อมูลเจม คอมโบ และ Unique ทั้งหมดได้ที่ "Codex" ในเมนูหลัก',
+  essence: 'ได้ Essence! กด I เลือกไอเทม (Normal/Magic/Rare) แล้วใช้ Essence เพื่อสร้าง Rare ที่การันตี mod นั้น (Tier 3 ขึ้นไป)',
+  res: 'แผนที่ Tier สูงลดค่าต้านทานของคุณ · ดูค่าต้านทานได้ที่หน้าสถิติ (C) · หาไอเทม/ฟลาสก์ที่มีค่าต้านทาน',
+  stash: 'จบรอบแล้วเลือกไอเทมเก็บเข้า Stash ได้ · Jewel เก็บอัตโนมัติ · พกไอเทมจาก Stash เข้ารอบได้ที่ Map Device',
 };
 const TIPS_KEY = 'exile_tips';
 let _tipsSeen = null, _tipTimer = null;

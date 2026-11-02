@@ -61,3 +61,20 @@ defKeystone({ id: 'hex_master', name: 'Hex Master', th: 'จอมคำสา�
   desc: 'คำสาปไม่มีวันหมดเวลา · ผลของคำสาปแรงขึ้น 20%', apply(m) { m.ks.hexMaster = true; m.curseEff += 0.2; } });
 defKeystone({ id: 'minion_instability', name: 'Minion Instability', th: 'มินเนียนไม่เสถียร', icon: '✷',
   desc: 'มินเนียนระเบิดเมื่อหมดเวลา ทำดาเมจไฟรอบตัว', apply(m) { m.ks.minionBoom = true; } });
+
+// ---- expansion 2: defences & resistances ----
+defPassive({ id: 'prismatic', name: 'Prismatic Skin', th: 'ผิวปริซึม', icon: '◈', desc: '+12% ต้านทานธาตุทั้งหมด', apply(m) { m.resFire += 0.12; m.resCold += 0.12; m.resLight += 0.12; } });
+defPassive({ id: 'purity_flesh', name: 'Purity of Flesh', th: 'กายบริสุทธิ์', icon: '☣', max: 3, desc: '+15% ต้านทานเคออส', apply(m) { m.resChaos += 0.15; } });
+defPassive({ id: 'fortress', name: 'Elemental Fortress', th: 'ป้อมธาตุ', icon: '⛫', max: 2, desc: '+2% ต้านทานธาตุสูงสุด · +6% ต้านทานธาตุทั้งหมด', apply(m) { m.maxRes += 0.02; m.resFire += 0.06; m.resCold += 0.06; m.resLight += 0.06; } });
+defPassive({ id: 'ironwood', name: 'Ironwood', th: 'ไม้เหล็ก', icon: '⛨', desc: '+120 Armour · +4% ชีวิตสูงสุด', apply(m) { m.armour += 120; m.lifeInc += 0.04; } });
+defPassive({ id: 'phase', name: 'Phase Walk', th: 'ก้าวเงา', icon: '❖', desc: '+120 Evasion · +3% ความเร็วเคลื่อนที่', apply(m) { m.evasion += 120; m.moveInc += 0.03; } });
+defPassive({ id: 'barrier', name: 'Arcane Barrier', th: 'ม่านอาคม', icon: '◇', desc: '+30 Energy Shield · ES ฟื้นเร็วขึ้น 15%', apply(m) { m.es += 30; m.esRechargeInc += 0.15; } });
+defPassive({ id: 'shieldwall', name: 'Shield Wall', th: 'กำแพงโล่', icon: '▣', max: 3, desc: '+4% โอกาส Block', apply(m) { m.block += 0.04; } });
+defPassive({ id: 'blade_dance', name: 'Blade Dance', th: 'ระบำดาบ', icon: '⚔', desc: '+15% ดาเมจ Attack · +6% พื้นที่', apply(m) { m.incAttack += 0.15; m.areaInc += 0.06; } });
+
+defKeystone({ id: 'chaos_inoculation', name: 'Chaos Inoculation', th: 'ภูมิคุ้มกันเคออส', icon: '☤',
+  desc: 'ชีวิตสูงสุดเหลือ 1 · ได้ Energy Shield เพิ่ม 110% ของชีวิตเดิม · อมตะต่อดาเมจเคออส (Life Flask เติม ES แทน)', apply(m) { m.ks.ci = true; } });
+defKeystone({ id: 'perfect_agony', name: 'Perfect Agony', th: 'ทรมานสมบูรณ์', icon: '✶',
+  desc: 'Ignite และ Poison จากคริติคอลแรงขึ้น 80% · ดาเมจ Hit 20% less', apply(m) { m.ks.agony = true; } });
+defKeystone({ id: 'arrow_dancing', name: 'Arrow Dancing', th: 'ระบำหลบธนู', icon: '➷',
+  desc: 'หลบ Projectile ได้เพิ่ม 40% · หลบการโจมตีระยะประชิดได้แค่ครึ่งเดียว', apply(m) { m.ks.arrowDance = true; } });

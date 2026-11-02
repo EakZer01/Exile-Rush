@@ -8,7 +8,7 @@
 // ============================================================
 const BREACH = { first: 110, gap: [130, 180], open: 11, maxAge: 24, perKill: 0.2, r0: 70, rMax: 440, grow: 34 };
 
-function resetBreach() { G.breach = { state: 'wait', t: BREACH.first, x: 0, y: 0, r: 0, kills: 0, age: 0, acc: 0, idle: 0 }; }
+function resetBreach() { G.breach = { state: 'wait', t: BREACH.first / G.atlasFx.breachRate, x: 0, y: 0, r: 0, kills: 0, age: 0, acc: 0, idle: 0 }; }
 
 function updateBreach(dt) {
   const B = G.breach, P = G.player;
@@ -61,7 +61,7 @@ function closeBreach(opened) {
   if (opened) {
     // remaining breach monsters are pulled back into the rift
     for (const e of G.enemies) if (e.breach && !e.dead) { e.dead = true; emit('wisp', e.x, e.y, 4); }
-    const k = B.kills;
+    const k = Math.round(B.kills * G.atlasFx.breachLoot);
     const orbs = Math.min(6, 1 + Math.floor(k / 30));
     for (let i = 0; i < orbs; i++) spawnPickup(B.x + rand(-50, 50), B.y + rand(-50, 50), randomCraftOrb());
     if (k >= 20) spawnPickup(B.x, B.y, 'chest');
@@ -70,7 +70,7 @@ function closeBreach(opened) {
     announce('Breach ปิดแล้ว', `สังหาร ${k} ตัว · รางวัลตกอยู่ที่ใจกลาง`, '#c070ff');
     G.stats.breaches = (G.stats.breaches || 0) + 1;
   }
-  Object.assign(B, { state: 'wait', t: rand(BREACH.gap[0], BREACH.gap[1]), r: 0 });
+  Object.assign(B, { state: 'wait', t: rand(BREACH.gap[0], BREACH.gap[1]) / G.atlasFx.breachRate, r: 0 });
 }
 
 // ---- rendering (pass B, glows in the dark) ----

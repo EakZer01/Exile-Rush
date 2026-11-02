@@ -10,7 +10,7 @@
 const ITEM_SLOTS = ['weapon', 'offhand', 'helm', 'body', 'gloves', 'boots', 'belt', 'amulet', 'ring', 'ring2'];
 const SOCKET_SLOTS = ['weapon', 'offhand', 'helm', 'body', 'gloves', 'boots'];
 const FLASK_SLOTS = 5;
-const SLOT_NAME = { weapon: 'อาวุธ', offhand: 'มือรอง', helm: 'หมวก', body: 'เกราะ', gloves: 'ถุงมือ', boots: 'รองเท้า', belt: 'เข็มขัด',
+const SLOT_NAME = { jewel: 'Jewel', weapon: 'อาวุธ', offhand: 'มือรอง', helm: 'หมวก', body: 'เกราะ', gloves: 'ถุงมือ', boots: 'รองเท้า', belt: 'เข็มขัด',
   amulet: 'สร้อยคอ', ring: 'แหวน', ring2: 'แหวน', flask: 'ฟลาสก์' };
 const RARITY_COLOR = { normal: '#c8c8c8', magic: '#8a8cff', rare: '#ffe866', unique: '#e8883a' };
 const RARITY_NAME = { normal: 'Normal', magic: 'Magic', rare: 'Rare', unique: 'Unique' };
@@ -65,10 +65,18 @@ defBase('coral_amulet',   { slot: 'amulet', name: 'Coral Amulet', size: [1, 1], 
 defBase('amber_amulet',   { slot: 'amulet', name: 'Amber Amulet', size: [1, 1], imp: ['phys', 10] });
 defBase('lapis_amulet',   { slot: 'amulet', name: 'Lapis Amulet', size: [1, 1], imp: ['spell', 10] });
 defBase('iron_ring',      { slot: 'ring', name: 'Iron Ring', size: [1, 1], imp: ['phys', 6] });
-defBase('sapphire_ring',  { slot: 'ring', name: 'Sapphire Ring', size: [1, 1], imp: ['ele', 6] });
-defBase('amethyst_ring',  { slot: 'ring', name: 'Amethyst Ring', size: [1, 1], imp: ['chaos', 8] });
+defBase('ruby_ring',      { slot: 'ring', name: 'Ruby Ring', size: [1, 1], imp: ['fireres', 20] });
+defBase('sapphire_ring',  { slot: 'ring', name: 'Sapphire Ring', size: [1, 1], imp: ['coldres', 20] });
+defBase('topaz_ring',     { slot: 'ring', name: 'Topaz Ring', size: [1, 1], imp: ['lightres', 20] });
+defBase('amethyst_ring',  { slot: 'ring', name: 'Amethyst Ring', size: [1, 1], imp: ['chaosres', 15] });
+defBase('prismatic_ring', { slot: 'ring', name: 'Prismatic Ring', size: [1, 1], imp: ['allres', 8], rare: true });
 defBase('coral_ring',     { slot: 'ring', name: 'Coral Ring', size: [1, 1], imp: ['lifeflat', 20] });
 defBase('two_stone_ring', { slot: 'ring', name: 'Two-Stone Ring', size: [1, 1], imp: ['ele', 12], rare: true });
+defBase('turquoise_amulet', { slot: 'amulet', name: 'Turquoise Amulet', size: [1, 1], imp: ['allres', 6] });
+// jewels — socketed into the Legacy Tree between runs (colour biases their mods)
+defBase('crimson_jewel',  { slot: 'jewel', name: 'Crimson Jewel', size: [1, 1], jewel: 'R' });
+defBase('viridian_jewel', { slot: 'jewel', name: 'Viridian Jewel', size: [1, 1], jewel: 'G' });
+defBase('cobalt_jewel',   { slot: 'jewel', name: 'Cobalt Jewel', size: [1, 1], jewel: 'B' });
 // flasks — kind decides the effect while active
 defBase('life_flask',     { slot: 'flask', name: 'Life Flask', size: [1, 2], flask: { kind: 'life', max: 60, use: 20, dur: 2.5 } });
 defBase('quicksilver',    { slot: 'flask', name: 'Quicksilver Flask', size: [1, 2], flask: { kind: 'quick', max: 50, use: 25, dur: 4 } });
@@ -77,11 +85,18 @@ defBase('jade_flask',     { slot: 'flask', name: 'Jade Flask', size: [1, 2], fla
 defBase('silver_flask',   { slot: 'flask', name: 'Silver Flask', size: [1, 2], flask: { kind: 'silver', max: 60, use: 30, dur: 4 } });
 defBase('sulphur_flask',  { slot: 'flask', name: 'Sulphur Flask', size: [1, 2], flask: { kind: 'sulphur', max: 60, use: 30, dur: 4 } });
 defBase('diamond_flask',  { slot: 'flask', name: 'Diamond Flask', size: [1, 2], flask: { kind: 'diamond', max: 60, use: 30, dur: 4 } });
+defBase('ruby_flask',     { slot: 'flask', name: 'Ruby Flask', size: [1, 2], flask: { kind: 'ruby', max: 50, use: 25, dur: 4.5 } });
+defBase('sapphire_flask', { slot: 'flask', name: 'Sapphire Flask', size: [1, 2], flask: { kind: 'sapphire', max: 50, use: 25, dur: 4.5 } });
+defBase('topaz_flask',    { slot: 'flask', name: 'Topaz Flask', size: [1, 2], flask: { kind: 'topaz', max: 50, use: 25, dur: 4.5 } });
+defBase('amethyst_flask', { slot: 'flask', name: 'Amethyst Flask', size: [1, 2], flask: { kind: 'amethyst', max: 50, use: 25, dur: 4.5 } });
 const FLASK_DESC = {
   life: 'ฟื้นชีวิต 55% ใน 2.5 วิ', quick: 'เคลื่อนที่เร็วขึ้น 40%', granite: '+Armour 100% และ +300 Armour', jade: '+Evasion 100% และ +300 Evasion',
   silver: 'ร่าย/โจมตีเร็วขึ้น 20% (Onslaught)', sulphur: 'ทุกสกิลทำดาเมจ 25% more', diamond: 'โอกาสคริ ×2 (Lucky)',
+  ruby: '+40% ต้านทานไฟ · +5% ต้านทานไฟสูงสุด', sapphire: '+40% ต้านทานน้ำแข็ง · +5% ต้านทานน้ำแข็งสูงสุด',
+  topaz: '+40% ต้านทานสายฟ้า · +5% ต้านทานสายฟ้าสูงสุด', amethyst: '+35% ต้านทานเคออส',
 };
-const FLASK_COLOR = { life: '#d0302a', quick: '#9ad2ff', granite: '#a89a80', jade: '#4fd08a', silver: '#e8e8f0', sulphur: '#f0d040', diamond: '#c0f0ff' };
+const FLASK_COLOR = { life: '#d0302a', quick: '#9ad2ff', granite: '#a89a80', jade: '#4fd08a', silver: '#e8e8f0', sulphur: '#f0d040', diamond: '#c0f0ff',
+  ruby: '#ff4a3a', sapphire: '#3a7aff', topaz: '#ffd83a', amethyst: '#b04aff' };
 
 // item level: rises through the run and with map tier — gates affix tiers
 function itemLevel(time, tier) { return Math.max(1, Math.min(86, Math.floor(1 + (time / 60) * 3.2 + ((tier || 1) - 1) * 5))); }
@@ -129,6 +144,13 @@ const AFFIXES = {
   evadepct:  { type: 'S', t: 'หลบการโจมตี +{v}%', nm: 'of Shadows', slots: 'body boots gloves', lo: 2, hi: 4, w: 4, apply(m, v) { m.evade += v / 100; } },
   block:     { type: 'S', t: '+{v}% โอกาส Block', nm: 'of the Wall', slots: 'offhand', lo: 3, hi: 5, w: 6, apply(m, v) { m.block += v / 100; } },
   esrecharge:{ type: 'S', t: 'ES ฟื้นเร็วขึ้น {v}%', nm: 'of Recharge', slots: 'helm body gloves boots offhand', def: 'es', lo: 15, hi: 30, w: 4, apply(m, v) { m.esRechargeInc += v / 100; } },
+  // resistances: the most common suffixes, like PoE
+  fireres:   { type: 'S', t: '+{v}% ต้านทานไฟ', nm: 'of the Drake', slots: 'helm body gloves boots belt amulet ring offhand', lo: 8, hi: 14, w: 9, apply(m, v) { m.resFire += v / 100; } },
+  coldres:   { type: 'S', t: '+{v}% ต้านทานน้ำแข็ง', nm: 'of the Penguin', slots: 'helm body gloves boots belt amulet ring offhand', lo: 8, hi: 14, w: 9, apply(m, v) { m.resCold += v / 100; } },
+  lightres:  { type: 'S', t: '+{v}% ต้านทานสายฟ้า', nm: 'of the Squall', slots: 'helm body gloves boots belt amulet ring offhand', lo: 8, hi: 14, w: 9, apply(m, v) { m.resLight += v / 100; } },
+  allres:    { type: 'S', t: '+{v}% ต้านทานธาตุทั้งหมด', nm: 'of the Prism', slots: 'amulet ring offhand', lo: 4, hi: 7, w: 3, apply(m, v) { m.resFire += v / 100; m.resCold += v / 100; m.resLight += v / 100; } },
+  chaosres:  { type: 'S', t: '+{v}% ต้านทานเคออส', nm: 'of the Lost', slots: 'body belt amulet ring', lo: 5, hi: 10, w: 3, apply(m, v) { m.resChaos += v / 100; } },
+  maxres:    { type: 'P', t: '+{v}% ต้านทานธาตุสูงสุด', nm: 'Unassailable', slots: 'body offhand', lo: 1, hi: 1, fixed: true, w: 0.6, rareOnly: true, apply(m, v) { m.maxRes += v / 100; } },
   // implicit-only
   alldmg:    { t: '+{v}% ดาเมจ Spell / Attack / มินเนียน', slots: '', lo: 6, hi: 6, apply(m, v) { m.incSpell += v / 100; m.incAttack += v / 100; m.incMinion += v / 100; } },
 };
@@ -143,6 +165,67 @@ const FLASK_AFFIXES = {
   adrenaline:{ type: 'S', t: '+{v}% ความเร็วเคลื่อนที่ขณะใช้งาน', nm: 'of Adrenaline', lo: 12, hi: 22 },
   rapidity:  { type: 'S', t: '+{v}% ร่าย/โจมตีเร็วขึ้นขณะใช้งาน', nm: 'of Rapidity', lo: 6, hi: 12 },
 };
+
+// jewel mods: c = jewel colour that can roll it ('' = any)
+const JEWEL_MODS = {
+  j_life:     { t: '+{v}% ชีวิตสูงสุด', c: 'R', lo: 4, hi: 7, apply(m, v) { m.lifeInc += v / 100; } },
+  j_armour:   { t: '+{v} Armour', c: 'R', lo: 40, hi: 80, apply(m, v) { m.armour += v; } },
+  j_phys:     { t: '+{v}% ดาเมจกายภาพ', c: 'R', lo: 10, hi: 16, apply(m, v) { m.incPhys += v / 100; } },
+  j_attack:   { t: '+{v}% ดาเมจ Attack', c: 'R', lo: 10, hi: 16, apply(m, v) { m.incAttack += v / 100; } },
+  j_area:     { t: '+{v}% พื้นที่', c: 'R', lo: 5, hi: 9, apply(m, v) { m.areaInc += v / 100; } },
+  j_fireres:  { t: '+{v}% ต้านทานไฟ', c: 'R', lo: 10, hi: 15, apply(m, v) { m.resFire += v / 100; } },
+  j_proj:     { t: '+{v}% ดาเมจ Projectile', c: 'G', lo: 10, hi: 16, apply(m, v) { m.incProj += v / 100; } },
+  j_critm:    { t: '+{v}% ตัวคูณคริ', c: 'G', lo: 12, hi: 20, apply(m, v) { m.critMulti += v / 100; } },
+  j_move:     { t: '+{v}% ความเร็วเคลื่อนที่', c: 'G', lo: 2, hi: 4, apply(m, v) { m.moveInc += v / 100; } },
+  j_evasion:  { t: '+{v} Evasion', c: 'G', lo: 40, hi: 80, apply(m, v) { m.evasion += v; } },
+  j_coldres:  { t: '+{v}% ต้านทานน้ำแข็ง', c: 'G', lo: 10, hi: 15, apply(m, v) { m.resCold += v / 100; } },
+  j_spell:    { t: '+{v}% ดาเมจ Spell', c: 'B', lo: 10, hi: 16, apply(m, v) { m.incSpell += v / 100; } },
+  j_ele:      { t: '+{v}% ดาเมจธาตุ', c: 'B', lo: 10, hi: 16, apply(m, v) { m.incEle += v / 100; } },
+  j_es:       { t: '+{v} Energy Shield', c: 'B', lo: 15, hi: 30, apply(m, v) { m.es += v; } },
+  j_minion:   { t: '+{v}% ดาเมจมินเนียน', c: 'B', lo: 10, hi: 16, apply(m, v) { m.incMinion += v / 100; } },
+  j_lightres: { t: '+{v}% ต้านทานสายฟ้า', c: 'B', lo: 10, hi: 15, apply(m, v) { m.resLight += v / 100; } },
+  j_speed:    { t: '+{v}% ความเร็วร่าย/โจมตี', c: '', lo: 3, hi: 5, apply(m, v) { m.speedInc += v / 100; } },
+  j_dot:      { t: '+{v}% ดาเมจ DoT', c: '', lo: 10, hi: 16, apply(m, v) { m.incDot += v / 100; } },
+  j_chaos:    { t: '+{v}% ดาเมจเคออส', c: '', lo: 10, hi: 16, apply(m, v) { m.incChaos += v / 100; } },
+  j_chaosres: { t: '+{v}% ต้านทานเคออส', c: '', lo: 7, hi: 12, apply(m, v) { m.resChaos += v / 100; } },
+  j_allres:   { t: '+{v}% ต้านทานธาตุทั้งหมด', c: '', lo: 5, hi: 8, apply(m, v) { m.resFire += v / 100; m.resCold += v / 100; m.resLight += v / 100; } },
+};
+function makeJewel(rarity) {
+  const base = pick(['crimson_jewel', 'viridian_jewel', 'cobalt_jewel']), col = BASES[base].jewel;
+  rarity = rarity || (Math.random() < 0.35 ? 'rare' : 'magic');
+  const pool = Object.keys(JEWEL_MODS).filter((k) => !JEWEL_MODS[k].c || JEWEL_MODS[k].c === col);
+  const n = rarity === 'rare' ? randi(3, 4) : randi(1, 2);
+  const affixes = shuffle(pool).slice(0, n).map((id) => { const d = JEWEL_MODS[id]; return { id, v: Math.round(d.lo + Math.random() * (d.hi - d.lo)), jewel: true }; });
+  return { uid: uid(), rarity, slot: 'jewel', base, ilvl: 1, affixes, quality: 0, name: rarity === 'rare' ? itemRareName('jewel') : BASES[base].name };
+}
+
+// ---------------- crafting bench: one fixed "crafted" mod per item ----------------
+const BENCH = [
+  { id: 'lifeflat', v: 30, cost: { scrap: 2 } },
+  { id: 'fireres', v: 20, cost: { chroma: 1 } },
+  { id: 'coldres', v: 20, cost: { chroma: 1 } },
+  { id: 'lightres', v: 20, cost: { chroma: 1 } },
+  { id: 'chaosres', v: 13, cost: { jeweller: 1 } },
+  { id: 'flates', v: 22, cost: { scrap: 2 } },
+  { id: 'speed', v: 7, cost: { whetstone: 2 } },
+  { id: 'move', v: 12, cost: { regal: 1 } },
+  { id: 'spell', v: 16, cost: { divine: 1 } },
+  { id: 'attack', v: 16, cost: { divine: 1 } },
+  { id: 'critmulti', v: 20, cost: { annul: 1 } },
+  { id: 'lphys', v: 35, cost: { whetstone: 3 } },
+];
+function benchCan(b, it) {
+  if (!it || it.corrupted || it.unique || it.slot === 'flask' || it.slot === 'jewel' || (it.rarity !== 'magic' && it.rarity !== 'rare')) return false;
+  if (it.affixes.some((a) => a.crafted || a.id === b.id)) return false;
+  const a = AFFIXES[b.id];
+  if (!a.slots.split(' ').includes(it.slot) || !openSides(it)[a.type]) return false;
+  return affixAllowed(b.id, Object.assign({}, it, { rarity: 'rare' }));
+}
+const benchAfford = (b, cur) => Object.entries(b.cost).every(([k, n]) => (cur[k] || 0) >= n);
+function benchUse(b, it, cur) {
+  for (const [k, n] of Object.entries(b.cost)) cur[k] -= n;
+  it.affixes.push({ id: b.id, v: b.v, tier: 0, crafted: true });
+}
 
 // ---------------- uniques ----------------
 // base: which base type it uses (defences / weapon stats / size)
@@ -232,6 +315,12 @@ const UNIQUES = {
   bastion_echoes: { slot: 'offhand', base: 'tower_shield', name: 'Bastion of Echoes', th: 'ป้อมแห่งเสียงสะท้อน', flavor: 'ทุกการโจมตีที่ถูกกั้น จะถูกส่งคืน',
     lines: ['+8% โอกาส Block', 'โดนโจมตีแล้วปล่อยคลื่นแสง (Retribution)', '+60 Armour'],
     apply(m) { m.block += 0.08; m.ks.retaliate = true; m.armour += 60; } },
+  tempest_ward: { slot: 'offhand', base: 'spirit_shield', name: 'Ward of the Tempest', th: 'โล่แห่งพายุ', flavor: 'ธาตุทั้งสามหักเหเมื่อกระทบผิวมัน',
+    lines: ['+20% ต้านทานธาตุทั้งหมด', '+2% ต้านทานธาตุสูงสุด', '+12% ดาเมจ Spell'],
+    apply(m) { m.resFire += 0.2; m.resCold += 0.2; m.resLight += 0.2; m.maxRes += 0.02; m.incSpell += 0.12; } },
+  stillwater: { slot: 'body', base: 'silk_robe', name: 'Stillwater Vestment', th: 'อาภรณ์น้ำนิ่ง', flavor: 'น้ำที่นิ่งที่สุด สะท้อนทุกสิ่งกลับคืน',
+    lines: ['+70 Energy Shield', 'ES ฟื้นเร็วขึ้น 50%', '+25% ต้านทานเคออส'],
+    apply(m) { m.es += 70; m.esRechargeInc += 0.5; m.resChaos += 0.25; } },
   girdle_plenty: { slot: 'belt', base: 'rustic_sash', name: 'Girdle of Plenty', th: 'สายคาดแห่งความอุดม', flavor: 'ขวดไม่เคยว่าง ท้องไม่เคยหิว',
     lines: ['ฟลาสก์ได้ชาร์จ +50%', 'ผลของฟลาสก์ +30%', '+30 ชีวิตสูงสุด'],
     apply(m) { m.flaskCharge += 0.5; m.flaskEff += 0.3; m.lifeFlat += 30; } },
@@ -247,6 +336,8 @@ const CORRUPT_MODS = [
   { t: 'ทุกสกิลทำดาเมจ 6% more', slots: 'ring amulet weapon', apply(m) { m.moreAll *= 1.06; } },
   { t: '+5% โอกาส Block', slots: 'offhand', apply(m) { m.block += 0.05; } },
   { t: '+1% โอกาสคริ (base)', slots: 'gloves helm', apply(m) { m.critAdd += 0.01; } },
+  { t: '+1% ต้านทานธาตุสูงสุด', slots: 'helm body boots offhand', apply(m) { m.maxRes += 0.01; } },
+  { t: '+15% ต้านทานเคออส', slots: 'ring amulet belt boots', apply(m) { m.resChaos += 0.15; } },
 ];
 
 const ITEM_PREFIX = ['Doom', 'Storm', 'Grim', 'Blood', 'Dusk', 'Rune', 'Shadow', 'Ember', 'Gloom', 'Wraith', 'Dread', 'Pale', 'Hate', 'Soul', 'Bone', 'Viper'];
@@ -254,6 +345,7 @@ const ITEM_SUFFIX = {
   weapon: ['Bane', 'Song', 'Fang', 'Edge', 'Thirst'], offhand: ['Bulwark', 'Ward', 'Guard', 'Aegis'], helm: ['Crown', 'Visage', 'Cowl', 'Brow'],
   body: ['Shell', 'Coat', 'Carapace', 'Hide'], gloves: ['Grip', 'Fist', 'Clutch', 'Talons'], boots: ['Stride', 'Tread', 'Spur', 'March'],
   belt: ['Cord', 'Lash', 'Girdle', 'Strap'], amulet: ['Charm', 'Locket', 'Talisman', 'Heart'], ring: ['Loop', 'Band', 'Coil', 'Knot'],
+  jewel: ['Eye', 'Spark', 'Star', 'Shard', 'Prism'],
 };
 const itemRareName = (slot) => `${pick(ITEM_PREFIX)} ${pick(ITEM_SUFFIX[slot] || ITEM_SUFFIX.ring)}`;
 
@@ -404,7 +496,7 @@ function itemProps(it) {
 const weaponPower = (pr) => (pr.pd * pr.aps) / 13;
 
 function affixText(a) {
-  const d = a.flask ? FLASK_AFFIXES[a.id] : AFFIXES[a.id];
+  const d = a.flask ? FLASK_AFFIXES[a.id] : a.jewel ? JEWEL_MODS[a.id] : AFFIXES[a.id];
   return d.t.replace('{v}', a.v);
 }
 function itemLines(it) {
@@ -412,7 +504,7 @@ function itemLines(it) {
   return it.affixes.map(affixText);
 }
 function applyItem(it, m) {
-  if (it.slot === 'flask') return;
+  if (it.slot === 'flask' || it.slot === 'jewel') return;
   const pr = itemProps(it);
   if (pr.ar) m.armour += pr.ar;
   if (pr.ev) m.evasion += pr.ev;
@@ -441,12 +533,12 @@ const CRAFT_ORBS = {
 const randomCraftOrb = () => weightedSample(Object.keys(CRAFT_ORBS), 1, (k) => CRAFT_ORBS[k].w)[0];
 
 // can(it) → true when the orb does something; use(it) changes the item
-const notLocked = (it) => !it.corrupted && it.slot !== 'flask';
+const notLocked = (it) => !it.corrupted && it.slot !== 'flask' && it.slot !== 'jewel';
 const CRAFT = {
   regal:  { can: (it) => notLocked(it) && it.rarity === 'magic', use(it) { it.rarity = 'rare'; it.name = itemRareName(it.slot); addRandomAffix(it); } },
   exalt:  { can: (it) => notLocked(it) && it.rarity === 'rare' && it.affixes.length < 6 && (openSides(it).P || openSides(it).S), use(it) { addRandomAffix(it); } },
   divine: { can: (it) => notLocked(it) && !it.unique && it.affixes.some((a) => !AFFIXES[a.id].fixed),
-    use(it) { it.affixes = it.affixes.map((a) => { const d = AFFIXES[a.id], p = Math.pow(10, d.dec || 0); return d.fixed ? a : Object.assign({}, a, { v: Math.max(d.dec ? 1 / p : 1, Math.round((d.lo + Math.random() * (d.hi - d.lo)) * TIER_MULT[a.tier - 1] * p) / p) }); }); } },
+    use(it) { it.affixes = it.affixes.map((a) => { const d = AFFIXES[a.id], p = Math.pow(10, d.dec || 0); return d.fixed || a.crafted ? a : Object.assign({}, a, { v: Math.max(d.dec ? 1 / p : 1, Math.round((d.lo + Math.random() * (d.hi - d.lo)) * TIER_MULT[a.tier - 1] * p) / p) }); }); } },
   annul:  { can: (it) => notLocked(it) && !it.unique && it.affixes.length > 1, use(it) { it.affixes.splice(Math.floor(Math.random() * it.affixes.length), 1); } },
   chaos:  { can: (it) => notLocked(it) && it.rarity === 'rare', use(it) { it.affixes = []; const n = 4 + (Math.random() < 0.4 ? 1 : 0) + (Math.random() < 0.15 ? 1 : 0); for (let i = 0; i < n; i++) addRandomAffix(it); it.name = itemRareName(it.slot); } },
   jeweller: { can: (it) => notLocked(it) && maxSockets(it) > 1, use(it) { rollSockets(it); } },

@@ -9,19 +9,19 @@ const MONSTERS = {
   archer:   { name: 'Bone Archer', hp: 15, speed: 58, dmg: 9, r: 11, xp: 2, color: '#c6b88a', shape: 'diamond',
               ranged: { range: 300, cd: 2.8, speed: 200, dmg: 7, color: '#e8dcb0' } },
   brute:    { name: 'Goatman Brute', hp: 85, speed: 44, dmg: 14, r: 21, xp: 4, color: '#7a5236', shape: 'square' },
-  volatile: { name: 'Volatile Spawn', hp: 10, speed: 92, dmg: 20, r: 10, xp: 1, color: '#ff6a1a', shape: 'circle', explode: true },
-  wraith:   { name: 'Frost Wraith', hp: 45, speed: 78, dmg: 12, r: 14, xp: 2, color: '#57b7d0', shape: 'tri' },
-  cultist:  { name: 'Void Cultist', hp: 38, speed: 55, dmg: 11, r: 13, xp: 3, color: '#6b3fa0', shape: 'diamond',
+  volatile: { name: 'Volatile Spawn', hp: 10, speed: 92, dmg: 20, r: 10, xp: 1, color: '#ff6a1a', shape: 'circle', explode: true, elem: 'fire' },
+  wraith:   { name: 'Frost Wraith', hp: 45, speed: 78, dmg: 12, r: 14, xp: 2, color: '#57b7d0', shape: 'tri', elem: 'cold' },
+  cultist:  { name: 'Void Cultist', hp: 38, speed: 55, dmg: 11, r: 13, xp: 3, color: '#6b3fa0', shape: 'diamond', elem: 'chaos',
               ranged: { range: 340, cd: 3.2, speed: 200, dmg: 14, color: '#c080ff', burst: 3 } },
   golem:    { name: 'Stone Golem', hp: 260, speed: 38, dmg: 22, r: 28, xp: 10, color: '#8a8478', shape: 'square' },
   // leaps at the player after a short crouch
   ghoul:    { name: 'Ash Ghoul', hp: 30, speed: 56, dmg: 12, r: 13, xp: 2, color: '#9a9488', shape: 'circle',
               leap: { range: 270, cd: 3.6, speed: 540, dur: 0.32, windup: 0.4 } },
   // lobs bile that leaves a poison pool
-  spitter:  { name: 'Bile Spitter', hp: 34, speed: 48, dmg: 9, r: 13, xp: 3, color: '#7ac040', shape: 'diamond',
+  spitter:  { name: 'Bile Spitter', hp: 34, speed: 48, dmg: 9, r: 13, xp: 3, color: '#7ac040', shape: 'diamond', elem: 'chaos',
               ranged: { range: 330, cd: 3.4, speed: 190, dmg: 8, color: '#9be05a', pool: true } },
   // empowers nearby monsters — kill it first
-  shaman:   { name: 'Bone Shaman', hp: 26, speed: 50, dmg: 6, r: 11, xp: 4, color: '#a070e0', shape: 'diamond',
+  shaman:   { name: 'Bone Shaman', hp: 26, speed: 50, dmg: 6, r: 11, xp: 4, color: '#a070e0', shape: 'diamond', elem: 'lightning',
               support: { cd: 4.5, r: 210, dur: 4 } },
 };
 
@@ -57,8 +57,15 @@ const MONSTER_MODS = {
   splitter:    { name: 'Summoner', th: 'แยกร่างเมื่อตาย', apply(e) { e.deathSplit = true; } },
   freeze_imm:  { name: 'Unwavering', th: 'ไม่หวั่นไหว', apply(e) { e.ailImmune = true; } },
   vampiric:    { name: 'Vampiric', th: 'ดูดเลือด', apply(e) { e.dmg *= 1.2; e.regen = Math.max(e.regen || 0, 0.02); } },
+  // hits deal an element instead of physical — resistances matter
+  flame_touched: { name: 'Flame-Touched', th: 'โจมตีเป็นไฟ', apply(e) { e.elem = 'fire'; e.dmg *= 1.15; } },
+  frost_touched: { name: 'Frost-Touched', th: 'โจมตีเป็นน้ำแข็ง', apply(e) { e.elem = 'cold'; e.dmg *= 1.15; } },
+  storm_touched: { name: 'Storm-Touched', th: 'โจมตีเป็นสายฟ้า', apply(e) { e.elem = 'lightning'; e.dmg *= 1.15; } },
+  void_touched:  { name: 'Void-Touched', th: 'โจมตีเป็นเคออส', apply(e) { e.elem = 'chaos'; e.dmg *= 1.1; } },
 };
-const MAGIC_MODS = ['hasted', 'armoured', 'berserk', 'ele_res', 'phys_res', 'regen'];
+const MAGIC_MODS = ['hasted', 'armoured', 'berserk', 'ele_res', 'phys_res', 'regen', 'flame_touched', 'frost_touched', 'storm_touched'];
+const ELEM_COLOR = { physical: '#e6e0d0', fire: '#ff8a3d', cold: '#7fd8ff', lightning: '#fff27a', chaos: '#b56cff' };
+const ELEM_TH = { physical: 'กายภาพ', fire: 'ไฟ', cold: 'น้ำแข็ง', lightning: 'สายฟ้า', chaos: 'เคออส' };
 
 const RARE_PREFIX = ['Gloom', 'Blood', 'Doom', 'Grim', 'Ash', 'Rot', 'Dread', 'Night', 'Storm', 'Bone', 'Venom', 'Woe', 'Hate', 'Corpse', 'Pain'];
 const RARE_SUFFIX = ['Gnaw', 'Howl', 'Ripper', 'Maw', 'Spawn', 'Bane', 'Thirst', 'Scourge', 'Feast', 'Wound', 'Shriek', 'Grinder', 'Fang', 'Wail'];
@@ -67,13 +74,13 @@ const rareName = () => pick(RARE_PREFIX) + ' ' + pick(RARE_SUFFIX);
 // Bosses — patterns used by enemies.js boss AI
 const BOSSES = [
   { at: 300, id: 'warden', name: 'Infernal Warden', th: 'ผู้คุมนรกเพลิง', hp: 3300, speed: 72, dmg: 22, r: 36,
-    color: '#c43a1a', glow: '#ff7a2a', patterns: ['radial', 'charge', 'ring'], ptype: 'fire' },
+    color: '#c43a1a', glow: '#ff7a2a', patterns: ['radial', 'charge', 'ring', 'cone'], ptype: 'fire' },
   { at: 600, id: 'colossus', name: 'Frostbound Colossus', th: 'ยักษ์น้ำแข็งนิรันดร์', hp: 20000, speed: 60, dmg: 36, r: 44,
-    color: '#3a7fb8', glow: '#9fe0ff', patterns: ['ring', 'radial', 'slam', 'summon'], ptype: 'cold' },
+    color: '#3a7fb8', glow: '#9fe0ff', patterns: ['ring', 'radial', 'slam', 'summon', 'donut', 'meteor'], ptype: 'cold' },
   { at: 900, id: 'herald', name: 'Herald of Storms', th: 'ผู้ประกาศพายุ', hp: 120000, speed: 85, dmg: 44, r: 40,
-    color: '#b8a03a', glow: '#fff07a', patterns: ['strike', 'radial', 'charge', 'summon'], ptype: 'lightning' },
+    color: '#b8a03a', glow: '#fff07a', patterns: ['strike', 'radial', 'charge', 'summon', 'beam', 'cone'], ptype: 'lightning' },
   { at: 1200, id: 'sovereign', name: 'The Void Sovereign', th: 'จักรพรรดิแห่งความว่างเปล่า', hp: 600000, speed: 70, dmg: 50, r: 54,
-    color: '#3a1a5a', glow: '#b060ff', patterns: ['spiral', 'strike', 'ring', 'radial', 'summon', 'charge'], ptype: 'chaos', final: true },
+    color: '#3a1a5a', glow: '#b060ff', patterns: ['spiral', 'strike', 'ring', 'radial', 'summon', 'charge', 'beam', 'donut', 'meteor'], ptype: 'chaos', final: true },
 ];
 BOSSES[0].phases = [0.5];
 for (let i = 1; i < BOSSES.length; i++) BOSSES[i].phases = [0.66, 0.33];

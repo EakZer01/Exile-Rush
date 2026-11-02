@@ -80,6 +80,11 @@ function collectLights(P, inView) {
   if (G.breach && G.breach.state === 'placed') addLight(G.breach.x, G.breach.y, 150, 0.8);
   else if (G.breach && G.breach.state === 'open') addLight(G.breach.x, G.breach.y, G.breach.r * 1.1, 0.35);
   for (const it of G.pickups) addLight(it.x, it.y, 70, 0.6);
+  if (G.league) {
+    for (const b of G.league.boxes) addLight(b.x, b.y, 120, 0.7);
+    for (const R of G.league.rituals) if (R.state === 'placed' || R.state === 'active') addLight(R.x, R.y, R.state === 'active' ? LEAGUE.ritualR * 1.2 : 120, 0.6);
+    if (G.league.deli.state === 'placed') addLight(G.league.deli.x, G.league.deli.y, 130, 0.8);
+  }
   for (const g of G.items) addLight(g.x, g.y, g.item.rarity === 'unique' ? 120 : 70, 0.6);
   for (const p of G.eproj) if (inView(p.x, p.y, 40)) addLight(p.x, p.y, 50, 0.5);
   for (const h of G.hazards) addLight(h.x, h.y, h.r * 1.4, 0.25 + 0.5 * (h.t / h.warn));
@@ -173,14 +178,8 @@ function render() {
   // ================= PASS B: glowing things =================
   worldTransform();
 
-  // hazards (boss telegraphs)
-  for (const h of G.hazards) {
-    const p = h.t / h.warn;
-    ctx.strokeStyle = hexA(h.color, 0.8); ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.stroke();
-    ctx.fillStyle = hexA(h.color, 0.12 + 0.25 * p);
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.r * p, 0, TAU); ctx.fill();
-  }
+  // hazards (boss telegraphs): outline = where it lands, fill grows until it hits
+  for (const h of G.hazards) drawHazard(ctx, h, Math.min(1, h.t / h.warn), false);
 
   drawBrazierFlames(ctx);
   if (G.settings.lighting) {
@@ -222,7 +221,7 @@ function render() {
   // pickups
   for (const it of G.pickups) {
     if (!inView(it.x, it.y, 20)) continue;
-    const def = PICKUPS[it.kind], bob = Math.sin(it.t * 4) * 3;
+    const def = pickupDef(it), bob = Math.sin(it.t * 4) * 3;
     ctx.globalCompositeOperation = 'lighter';
     ctx.drawImage(glowSprite(def.color, 26), it.x - 26, it.y - 26 + bob);
     ctx.globalCompositeOperation = 'source-over';
@@ -240,6 +239,7 @@ function render() {
 
   drawGroundItems(ctx, inView);
   drawBreach(ctx);
+  drawLeagues(ctx, inView);
 
   // Righteous Fire aura
   for (const inst of P.skills) {
@@ -355,6 +355,7 @@ function render() {
     ctx.fillStyle = lv; ctx.fillRect(0, 0, W, H);
   }
 
+  drawDeliriumFog(ctx, W, H);
   drawHUD(ctx, W, H, P);
 }
 
@@ -516,9 +517,31 @@ function drawPlayer(ctx, P) {
   }
 }
 
+function hazardPath(ctx, h, k) {
+  ctx.beginPath();
+  if (h.shape === 'line') {
+    const ax = Math.cos(h.a), ay = Math.sin(h.a), nx = -ay * h.r, ny = ax * h.r, L = h.len * k;
+    ctx.moveTo(h.x + nx, h.y + ny); ctx.lineTo(h.x + nx + ax * L, h.y + ny + ay * L);
+    ctx.lineTo(h.x - nx + ax * L, h.y - ny + ay * L); ctx.lineTo(h.x - nx, h.y - ny); ctx.closePath();
+  } else if (h.shape === 'cone') {
+    ctx.moveTo(h.x, h.y); ctx.arc(h.x, h.y, h.r * k, h.a - h.arc / 2, h.a + h.arc / 2); ctx.closePath();
+  } else if (h.shape === 'ring') {
+    ctx.arc(h.x, h.y, h.r0 + (h.r - h.r0) * k, 0, TAU); ctx.arc(h.x, h.y, h.r0, 0, TAU, true);
+  } else ctx.arc(h.x, h.y, h.r * k, 0, TAU);
+}
+function drawHazard(ctx, h, p, burst) {
+  ctx.strokeStyle = hexA(h.color, burst ? 0.9 * (1 - p) : 0.85); ctx.lineWidth = h.ghost ? 1.5 : 2.5;
+  if (h.ghost) ctx.setLineDash([10, 8]);
+  hazardPath(ctx, h, 1); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = hexA(h.color, burst ? 0.5 * (1 - p) : h.ghost ? 0.08 : 0.1 + 0.28 * p);
+  hazardPath(ctx, h, burst ? 1 : h.shape === 'ring' ? 1 : p); ctx.fill('evenodd');
+}
+
 function drawEffect(ctx, fx) {
   const p = fx.t / fx.dur, a = 1 - p;
   switch (fx.kind) {
+    case 'hzfire': drawHazard(ctx, fx.h, p, true); break;
     case 'boom': {
       const r = fx.r * (0.5 + 0.5 * Math.min(1, p * 3));
       ctx.fillStyle = hexA(fx.color, 0.45 * a);
@@ -667,11 +690,13 @@ function drawHUD(ctx, W, H, P) {
   const orbs = ['regal', 'exalt', 'divine', 'annul', 'jeweller', 'chroma', 'whetstone', 'scrap', 'vaal'].reduce((a, k) => a + (P.currency[k] || 0), 0);
   if (orbs > 0) { ctx.fillStyle = '#c8b8e8'; ctx.fillText(`Orb คราฟต์ ×${orbs}`, W - 12, 86); }
   const B = G.breach;
+  let ly = G.bossRef && !G.bossRef.dead ? 134 : 96;
   if (B && B.state === 'open') {
     ctx.textAlign = 'center'; ctx.font = '700 16px Cinzel, serif'; ctx.fillStyle = '#d8a0ff';
-    ctx.fillText(`BREACH ${Math.max(0, B.t).toFixed(1)}s · ☠ ${B.kills}`, W / 2, G.bossRef && !G.bossRef.dead ? 134 : 96);
+    ctx.fillText(`BREACH ${Math.max(0, B.t).toFixed(1)}s · ☠ ${B.kills}`, W / 2, ly); ly += 20;
     ctx.textAlign = 'right'; ctx.font = '600 14px Sarabun, sans-serif';
   }
+  drawLeagueHUD(ctx, W, H, ly);
   if (B && B.state === 'placed') {
     const dx = (B.x - G.cam.x) * G.zoom, dy = (B.y - G.cam.y) * G.zoom;
     if (Math.abs(dx) > W / 2 - 20 || Math.abs(dy) > H / 2 - 20) {

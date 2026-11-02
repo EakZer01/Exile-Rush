@@ -251,3 +251,60 @@ defSupport({
   desc: 'โจมตีซ้ำอีก 2 ครั้งติดกัน · ดาเมจ 25% less',
   apply(s) { s.echo += 2; s.more *= 0.75; },
 });
+
+// ---- expansion 2 ----
+defSupport({
+  id: 'fortify', name: 'Fortify', th: 'ป้อมปราการ', gem: 'r', req: ['Melee'],
+  desc: 'Hit ระยะประชิดให้ Fortify 4 วิ: รับดาเมจ 20% less · ดาเมจ 10% more',
+  apply(s) { s.fortify = true; s.more *= 1.1; },
+});
+defSupport({
+  id: 'close_combat', name: 'Close Combat', th: 'ประชิดตัว', gem: 'g', req: ['Melee', 'Attack'],
+  desc: 'ดาเมจ 35% more กับศัตรูในระยะ 160 รอบตัว',
+  apply(s) { s.closeCombat = true; },
+});
+defSupport({
+  id: 'impale_sup', name: 'Impale', th: 'เสียบทะลุ', gem: 'r', req: ['Physical'], excl: ['Aura'],
+  desc: 'Hit กายภาพ 40% Impale: ดาเมจกายภาพซ้ำอีก 60% หลังจากนั้นครู่หนึ่ง',
+  apply(s) { s.impale = 0.4; },
+});
+defSupport({
+  id: 'trinity', name: 'Trinity', th: 'ตรีเอกธาตุ', gem: 'b', req: ['Fire', 'Cold', 'Lightning'],
+  desc: 'ดาเมจธาตุ 15% more · ถ้าสกิลมีธาตุตั้งแต่ 2 ชนิดขึ้นไป เป็น 35% more (ใช้กับ Added Damage)',
+  apply(s) { s.trinity = true; },
+});
+defSupport({
+  id: 'arcane_surge', name: 'Arcane Surge', th: 'คลื่นอาคม', gem: 'b', req: ['Spell'], excl: ['Aura', 'Herald'],
+  desc: 'ดาเมจ Spell 20% more · ร่ายเร็วขึ้น 10%',
+  apply(s) { s.more *= 1.2; s.speedInc += 0.1; },
+});
+defSupport({
+  id: 'vicious_projectiles', name: 'Vicious Projectiles', th: 'กระสุนโหด', gem: 'g', req: ['Projectile'],
+  desc: 'ดาเมจกายภาพ 35% more · ดาเมจ DoT 20% more · กระสุนช้าลง 10%',
+  apply(s) { s.morePhys *= 1.35; s.dotMore *= 1.2; s.projSpeedInc -= 0.1; },
+});
+defSupport({
+  id: 'unleash', name: 'Unleash', th: 'ปลดปล่อย', gem: 'b', req: ['Spell'], excl: ['Aura', 'Orbit', 'Minion', 'Herald', 'Channelling', 'Brand'],
+  desc: 'ร่ายซ้ำ +1 ครั้ง · คูลดาวน์นานขึ้น 30% · ดาเมจ 10% less',
+  apply(s) { s.echo += 1; s.cd *= 1.3; s.more *= 0.9; },
+});
+defSupport({
+  id: 'barrage', name: 'Barrage', th: 'ห่ากระสุน', gem: 'g', req: ['Projectile'], excl: ['Melee'],
+  desc: '+2 Projectile ยิงเป็นแนวเดียวกัน (กระจุกใส่ศัตรูตัวเดียว) · ดาเมจ 25% less',
+  apply(s) { s.proj += 2; s.spread *= 0.2; s.more *= 0.75; },
+});
+defSupport({
+  id: 'pulverise', name: 'Pulverise', th: 'บดขยี้', gem: 'r', req: ['Melee'],
+  desc: 'พื้นที่ +30% · ดาเมจ 20% more · ความเร็วโจมตี 10% less',
+  apply(s) { s.areaInc += 0.3; s.more *= 1.2; s.speedInc -= 0.1; },
+});
+defSupport({
+  id: 'feeding_frenzy', name: 'Feeding Frenzy', th: 'คลั่งกิน', gem: 'g', req: ['Minion'],
+  desc: 'มินเนียนทำดาเมจ 15% more และเร็วขึ้น 20%',
+  apply(s) { s.more *= 1.15; s.minionSpeed += 0.2; },
+});
+defSupport({
+  id: 'elemental_army', name: 'Elemental Army', th: 'กองทัพธาตุ', gem: 'b', req: ['Minion'],
+  desc: 'มินเนียนทำดาเมจธาตุ 30% more และเจาะต้านทานธาตุ 15%',
+  apply(s) { s.moreEle *= 1.3; s.pen.fire += 0.15; s.pen.cold += 0.15; s.pen.lightning += 0.15; },
+});

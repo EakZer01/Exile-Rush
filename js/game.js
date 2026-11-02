@@ -27,7 +27,10 @@ function resize() {
 
 function startGame(cls, map) {
   G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice() } : Object.assign({}, DEFAULT_MAP, { mods: [] });
+  G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.runMaps = [];
+  if (!G.daily) restoreRandom();
   G.mapFx = mapFx(G.map);
+  G.atlasFx = atlasFx();
   G.lastMap = G.map;
   G.mapHazT = 4;
   resetBreach();
@@ -40,8 +43,10 @@ function startGame(cls, map) {
     pendingLevels: 0, pendingChests: 0, pendingAscend: 0, bossRef: null, victoryT: 0, shake: 0, banned: new Set(),
     decals: [], hitStop: 0, worldSeed: Math.floor(Math.random() * 1e9),
     spawn: { acc: 0, magicT: 25, rareT: 75, hordeT: 110, shrineT: 25, bossIdx: 0 },
-    stats: { kills: 0, dmg: 0, bosses: 0, salvage: 0 }, settled: false,
+    stats: { kills: 0, dmg: 0, bosses: 0, salvage: 0 }, settled: false, dmgLog: [], dpsT: 0,
   });
+  resetLeagues();
+  G.pendingRitual = false;
   G.lastClass = cls;
   _parts.length = 0; _chunks.clear();
   const P = createPlayer(cls);
@@ -52,6 +57,7 @@ function startGame(cls, map) {
   if (cls.id === 'scion') P.currency.fusing++;
   giveStartingGear(P);
   applyMetaStart(P);
+  if (map && map.loadout) for (const it of map.loadout) giveLoadoutItem(P, it);
   recomputePlayer();
   if (P.mods.ks.bornAscendant) G.pendingAscend = 1;
   P.life = P.maxLife;
@@ -73,6 +79,10 @@ function update(dt) {
   }
 
   updatePlayer(dt);
+  if (G.time >= G.dpsT) {
+    G.dpsT = G.time + 1;
+    for (const inst of P.skills) { const h = inst.rt.dh || (inst.rt.dh = []); h.push(inst.dmgDealt); if (h.length > 11) h.shift(); }
+  }
 
   // spatial hash of live enemies
   G.hash.clear();
@@ -91,6 +101,7 @@ function update(dt) {
   updateMapHazards(dt);
   updatePools(dt);
   updateBreach(dt);
+  updateLeagues(dt);
   updateShrines(dt);
   updateParticles(dt);
 
@@ -108,7 +119,8 @@ function update(dt) {
   if (P.dead) { setTimeout(() => showGameOver(false), 50); G.state = 'dying'; return; }
   if (G.victoryT > 0) { G.victoryT -= dt; if (G.victoryT <= 0) { G.state = 'dying'; showGameOver(true); return; } }
 
-  if (G.pendingAscend > 0) openAscend();
+  if (G.pendingRitual) openRitual();
+  else if (G.pendingAscend > 0) openAscend();
   else if (G.pendingLevels > 0) openLevelUp(false);
   else if (G.pendingChests > 0) openLevelUp(true);
 }
@@ -149,6 +161,7 @@ function onKey(e, down) {
   else if (e.code === 'AltLeft' || e.code === 'AltRight') { if (G.state === 'inventory') { G.showTiers = !G.showTiers; renderInvDetail(); e.preventDefault(); } }
   else if (e.code === 'KeyV') G.input.vaal = true;
   else if (e.code === 'KeyI') { if (G.state === 'play' || G.state === 'paused') openInventory(); else if (G.state === 'inventory') closeInventory(); }
+  else if (e.code === 'KeyC') { if (G.state === 'play') openPause(); else if (G.state === 'paused') resume(); }
   else if (e.code === 'KeyM') { Sfx.muted = !Sfx.muted; Music.setVolume(Sfx.muted ? 0 : G.settings.music); }
   else if (e.code === 'KeyN') toggleSetting('dmgNumbers');
   else if (e.code === 'KeyL') toggleSetting('lighting');
@@ -223,7 +236,7 @@ function init() {
   $('btn-map-alch').onclick = mapAlchemy;
   $('btn-map-chaos').onclick = mapChaos;
   $('btn-map-clear').onclick = mapClear;
-  $('btn-map-start').onclick = mapStart;
+  $('btn-map-start').onclick = mapStartPaid;
   $('btn-map-back').onclick = mapBack;
   $('btn-altar-back').onclick = closeAltar;
   $('btn-respec').onclick = () => { treeRespec(); altarSel = null; openAltar(); };
@@ -231,9 +244,20 @@ function init() {
   $('btn-socket-back').onclick = socketBack;
   $('btn-resume').onclick = resume;
   $('btn-inv').onclick = openInventory;
+  $('btn-ritual-close').onclick = closeRitual;
   $('btn-inv-close').onclick = closeInventory;
   $('btn-quit').onclick = () => { hide('pause'); G.state = 'menu'; G.player = null; buildMenu(); show('menu'); };
-  $('btn-retry').onclick = () => { hide('gameover'); startGame(G.lastClass, G.lastMap); };
+  // retrying a bought / dropped map sends you back to the Map Device (maps are consumed)
+  $('btn-retry').onclick = () => {
+    hide('gameover');
+    if (G.daily) startDaily();
+    else if (G.lastMap.tier > 1 || G.hc) { G.state = 'menu'; G.player = null; openMapDevice(G.lastClass); }
+    else startGame(G.lastClass, G.lastMap);
+  };
+  $('btn-stash').onclick = () => { Sfx.init(); stashView = null; openStash(); };
+  $('btn-stash-close').onclick = closeStash;
+  $('btn-daily').onclick = () => { Sfx.init(); startDaily(); };
+  $('btn-map-atlas').onclick = toggleAtlasTree;
   $('btn-menu').onclick = () => { hide('gameover'); G.state = 'menu'; G.player = null; buildMenu(); show('menu'); };
 
   buildMenu();

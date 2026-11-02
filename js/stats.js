@@ -126,6 +126,12 @@ function buildSkillStats(inst, p) {
     s.hit[t] = v; s.hitTotal += v;
   }
 
+  // Trinity: more elemental damage, even more with two or more elements
+  if (s.trinity) {
+    const n = ['fire', 'cold', 'lightning'].filter((t) => s.hit[t] > 0).length, k = n >= 2 ? 1.35 : 1.15;
+    for (const t of ['fire', 'cold', 'lightning']) if (s.hit[t]) { s.hitTotal += s.hit[t] * (k - 1); s.hit[t] *= k; }
+  }
+  if (m.ks.agony) s.hitMul *= 0.8;
   s.mainType = 'physical';
   { let best = 0; for (const t in s.hit) if (s.hit[t] > best) { best = s.hit[t]; s.mainType = t; } }
   s.critChance = m.ks.resolute ? 0 : clamp(s.crit * (1 + s.critInc) * s.critMore, 0, 0.95);
@@ -156,6 +162,10 @@ function describeStats(s) {
   else if (s.behavior !== 'aura' && s.behavior !== 'herald') out.push('คูลดาวน์: ' + s.cdFinal.toFixed(2) + 's');
   if (s.brand) out.push('ตราสูงสุด: ' + s.maxCount + ' · ทำงานทุก ' + s.hitCd.toFixed(2) + 's');
   if (s.split) out.push('ลูกธนูย่อย: ' + s.split);
+  if (s.flickers) out.push('วาร์ปต่อเนื่อง: ' + s.flickers);
+  if (s.bolts) out.push('สายฟ้า: ' + s.bolts);
+  if (s.blades) out.push('ใบมีด: ' + (s.blades + s.proj));
+  if (s.cluster) out.push('ระเบิดย่อย: ' + s.cluster);
   if (s.strikes) out.push('สายฟ้าฟาด: ' + s.strikes);
   if (s.balls) out.push('ลูกลาวา: ' + (s.balls + s.proj));
   if (s.proj) out.push('กระสุน: ' + s.proj + (s.pierce ? ' · ทะลุ ' + s.pierce : '') + (s.chain ? ' · กระโดด ' + s.chain : '') + (s.fork ? ' · Fork' : ''));

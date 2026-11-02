@@ -80,6 +80,7 @@ function castSkill(inst, s) {
       return true;
     }
     case 'ground': {
+      if (s.line) return castLine(inst, s);
       if (!nearestEnemy(P.x, P.y, s.range)) return false;
       const count = s.count + (s.cascade ? Math.ceil(s.count * 0.5) : 0);
       for (let i = 0; i < count; i++) {
@@ -112,6 +113,7 @@ function castSkill(inst, s) {
       return true;
     }
     case 'brand': return castBrand(inst, s);
+    case 'flicker': return castFlicker(inst, s);
     case 'strike': return castStrike(inst, s);
     case 'slam': return castSlam(inst, s);
     case 'beam': return castBeam(inst, s);
@@ -252,6 +254,16 @@ function explodeAt(p, x, y, mult) {
   addEffect({ kind: 'boom', x, y, r: s.radius, t: 0, dur: 0.3, color: s.color });
   fxExplosion(x, y, s.radius, s.mainType);
   if (s.mainType === 'fire' && Math.random() < 0.35) addDecal('scorch', x, y, s.radius / 34);
+  // Kinetic Blast: smaller explosions scatter around the first
+  if (s.cluster) {
+    for (let k = 0; k < s.cluster; k++) {
+      const cx = x + rand(-75, 75), cy = y + rand(-75, 75), r = s.radius * 0.75;
+      G.delayed.push({ t: 0.1 * (k + 1), fn: () => {
+        for (const e of enemiesInRadius(cx, cy, r, [])) hitEnemy(e, s, p.inst, 0.6, cx, cy);
+        addEffect({ kind: 'boom', x: cx, y: cy, r, t: 0, dur: 0.25, color: s.color });
+      } });
+    }
+  }
 }
 
 // ---------------- Caustic cloud ----------------
@@ -531,7 +543,22 @@ function castStrike(inst, s) {
   if (!tgt) return false;
   hitEnemy(tgt, s, inst, 1, P.x, P.y);
   addEffect({ kind: 'spark', x: tgt.x, y: tgt.y, r: 22, t: 0, dur: 0.18, color: s.color });
-  const n = s.balls + s.proj;
+  // Smite: lightning bolts on enemies around the target
+  if (s.bolts) {
+    const list = enemiesInRadius(tgt.x, tgt.y, s.boltR, []);
+    for (let k = 0; k < s.bolts && list.length; k++) {
+      const e = list.splice(Math.floor(Math.random() * list.length), 1)[0];
+      hitEnemy(e, s, inst, 0.7, e.x, e.y - 10);
+      addEffect({ kind: 'bolt', pts: [[e.x + rand(-20, 20), e.y - 240], [e.x + rand(-12, 12), e.y - 110], [e.x, e.y]], t: 0, dur: 0.18, color: s.color });
+      emit('spark', e.x, e.y, 5);
+    }
+  }
+  // Frost Blades: icy blades fly on from the target
+  if (s.blades) {
+    const n = s.blades + s.proj, a0 = angleTo(P.x, P.y, tgt.x, tgt.y), hs = new Set([tgt.id]);
+    for (let k = 0; k < n; k++) spawnProjectile(inst, s, tgt.x, tgt.y, a0 + (k - (n - 1) / 2) * s.spread, hs);
+  }
+  const n = s.balls ? s.balls + s.proj : 0;
   for (let i = 0; i < n; i++) {
     const a = rand(0, TAU), d = rand(30, 110);
     G.meteors.push({ x: tgt.x + Math.cos(a) * d, y: tgt.y + Math.sin(a) * d, delay: 0.25 + i * 0.03, fall: 0.25, r: s.radius, inst, s, mult: 0.6 });
@@ -578,6 +605,41 @@ function castBeam(inst, s) {
     const rx = e.x - P.x, ry = e.y - P.y, along = rx * ax + ry * ay;
     if (along < 0 || along > L) continue;
     if (Math.abs(rx * ay - ry * ax) < w + e.r) hitEnemy(e, s, inst, 1, P.x, P.y);
+  }
+  return true;
+}
+
+// Flicker Strike: teleport next to an enemy (Rares preferred) and strike around it
+function castFlicker(inst, s) {
+  const P = G.player;
+  const go = () => {
+    const pool = enemiesInRadius(P.x, P.y, s.range, []).filter((e) => !e.dead && !e.encased);
+    if (!pool.length) return false;
+    const tgt = pool.find((e) => e.rarity >= 2 && Math.random() < 0.6) || pick(pool);
+    const a = Math.atan2(P.y - tgt.y, P.x - tgt.x), d = tgt.r + P.r + 4;
+    const nx = tgt.x + Math.cos(a) * d, ny = tgt.y + Math.sin(a) * d;
+    addEffect({ kind: 'trail', x: P.x, y: P.y, r: 14, t: 0, dur: 0.3, color: s.color });
+    addEffect({ kind: 'bolt', pts: [[P.x, P.y], [(P.x + nx) / 2 + rand(-10, 10), (P.y + ny) / 2 + rand(-10, 10)], [nx, ny]], t: 0, dur: 0.14, color: s.color });
+    P.x = nx; P.y = ny;
+    P.iframes = Math.max(P.iframes, 0.2);
+    for (const e of enemiesInRadius(tgt.x, tgt.y, s.radius, [])) hitEnemy(e, s, inst, 1, P.x, P.y);
+    addEffect({ kind: 'spin', x: tgt.x, y: tgt.y, r: s.radius, t: 0, dur: 0.2, color: s.color });
+    emit('phys', tgt.x, tgt.y, 8, { speed: 1.3 });
+    return true;
+  };
+  if (!go()) return false;
+  for (let k = 1; k < s.flickers; k++) G.delayed.push({ t: 0.09 * k, fn: go });
+  return true;
+}
+
+// Glacial Cascade: bursts erupt one after another in a line toward the nearest enemy
+function castLine(inst, s) {
+  const P = G.player, tgt = nearestEnemy(P.x, P.y, s.range);
+  if (!tgt) return false;
+  const a = angleTo(P.x, P.y, tgt.x, tgt.y), n = s.count + (s.cascade ? 2 : 0), step = Math.max(s.radius * 1.1, (s.range * 0.9) / n);
+  for (let i = 0; i < n; i++) {
+    G.meteors.push({ x: P.x + Math.cos(a) * step * (i + 0.6), y: P.y + Math.sin(a) * step * (i + 0.6), delay: 0.06 * i + 0.1, fall: 0.1,
+      r: s.radius * (1 + i * 0.05), inst, s, mult: i === n - 1 ? 1.5 : 1 });
   }
   return true;
 }
