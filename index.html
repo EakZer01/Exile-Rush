@@ -6,7 +6,7 @@
 <title>Exile Survivors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=22">
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -140,15 +140,20 @@
       <div class="inv-left">
         <div id="inv-doll" class="doll"></div>
         <div id="inv-flasks" class="flask-row"></div>
-        <h3 class="altar-h">ลิงก์สกิล <span class="muted">(สกิลอยู่ใน Socket ของไอเทมไหน)</span></h3>
-        <div id="inv-links" class="links-panel"></div>
+        <div id="inv-quick" class="inv-quick"></div>
+        <details class="links-box"><summary>ลิงก์สกิล <span class="muted" id="inv-links-n"></span></summary>
+          <div class="muted links-help">สกิลอยู่ใน Socket ของไอเทมไหน · Support ต้องตรงสี Socket</div>
+          <div id="inv-links" class="links-panel"></div></details>
       </div>
       <div class="inv-right">
         <div id="inv-detail" class="inv-detail"></div>
         <label class="set-row tiers-row"><input type="checkbox" id="inv-tiers"> แสดง Prefix / Suffix และ Tier (Alt)</label>
       </div>
     </div>
-    <div class="inv-bagbar"><b>กระเป๋า</b> <span id="inv-count" class="muted"></span> <button id="btn-inv-sort" class="btn btn-small">จัดเรียง</button> <span id="inv-msg" class="bad"></span></div>
+    <div class="inv-bagbar"><b>กระเป๋า</b> <span id="inv-count" class="muted"></span> <button id="btn-inv-sort" class="btn btn-small">จัดเรียง</button>
+      <button id="btn-inv-salv-worse" class="btn btn-small">♻ ย่อยของที่แย่กว่า</button><button id="btn-inv-salv-all" class="btn btn-small btn-dim">♻ ย่อยทั้งหมด</button>
+      <span class="inv-legend"><span class="v-up-t">▲ ดีกว่า</span> <span class="v-down-t">▼ แย่กว่า</span> <span class="muted">● ใกล้เคียง</span></span>
+      <span id="inv-msg" class="bad"></span></div>
     <div class="bag-wrap"><div id="inv-grid" class="bag-grid"></div></div>
     <div id="inv-currency" class="inv-currency"></div>
     <div class="levelup-actions"><button id="btn-inv-close" class="btn">เล่นต่อ (I / Esc)</button></div>
@@ -224,37 +229,38 @@
 <div id="tip" class="tip hidden"></div>
 <div id="tooltip" class="tooltip hidden"></div>
 
-<script src="js/util.js?v=20"></script>
-<script src="js/data/skills.js?v=20"></script>
-<script src="js/data/supports.js?v=20"></script>
-<script src="js/data/passives.js?v=20"></script>
-<script src="js/data/monsters.js?v=20"></script>
-<script src="js/data/classes.js?v=20"></script>
-<script src="js/data/ascendancy.js?v=20"></script>
-<script src="js/data/evolutions.js?v=20"></script>
-<script src="js/data/meta.js?v=20"></script>
-<script src="js/data/items.js?v=20"></script>
-<script src="js/data/maps.js?v=20"></script>
-<script src="js/data/sprite_art.js?v=20"></script>
-<script src="js/stats.js?v=20"></script>
-<script src="js/fx.js?v=20"></script>
-<script src="js/combat.js?v=20"></script>
-<script src="js/skills.js?v=20"></script>
-<script src="js/enemies.js?v=20"></script>
-<script src="js/player.js?v=20"></script>
-<script src="js/settings.js?v=20"></script>
-<script src="js/meta.js?v=20"></script>
-<script src="js/items.js?v=20"></script>
-<script src="js/breach.js?v=20"></script>
-<script src="js/lighting.js?v=20"></script>
-<script src="js/world.js?v=20"></script>
-<script src="js/icons.js?v=20"></script>
-<script src="js/sprites.js?v=20"></script>
-<script src="js/render.js?v=20"></script>
-<script src="js/ui.js?v=20"></script>
-<script src="js/leagues.js?v=20"></script>
-<script src="js/stash.js?v=20"></script>
-<script src="js/codex.js?v=20"></script>
-<script src="js/game.js?v=20"></script>
+<script src="js/util.js?v=22"></script>
+<script src="js/data/skills.js?v=22"></script>
+<script src="js/data/supports.js?v=22"></script>
+<script src="js/data/passives.js?v=22"></script>
+<script src="js/data/monsters.js?v=22"></script>
+<script src="js/data/classes.js?v=22"></script>
+<script src="js/data/ascendancy.js?v=22"></script>
+<script src="js/data/evolutions.js?v=22"></script>
+<script src="js/data/meta.js?v=22"></script>
+<script src="js/data/items.js?v=22"></script>
+<script src="js/data/maps.js?v=22"></script>
+<script src="js/data/sprite_art.js?v=22"></script>
+<script src="js/stats.js?v=22"></script>
+<script src="js/fx.js?v=22"></script>
+<script src="js/combat.js?v=22"></script>
+<script src="js/skills.js?v=22"></script>
+<script src="js/enemies.js?v=22"></script>
+<script src="js/player.js?v=22"></script>
+<script src="js/settings.js?v=22"></script>
+<script src="js/meta.js?v=22"></script>
+<script src="js/items.js?v=22"></script>
+<script src="js/breach.js?v=22"></script>
+<script src="js/lighting.js?v=22"></script>
+<script src="js/world.js?v=22"></script>
+<script src="js/icons.js?v=22"></script>
+<script src="js/sprites.js?v=22"></script>
+<script src="js/render.js?v=22"></script>
+<script src="js/ui.js?v=22"></script>
+<script src="js/compare.js?v=22"></script>
+<script src="js/leagues.js?v=22"></script>
+<script src="js/stash.js?v=22"></script>
+<script src="js/codex.js?v=22"></script>
+<script src="js/game.js?v=22"></script>
 </body>
 </html>

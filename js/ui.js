@@ -728,36 +728,53 @@ function openInventory() {
   G.state = 'inventory';
   const P = G.player, cell = invCell();
   P.newItems = 0;
+  // compare every bag item with what's worn (▲ / ▼ / ●)
+  compareReset();
+  invCmp = new Map();
+  for (const it of P.backpack) invCmp.set(it, compareItem(it));
   // paper doll
   $('inv-doll').innerHTML = DOLL_LAYOUT.map((k) => {
     const it = P.equip[k];
     const lock = k === 'offhand' && !it && P.equip.weapon && BASES[P.equip.weapon.base].w.hands === 2 && BASES[P.equip.weapon.base].w.type !== 'bow';
-    return `<div class="doll-slot ds-${k}${it ? ' r-' + it.rarity : ''}${invSel && invSel === it ? ' sel' : ''}${lock ? ' locked' : ''}" data-eq="${k}">
+    const better = !it && P.backpack.some((b) => { const c = invCmp.get(b); return c && c.key === k && c.empty; });
+    return `<div class="doll-slot ds-${k}${it ? ' r-' + it.rarity : ''}${invSel && invSel === it ? ' sel' : ''}${lock ? ' locked' : ''}${better ? ' can-fill' : ''}" data-eq="${k}">
       ${it ? `<img src="${itemIconURL(it)}" alt="" draggable="false">${socketsVisualHtml(it, true)}` : `<span class="muted">${lock ? 'สองมือ' : SLOT_NAME[k]}</span>`}</div>`;
   }).join('');
   $('inv-flasks').innerHTML = P.flasks.map((f, i) => `<div class="flask-slot${f ? ' r-' + f.rarity : ''}${invSel && invSel === f ? ' sel' : ''}" data-fl="${i}">
     ${f ? `<img src="${itemIconURL(f)}" alt="" draggable="false">` : ''}<span class="fk">${i + 1}</span></div>`).join('');
+  $('inv-quick').innerHTML = quickStatsHtml();
   // grid backpack
   const grid = $('inv-grid');
   grid.style.setProperty('--cell', cell + 'px');
   grid.style.width = GRID_W * cell + 'px'; grid.style.height = GRID_H * cell + 'px';
   grid.innerHTML = P.backpack.map((it, i) => {
-    const [w, h] = itemSize(it);
-    return `<div class="bag-item r-${it.rarity}${invSel === it ? ' sel' : ''}" data-bi="${i}" title="${it.name}"
-      style="left:${it.gx * cell}px;top:${it.gy * cell}px;width:${w * cell}px;height:${h * cell}px"><img src="${itemIconURL(it)}" alt="" draggable="false"></div>`;
+    const [w, h] = itemSize(it), c = invCmp.get(it), v = c && c.verdict ? VERDICT[c.empty ? 'up' : c.verdict] : null;
+    return `<div class="bag-item r-${it.rarity}${invSel === it ? ' sel' : ''}${v ? ' ' + v[2] : ''}" data-bi="${i}" title="${it.name}${v ? ' — ' + (c.empty ? 'ช่องว่าง' : v[1]) : ''}"
+      style="left:${it.gx * cell}px;top:${it.gy * cell}px;width:${w * cell}px;height:${h * cell}px"><img src="${itemIconURL(it)}" alt="" draggable="false">
+      ${v ? `<span class="vb ${v[2]}">${v[0]}</span>` : ''}${it.locked ? '<span class="lk">🔒</span>' : ''}</div>`;
   }).join('');
   $('inv-count').textContent = `(${P.backpack.length} ชิ้น)`;
+  // salvage buttons: "worse than what I wear" and "everything" (both skip locked / Unique / Jewel)
+  const worse = salvageList('worse'), all = salvageList('all'), sh = (l) => l.reduce((a, it) => a + (SALVAGE_SHARDS[it.rarity] || 0), 0);
+  const bw = $('btn-inv-salv-worse'), ba = $('btn-inv-salv-all');
+  bw.textContent = `♻ ย่อยของที่แย่กว่า (${worse.length} · +${sh(worse)} ✦)`; bw.disabled = !worse.length;
+  ba.textContent = invConfirm === 'all' ? `ยืนยัน? ย่อย ${all.length} ชิ้น (+${sh(all)} ✦)` : `♻ ย่อยทั้งหมด (${all.length})`; ba.disabled = !all.length;
+  ba.classList.toggle('btn-danger', invConfirm === 'all');
+  bw.onclick = () => { salvageMany(worse); };
+  ba.onclick = () => { if (invConfirm !== 'all') { invConfirm = 'all'; openInventory(); } else { invConfirm = ''; salvageMany(all); } };
   $('inv-currency').innerHTML = CURRENCY_ORDER.map((k) => {
     const d = CRAFT_ORBS[k] || PICKUPS[k];
     return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}">${d.icon} ${P.currency[k] || 0}</span>`;
   }).join('') + Object.keys(P.essences).filter((k) => P.essences[k] > 0).map((k) => `<span class="cur" style="color:${ESSENCES[k].color}" title="${ESSENCES[k].name}: การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')}">◆ ${P.essences[k]}</span>`).join('');
   $('inv-links').innerHTML = linksPanelHtml();
+  $('inv-links-n').textContent = `(${P.skills.length} สกิล${P.skills.some((s) => activeSupports(s).inactive.length) ? ' · ⚠ มี Support ไม่ทำงาน' : ''})`;
   $('inv-msg').textContent = invMsg; invMsg = '';
-  // drag sources
-  const root = $('inventory');
-  root.querySelectorAll('[data-bi]').forEach((el) => { el.onpointerdown = (ev) => invPointerDown(ev, { item: P.backpack[+el.dataset.bi], from: 'bag' }, el); });
-  root.querySelectorAll('[data-eq]').forEach((el) => { const it = P.equip[el.dataset.eq]; if (it) el.onpointerdown = (ev) => invPointerDown(ev, { item: it, from: 'eq', key: el.dataset.eq }, el); });
-  root.querySelectorAll('[data-fl]').forEach((el) => { const f = P.flasks[+el.dataset.fl]; if (f) el.onpointerdown = (ev) => invPointerDown(ev, { item: f, from: 'fl', i: +el.dataset.fl }, el); });
+  // drag sources + hover preview (mouse only)
+  const root = $('inventory'), hover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+  const bindHover = (el, it) => { if (hover && it) { el.onmouseenter = () => renderInvDetail(it); el.onmouseleave = () => renderInvDetail(); } };
+  root.querySelectorAll('[data-bi]').forEach((el) => { const it = P.backpack[+el.dataset.bi]; el.onpointerdown = (ev) => invPointerDown(ev, { item: it, from: 'bag' }, el); bindHover(el, it); });
+  root.querySelectorAll('[data-eq]').forEach((el) => { const it = P.equip[el.dataset.eq]; if (it) { el.onpointerdown = (ev) => invPointerDown(ev, { item: it, from: 'eq', key: el.dataset.eq }, el); bindHover(el, it); } });
+  root.querySelectorAll('[data-fl]').forEach((el) => { const f = P.flasks[+el.dataset.fl]; if (f) { el.onpointerdown = (ev) => invPointerDown(ev, { item: f, from: 'fl', i: +el.dataset.fl }, el); bindHover(el, f); } });
   root.querySelectorAll('[data-host]').forEach((sel) => {
     sel.onchange = () => { const inst = P.skills.find((s) => s.uid === +sel.dataset.host); if (inst) { setHost(inst, sel.value || null); openInventory(); } };
   });
@@ -766,6 +783,50 @@ function openInventory() {
   $('btn-inv-sort').onclick = () => { sortBag(); openInventory(); };
   renderInvDetail();
   show('inventory');
+}
+
+let invCmp = new Map(), invConfirm = '';
+// bag items the salvage buttons would destroy
+function salvageList(mode) {
+  return G.player.backpack.filter((it) => {
+    if (it.locked || it.unique || it.slot === 'jewel') return false;
+    if (mode === 'all') return true;
+    if (it.slot === 'flask') return it.rarity === 'normal';
+    const c = invCmp.get(it);
+    return !!(c && c.verdict === 'down' && !c.empty);
+  });
+}
+function salvageMany(list) {
+  if (!list.length) return;
+  let got = 0;
+  for (const it of list) { got += SALVAGE_SHARDS[it.rarity] || 0; salvageItem(it); }
+  if (list.includes(invSel)) invSel = null;
+  invMsg = ''; Sfx.play('pickup');
+  openInventory();
+  $('inv-msg').innerHTML = `<span class="ok">ย่อย ${list.length} ชิ้น · +${got} ✦</span>`;
+}
+
+// the character's key numbers at a glance (updates as gear changes)
+function quickStatsHtml() {
+  const P = G.player, s = statSnapshot(P.equip);
+  const res = RES_KEYS.map(([t, n]) => {
+    const v = s.res[t], txt = t === 'chaos' && P.mods.ks.ci ? '∞' : Math.round(v * 100) + '%';
+    return `<span class="qs-res${v < 0 ? ' neg' : v >= 0.75 ? ' capped' : ''}" style="--c:${ELEM_COLOR[t]}" title="ต้านทาน${ELEM_TH[t]}">${n} ${txt}</span>`;
+  }).join('');
+  return `<div class="qs-row"><span>❤ <b>${Math.round(s.life)}</b></span>${s.es ? `<span>◇ <b>${Math.round(s.es)}</b> ES</span>` : ''}<span>⚔ <b>${fmtNum(s.dps)}</b> ดาเมจ/วิ</span></div>
+    <div class="qs-row"><span>⛨ ${Math.round(s.armour)}</span><span>➶ หลบ ${pct(evadeChance(P))}</span>${s.block ? `<span>▣ Block ${pct(s.block)}</span>` : ''}<span>➹ ${Math.round(s.move)}</span></div>
+    <div class="qs-row">${res}</div>`;
+}
+
+// ▲ / ▼ banner with the exact stat changes
+function verdictHtml(it) {
+  const c = invCmp.get(it);
+  if (!c) return '';
+  if (c.blocked) return `<div class="verdict v-side"><b>⛔ ${c.blocked}</b></div>`;
+  const [ic, txt, cls] = VERDICT[c.empty ? 'up' : c.verdict];
+  const head = c.empty ? `▲ ช่อง${SLOT_NAME[c.key]}ว่าง — สวมได้เลย` : `${ic} ${txt}`;
+  return `<div class="verdict ${cls}"><b>${head}</b>${c.empty ? '' : ` <span class="muted">(เทียบกับ${SLOT_NAME[c.key]})</span>`}
+    <div class="diff">${c.lines.map(([l, t, good]) => `<span class="${good ? 'pos' : 'neg'}">${l} ${t}</span>`).join('') || '<span class="muted">ไม่เปลี่ยนค่าหลัก</span>'}</div></div>`;
 }
 
 // which gear piece each skill gem sits in, and which supports are powered
@@ -782,31 +843,48 @@ function linksPanelHtml() {
   }).join('') || '<span class="muted">ยังไม่มีสกิล</span>';
 }
 
-function renderInvDetail() {
-  const P = G.player, it = invSel, box = $('inv-detail');
+// pv = an item under the mouse: preview only (no buttons), otherwise the selected item
+function renderInvDetail(pv) {
+  const P = G.player, it = pv || invSel, box = $('inv-detail');
   const w = it && whereIs(it);
-  if (!w) { invSel = null; box.innerHTML = '<div class="muted inv-help">คลิกไอเทมเพื่อดูรายละเอียด · <b>ลาก</b>ไอเทมไปวางที่ตัวละคร / ช่องฟลาสก์ / กระเป๋า<br>Socket บนไอเทมกำหนดว่าสกิลใส่ Support ได้กี่อันและสีอะไร (ดูแผง "ลิงก์สกิล")</div>'; return; }
-  let h = itemCardHtml(it, w.equip ? 'สวมใส่อยู่' : w.flask !== undefined ? `ฟลาสก์ช่อง ${w.flask + 1}` : 'ในกระเป๋า');
+  if (!w) {
+    if (!pv) invSel = null;
+    box.innerHTML = `<div class="muted inv-help"><b>วิธีใช้</b><br>• ชี้ / แตะไอเทมเพื่อดูรายละเอียด · <b>ลาก</b>ไปวางที่ตัวละคร ช่องฟลาสก์ หรือกระเป๋า<br>
+      • <span class="v-up-t">▲ เขียว</span> = ดีกว่าที่สวมอยู่ · <span class="v-down-t">▼ แดง</span> = แย่กว่า · <span class="muted">● เทา</span> = ใกล้เคียง (คิดจาก DPS, ชีวิต, ES, ค่าต้านทาน, ป้องกัน)<br>
+      • ปุ่ม ♻ ด้านล่างย่อยของหลายชิ้นในครั้งเดียว (ไม่ย่อย Unique, Jewel และของที่ล็อก 🔒)</div>`;
+    return;
+  }
+  let h = verdictHtml(it);
+  h += itemCardHtml(it, w.equip ? 'สวมใส่อยู่' : w.flask !== undefined ? `ฟลาสก์ช่อง ${w.flask + 1}` : 'ในกระเป๋า');
+  if (pv) { box.innerHTML = h; return; }
   h += '<div class="inv-actions">';
   if (it.slot === 'jewel') h += '<span class="muted">Jewel: เก็บเข้า Stash อัตโนมัติเมื่อจบรอบ แล้วใส่ที่ Legacy Tree</span>';
   else if (w.bag) h += it.slot === 'flask' ? '<button class="btn btn-small" data-act="flask">ใส่ช่องฟลาสก์</button>' : '<button class="btn btn-small" data-act="equip">สวมใส่</button>';
   else h += '<button class="btn btn-small" data-act="unequip">ถอดเก็บ</button>';
-  h += `<button class="btn btn-small btn-dim" data-act="salvage">ย่อย (+${SALVAGE_SHARDS[it.rarity]} ✦)</button></div>`;
-  h += '<div class="inv-actions craft-row">' + Object.entries(CRAFT).filter(([, c]) => c.can(it)).map(([k]) => {
-    const n = P.currency[k] || 0;
-    return `<button class="btn btn-small craft-btn" data-craft="${k}" ${n > 0 ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '').replace("'s", '')} ×${n}</button>`;
-  }).join('') + Object.keys(P.essences).filter((k) => P.essences[k] > 0 && essenceCan(k, it)).map((k) =>
-    `<button class="btn btn-small craft-btn" data-ess="${k}" style="--oc:${ESSENCES[k].color}" title="${ESSENCES[k].name}: สร้าง Rare ใหม่ การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')} (Tier 3+)">◆ ${ESSENCES[k].name.replace('Essence of ', '')} ×${P.essences[k]}</button>`).join('') + '</div>';
-  const bench = BENCH.filter((b) => benchCan(b, it));
-  if (bench.length || it.affixes && it.affixes.some((a) => a.crafted)) {
-    h += `<details class="bench"${G.benchOpen ? ' open' : ''}><summary>🔨 Crafting Bench <span class="muted">(เพิ่ม mod ได้ 1 อันต่อไอเทม)</span></summary><div class="inv-actions craft-row">` +
-      bench.map((b, i) => `<button class="btn btn-small" data-bench="${BENCH.indexOf(b)}" ${benchAfford(b, P.currency) ? '' : 'disabled'}>${AFFIXES[b.id].t.replace('{v}', b.v)} — ${Object.entries(b.cost).map(([k, n]) => `${CRAFT_ORBS[k].icon}×${n}`).join(' ')}</button>`).join('') +
-      (it.affixes.some((a) => a.crafted) ? '<button class="btn btn-small btn-dim" data-bench="rm">ลบ mod ที่คราฟต์ (ฟรี)</button>' : '') + '</div></details>';
+  if (w.bag) h += `<button class="btn btn-small btn-dim" data-act="lock">${it.locked ? '🔓 ปลดล็อก' : '🔒 ล็อก'}</button>`;
+  h += `<button class="btn btn-small btn-dim" data-act="salvage">ย่อย (+${SALVAGE_SHARDS[it.rarity] || 0} ✦)</button></div>`;
+  // crafting: orbs, essences and the bench, folded away until needed
+  const orbs = Object.entries(CRAFT).filter(([, c]) => c.can(it)), ess = Object.keys(P.essences).filter((k) => P.essences[k] > 0 && essenceCan(k, it));
+  const bench = BENCH.filter((b) => benchCan(b, it)), crafted = it.affixes && it.affixes.some((a) => a.crafted);
+  const usable = orbs.filter(([k]) => P.currency[k] > 0).length + ess.length + bench.filter((b) => benchAfford(b, P.currency)).length;
+  if (orbs.length || ess.length || bench.length || crafted) {
+    h += `<details class="craft-box"${G.craftOpen ? ' open' : ''}><summary>🔨 คราฟต์ไอเทมนี้ <span class="muted">(ใช้ได้ตอนนี้ ${usable} อย่าง)</span></summary>`;
+    h += '<div class="inv-actions craft-row">' + orbs.map(([k]) => {
+      const n = P.currency[k] || 0;
+      return `<button class="btn btn-small craft-btn" data-craft="${k}" ${n > 0 ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '').replace("'s", '')} ×${n}</button>`;
+    }).join('') + ess.map((k) =>
+      `<button class="btn btn-small craft-btn" data-ess="${k}" style="--oc:${ESSENCES[k].color}" title="${ESSENCES[k].name}: สร้าง Rare ใหม่ การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')} (Tier 3+)">◆ ${ESSENCES[k].name.replace('Essence of ', '')} ×${P.essences[k]}</button>`).join('') + '</div>';
+    if (bench.length || crafted) {
+      h += '<div class="muted bench-h">Crafting Bench — เพิ่ม mod ได้ 1 อันต่อไอเทม</div><div class="inv-actions craft-row">' +
+        bench.map((b) => `<button class="btn btn-small" data-bench="${BENCH.indexOf(b)}" ${benchAfford(b, P.currency) ? '' : 'disabled'}>${AFFIXES[b.id].t.replace('{v}', b.v)} — ${Object.entries(b.cost).map(([k, n]) => `${CRAFT_ORBS[k].icon}×${n}`).join(' ')}</button>`).join('') +
+        (crafted ? '<button class="btn btn-small btn-dim" data-bench="rm">ลบ mod ที่คราฟต์ (ฟรี)</button>' : '') + '</div>';
+    }
+    h += '</details>';
   }
-  // compare with what is worn in that slot
-  if (w.bag && it.slot !== 'flask') {
-    const keys = it.slot === 'ring' ? ['ring', 'ring2'] : [it.slot];
-    for (const k of keys) if (P.equip[k]) h += itemCardHtml(P.equip[k], 'เทียบกับที่สวมอยู่ (' + SLOT_NAME[k] + ')');
+  // the item(s) worn in that slot, folded
+  if (w.bag && it.slot !== 'flask' && it.slot !== 'jewel') {
+    const keys = (it.slot === 'ring' ? ['ring', 'ring2'] : [it.slot]).filter((k) => P.equip[k]);
+    if (keys.length) h += `<details class="cmp-eq"><summary>ดูไอเทมที่สวมอยู่ (${keys.map((k) => SLOT_NAME[k]).join(', ')})</summary>${keys.map((k) => itemCardHtml(P.equip[k], 'สวมอยู่: ' + SLOT_NAME[k])).join('')}</details>`;
   }
   box.innerHTML = h;
   box.querySelectorAll('[data-act]').forEach((b) => {
@@ -815,12 +893,13 @@ function renderInvDetail() {
       if (a === 'equip') invMsg = equipItem(it) || '';
       else if (a === 'flask') invMsg = equipFlask(it) || '';
       else if (a === 'unequip') { const ok = w.equip ? unequipItem(w.equip) : unequipFlask(w.flask); if (!ok) invMsg = 'กระเป๋าเต็ม'; }
+      else if (a === 'lock') { it.locked = !it.locked; openInventory(); return; }
       else if (a === 'salvage') { salvageItem(it); invSel = null; Sfx.play('pickup'); }
       Sfx.play('flask'); openInventory();
     };
   });
-  const bd = box.querySelector('details.bench');
-  if (bd) bd.ontoggle = () => { G.benchOpen = bd.open; };
+  const cb = box.querySelector('details.craft-box');
+  if (cb) cb.ontoggle = () => { G.craftOpen = cb.open; };
   box.querySelectorAll('[data-ess]').forEach((b) => {
     b.onclick = () => {
       const k = b.dataset.ess;

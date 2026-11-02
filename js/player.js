@@ -49,19 +49,25 @@ function createPlayer(cls) {
   };
 }
 
-function recomputePlayer() {
-  const P = G.player;
-  const ratio = P.maxLife > 0 ? P.life / P.maxLife : 1;
-  reassignHosts();
-  const m = defaultMods();
+// every modifier source for a given set of equipment (the item comparison uses other sets)
+function buildPlayerMods(equip) {
+  const P = G.player, m = defaultMods();
   P.cls.apply(m);
   applyMetaMods(m);
   for (const id in P.passives) for (let i = 0; i < P.passives[id]; i++) PASSIVES[id].apply(m);
   for (const id in P.keystones) KEYSTONES[id].apply(m);
   for (const id of P.ascNodes) ASC_NODES[id].apply(m);
-  for (const slot of ITEM_SLOTS) if (P.equip[slot]) applyItem(P.equip[slot], m);
+  for (const slot of ITEM_SLOTS) if (equip[slot]) applyItem(equip[slot], m);
   const fx = G.mapFx;
   m.lifeMore *= fx.pLife; m.regen *= fx.pRegen; m.leechCap *= fx.pRegen; m.flaskGainMore *= fx.pFlask;
+  return m;
+}
+
+function recomputePlayer() {
+  const P = G.player;
+  const ratio = P.maxLife > 0 ? P.life / P.maxLife : 1;
+  reassignHosts();
+  const m = buildPlayerMods(P.equip), fx = G.mapFx;
   P.mods = m;
   P.weapon = P.equip.weapon ? itemProps(P.equip.weapon) : null;
   P.armour = m.armour; P.evasion = m.evasion; P.block = Math.min(0.5, m.block);
