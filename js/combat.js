@@ -373,8 +373,13 @@ function proliferate(e, r) {
   }
 }
 
-// on-kill effects of skills: Contagion spreading, Herald of Ice shatter
-let _heraldBudget = 0, _heraldT = 0;
+// on-kill effects of skills: Contagion spreading, Herald of Ice shatter, Herald of Ash flames
+let _heraldBudget = 30, _heraldT = 0;
+function heraldBudgetOk() {
+  // cap herald chains so a frozen / burning horde can't stall a frame
+  if (G.time - _heraldT > 1 || G.time < _heraldT) { _heraldT = G.time; _heraldBudget = 30; }
+  return _heraldBudget-- > 0;
+}
 function onKillSkills(e) {
   if (e.contagion && e.contagion.t > G.time && G.player.skills.includes(e.contagion.inst)) {
     const c = e.contagion, x = e.x, y = e.y;
@@ -383,17 +388,24 @@ function onKillSkills(e) {
       addEffect({ kind: 'ring', x, y, r: 130, t: 0, dur: 0.3, color: '#a8e05a' });
     } });
   }
-  if ((e.chill.t > 0 || e.freeze > 0)) {
-    const her = G.player.skills.find((s) => s.st.herald === 'ice');
-    if (!her) return;
-    // cap shatter chains so a frozen horde can't stall a frame
-    if (G.time - _heraldT > 1 || G.time < _heraldT) { _heraldT = G.time; _heraldBudget = 30; }
-    if (_heraldBudget-- <= 0) return;
-    const x = e.x, y = e.y, s = her.st;
+  const ice = (e.chill.t > 0 || e.freeze > 0) && G.player.skills.find((s) => s.st.herald === 'ice' && !s.st.disabled);
+  if (ice && heraldBudgetOk()) {
+    const x = e.x, y = e.y, s = ice.st;
     G.delayed.push({ t: 0.07, fn: () => {
-      for (const n of enemiesInRadius(x, y, s.radius, [])) hitEnemy(n, s, her, 1, x, y);
+      for (const n of enemiesInRadius(x, y, s.radius, [])) hitEnemy(n, s, ice, 1, x, y);
       addEffect({ kind: 'boom', x, y, r: s.radius, t: 0, dur: 0.3, color: '#9fe0ff' });
       emit('shard', x, y, 8);
+    } });
+  }
+  // the burst always ignites, so the flames keep jumping from corpse to corpse
+  const ash = e.ign.t > 0 && G.player.skills.find((s) => s.st.herald === 'ash' && !s.st.disabled);
+  if (ash && heraldBudgetOk()) {
+    const x = e.x, y = e.y, s = ash.st;
+    G.delayed.push({ t: 0.1, fn: () => {
+      for (const n of enemiesInRadius(x, y, s.radius, [])) hitEnemy(n, s, ash, 1, x, y);
+      addEffect({ kind: 'boom', x, y, r: s.radius, t: 0, dur: 0.35, color: '#ff7a2a' });
+      emit('ember', x, y, 12, { speed: 1.4 });
+      addDecal('scorch', x, y, s.radius / 45);
     } });
   }
 }

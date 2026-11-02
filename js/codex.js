@@ -28,6 +28,10 @@ const COMBOS = [
     desc: 'ฟันไขว้ทำให้ทั้งฝูง Bleed · Crimson Bleed ทำให้ศพแตกเป็นเลือดต่อเนื่อง · เลือก Keystone Crimson Dance ให้ Bleed ซ้อนได้ 8 ชั้น' },
   { name: 'Frost Volley', parts: ['ice_shot', 'gmp', 'hypothermia', 'herald_of_ice'],
     desc: 'ลูกธนูน้ำแข็งแตกเป็นกรวยทำให้ทั้งแนว Chill · Herald of Ice ระเบิดศัตรูที่ติด Chill ตายต่อเป็นลูกโซ่' },
+  { name: 'Wildfire', parts: ['herald_of_ash', 'fireball', 'burning_damage', 'elemental_prolif'],
+    desc: 'Fireball ทำให้ฝูงติด Ignite → ตัวที่ตายปะทุไฟให้ตัวข้างๆ ติด Ignite ต่อเป็นทอดๆ · Burning Damage เพิ่มดาเมจเผา' },
+  { name: 'Storm Caller', parts: ['herald_of_thunder', 'arc', 'added_lightning', 'light_pen'],
+    desc: 'Arc กระโดดทำให้ทั้งฝูงติด Shock → Herald of Thunder ผ่าลงตัวที่ Shock อยู่ทุกช่วงเวลา แม้ไม่ได้ร่ายเอง' },
   { name: 'Burning Beam', parts: ['scorching_ray', 'infused_channelling', 'burning_damage', 'fire_pen'],
     desc: 'ลำแสงเผาต่อเนื่อง ยิ่งยืนยิงยิ่งร้อน · Infused Channelling ลดดาเมจที่ได้รับขณะยิง' },
 ];

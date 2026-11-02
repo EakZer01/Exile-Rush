@@ -163,3 +163,14 @@ test('Melee Splash hits around the target; Onslaught speeds you up on kill', () 
   g2.run(`const w = foe(80, 0); w.hp = w.maxHp = 1; step(60);`);
   assert.ok(g2.run('P7.onslaughtT > G.time'));
 });
+
+test('Herald of Ash spreads Ignite from burning corpses; Herald of Thunder strikes on its own', () => {
+  const { run } = supportGame(0, 'herald_of_ash', 'onslaught');
+  run(`I7.supports = []; recomputePlayer(); const a = foe(300, 300), b = foe(340, 300), c = foe(900, 900); H8 = [b, c];
+    a.ign.t = 2; a.ign.dps = 1; G.hash.clear(); for (const e of G.enemies) G.hash.insert(e); killEnemy(a, null);
+    for (const d of G.delayed.splice(0)) d.fn();`);
+  assert.deepEqual(Array.from(run('H8.map(e => e.ign.t > 0)')), [true, false]);
+  const g2 = supportGame(3, 'herald_of_thunder', 'onslaught');
+  g2.run(`I7.supports = []; recomputePlayer(); const s1 = foe(150, 0), s2 = foe(-150, 0), far = foe(800, 0); s1.shock.t = 5; s1.shock.eff = 0.2; T8 = [s1, s2, far]; I7.timer = 0; step(2);`);
+  assert.deepEqual(Array.from(g2.run('T8.map(e => e.hp < 1e9)')), [true, false, false]);
+});

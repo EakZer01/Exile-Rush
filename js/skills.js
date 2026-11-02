@@ -43,7 +43,10 @@ function updateSkills(dt) {
     if (s.totem) { updateTotems(inst, s, dt, speedMul * (inst.vaalT > 0 ? 2.5 : 1)); continue; }
     if (s.behavior === 'flicker') { updateFlicker(inst, s, dt, speedMul); continue; }
     if (s.behavior === 'aura') { tickAura(inst, s, dt); continue; }
-    if (s.behavior === 'herald') continue;          // works through on-kill only
+    if (s.behavior === 'herald') {                   // Ice / Ash work through on-kill only
+      if (s.herald === 'thunder') { inst.timer -= dt * speedMul; if (inst.timer <= 0) inst.timer = heraldThunder(inst, s) ? s.cdFinal : 0.2; }
+      continue;
+    }
     if (s.behavior === 'orbit') updateOrbit(inst, s, dt);
     if (s.behavior === 'brand') updateBrands(inst, s, dt);
     if (s.behavior === 'spin') inst.rt.spin = (inst.rt.spin || 0) + dt * 12;
@@ -589,6 +592,21 @@ function castStrike(inst, s) {
   for (let i = 0; i < n; i++) {
     const a = rand(0, TAU), d = rand(30, 110);
     G.meteors.push({ x: tgt.x + Math.cos(a) * d, y: tgt.y + Math.sin(a) * d, delay: 0.25 + i * 0.03, fall: 0.25, r: s.radius, inst, s, mult: 0.6 });
+  }
+  return true;
+}
+
+// Herald of Thunder: bolts on shocked enemies around you (one bolt when none is shocked)
+function heraldThunder(inst, s) {
+  const P = G.player, list = enemiesInRadius(P.x, P.y, s.range, []);
+  if (!list.length) return false;
+  const shocked = list.filter((e) => e.shock.t > 0);
+  const pool = shocked.length ? shocked : [list[Math.floor(Math.random() * list.length)]];
+  for (let k = 0; k < s.bolts && pool.length; k++) {
+    const e = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    hitEnemy(e, s, inst, 1, e.x, e.y - 10);
+    addEffect({ kind: 'bolt', pts: [[e.x + rand(-20, 20), e.y - 260], [e.x + rand(-12, 12), e.y - 120], [e.x, e.y]], t: 0, dur: 0.2, color: s.color });
+    emit('spark', e.x, e.y, 5);
   }
   return true;
 }

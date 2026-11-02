@@ -289,6 +289,26 @@ defSkill({
   color: '#9fe0ff', core: '#ffffff',
 });
 defSkill({
+  id: 'herald_of_ash', name: 'Herald of Ash', th: 'ผู้ประกาศเถ้าถ่าน', gem: 'r', icon: '♨',
+  tags: ['Spell', 'Fire', 'AoE', 'Herald'],
+  desc: 'ไม่ต้องร่าย: ศัตรูที่ตายขณะติด Ignite จะปะทุเป็นเปลวไฟ ทำให้ศัตรูรอบๆ ติด Ignite ต่อ (ลุกลามเป็นทอดๆ)',
+  behavior: 'herald',
+  base: { dmg: 9, types: { fire: 1 }, cd: 0, area: 90, ignite: 1, herald: 'ash' },
+  scale(s, l) { s.area *= 1 + 0.015 * (l - 1); },
+  levelNote: 'ทุกเลเวล: เปลวไฟกว้างขึ้น · คอมโบกับสกิลที่ทำให้ติด Ignite',
+  color: '#ff8a3d', core: '#ffe0a0',
+});
+defSkill({
+  id: 'herald_of_thunder', name: 'Herald of Thunder', th: 'ผู้ประกาศอัสนี', gem: 'b', icon: 'ϟ',
+  tags: ['Spell', 'Lightning', 'Herald'],
+  desc: 'ไม่ต้องร่าย: ทุกช่วงเวลาฟ้าผ่าศัตรูรอบตัว เล็งตัวที่ติด Shock ก่อน (ถ้าไม่มีตัวไหนติด Shock จะผ่าแค่ 1 ตัว) และทำให้ติด Shock',
+  behavior: 'herald',
+  base: { dmg: 14, types: { lightning: 1 }, cd: 1.3, range: 380, bolts: 3, shock: 0.5, herald: 'thunder' },
+  scale(s, l) { s.bolts += Math.floor(l / 6); s.cd *= 1 - 0.01 * (l - 1); },
+  levelNote: 'ทุก 6 เลเวล: +1 สายฟ้า · ทุกเลเวล: ผ่าถี่ขึ้น',
+  color: '#fff27a', core: '#ffffff',
+});
+defSkill({
   id: 'summon_skeletons', name: 'Summon Skeletons', th: 'อัญเชิญโครงกระดูก', gem: 'b', icon: '☠',
   tags: ['Spell', 'Minion', 'Duration', 'Physical'],
   desc: 'อัญเชิญโครงกระดูกนักดาบทีละ 2 ตัว ฝูงใหญ่แต่ตัวเล็ก (Minion)',
@@ -415,7 +435,7 @@ defSkill({
 
 // ---- weapon requirements: a gem only fires while you hold one of its weapons ----
 // Gems left out of this list are universal (any weapon, even unarmed):
-// novas, auras, heralds, brands, minions and Firestorm.
+// novas, auras, heralds (Ice / Ash / Thunder), brands, minions and Firestorm.
 const CASTER_WEAPONS = ['wand', 'staff', 'sceptre', 'dagger'];
 const SKILL_WEAPONS = {
   fireball: CASTER_WEAPONS, arc: CASTER_WEAPONS, spark: CASTER_WEAPONS, frostbolt: CASTER_WEAPONS,

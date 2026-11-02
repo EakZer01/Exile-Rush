@@ -212,6 +212,14 @@ const SYMBOLS = {
     g.lineWidth = 2;
     for (const a of [-0.9, 0.9, -2.2, 2.2]) { g.beginPath(); g.moveTo(Math.cos(a) * 9, Math.sin(a) * 9); g.lineTo(Math.cos(a) * 17, Math.sin(a) * 17); g.stroke(); }
   },
+  herald_of_ash(g) {
+    g.beginPath(); g.moveTo(0, -18); g.quadraticCurveTo(12, -4, 8, 8); g.quadraticCurveTo(4, 16, 0, 16); g.quadraticCurveTo(-4, 16, -8, 8); g.quadraticCurveTo(-12, -4, 0, -18); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.45)'; g.beginPath(); g.arc(0, 8, 5, 0, TAU); g.fill();
+  },
+  herald_of_thunder(g) {
+    g.beginPath(); g.moveTo(4, -18); g.lineTo(-8, 2); g.lineTo(0, 2); g.lineTo(-4, 18); g.lineTo(9, -4); g.lineTo(1, -4); g.closePath(); g.fill();
+    g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 17, -2.6, -0.6); g.stroke(); g.beginPath(); g.arc(0, 0, 17, 0.5, 2.5); g.stroke();
+  },
   summon_skeletons(g) {
     g.beginPath(); g.arc(0, -8, 8, 0, TAU); g.fill();
     g.fillRect(-4, 0, 8, 4);

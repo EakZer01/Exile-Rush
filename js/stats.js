@@ -172,7 +172,9 @@ function describeStats(s) {
   const out = [];
   const typeStr = DMG_TYPES.filter((t) => s.hit[t]).map((t) => `<span style="color:${TYPE_COLOR[t]}">${fmtNum(s.hit[t])} ${t}</span>`).join(' + ');
   if (s.behavior === 'aura') out.push('ดาเมจเผา/วิ: <b>' + fmtNum(s.auraDps) + '</b>');
-  else if (s.behavior === 'herald') out.push('ระเบิดเมื่อศัตรูติด Chill ตาย: ' + typeStr);
+  else if (s.herald === 'ice') out.push('ระเบิดเมื่อศัตรูติด Chill ตาย: ' + typeStr);
+  else if (s.herald === 'ash') out.push('ปะทุเมื่อศัตรูติด Ignite ตาย: ' + typeStr);
+  else if (s.herald === 'thunder') out.push('ฟ้าผ่าทุก ' + s.cdFinal.toFixed(2) + 's: ' + typeStr);
   else out.push('ดาเมจต่อครั้ง: ' + typeStr);
   if (s.curse) out.push('คำสาป: ' + { ele: 'Elemental Weakness', vuln: 'Vulnerability', despair: 'Despair' }[s.curse]);
   if (s.cloud) out.push('หมอกพิษ/วิ: <b>' + fmtNum(s.cloudDpsFinal) + '</b>');
