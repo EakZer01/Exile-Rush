@@ -14,7 +14,7 @@ function makeEnemy(type, x, y, rarity) {
     id: uid(), type, def: d, x, y, kx: 0, ky: 0,
     r: d.r * (rarity === 2 ? 1.4 : rarity === 1 ? 1.15 : 1),
     hp: d.hp * hpMul * mapHp, maxHp: d.hp * hpMul * mapHp,
-    speed: d.speed * rand(0.9, 1.1) * fx.monSpeed, dmg: d.dmg * dmgScale(min) * tierDmg(M.tier) * fx.monDmg,
+    speed: d.speed * rand(0.9, 1.1) * fx.monSpeed * speedScale(min), dmg: d.dmg * dmgScale(min) * tierDmg(M.tier) * fx.monDmg,
     color: d.color, shape: d.shape, xp: d.xp * (rarity === 1 ? 4 : rarity === 2 ? 25 : 1),
     rarity, mods: [], name: null,
     res: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 }, dmgTakenMul: 1, regen: 0,
@@ -28,7 +28,7 @@ function makeEnemy(type, x, y, rarity) {
     addMod(e, pick(MAGIC_MODS));
   } else if (rarity === 2) {
     e.name = rareName();
-    const keys = shuffle(Object.keys(MONSTER_MODS)).slice(0, randi(2, 3));
+    const keys = shuffle(Object.keys(MONSTER_MODS)).slice(0, randi(2, 3) + (min > 9 ? 1 : 0));
     for (const k of keys) addMod(e, k);
   }
   return e;
@@ -68,8 +68,8 @@ function updateSpawner(dt) {
   const S = G.spawn, min = G.time / 60;
   const bossAlive = G.enemies.some((e) => e.rarity === 3 && !e.dead);
   const fx = G.mapFx;
-  const target = Math.min((26 + min * 22) * fx.spawn, 360 * Math.min(1.25, fx.spawn)) * (bossAlive ? 0.6 : 1);
-  const rate = (2.0 + min * 1.25) * fx.spawn * (bossAlive ? 0.5 : 1);
+  const target = Math.min((28 + min * 25) * fx.spawn, 410 * Math.min(1.2, fx.spawn)) * (bossAlive ? 0.6 : 1);
+  const rate = (2.2 + min * 1.4) * fx.spawn * (bossAlive ? 0.5 : 1);
   if (G.enemies.length < target) {
     S.acc += rate * dt * (G.enemies.length < target * 0.4 ? 3 : 1);
     while (S.acc >= 1) {
@@ -82,14 +82,14 @@ function updateSpawner(dt) {
   // magic pack
   S.magicT -= dt;
   if (S.magicT <= 0 && min >= 1) {
-    S.magicT = rand(18, 26) / fx.magicRate;
-    const [x, y] = spawnPoint(30), type = waveType(), n = randi(3, 5);
+    S.magicT = rand(16, 23) / fx.magicRate;
+    const [x, y] = spawnPoint(30), type = waveType(), n = randi(3, 5) + (min > 8 ? 2 : 0);
     for (let i = 0; i < n; i++) spawnEnemy(type, x + rand(-40, 40), y + rand(-40, 40), 1);
   }
   // rare monster
   S.rareT -= dt;
   if (S.rareT <= 0 && min >= 1.5) {
-    S.rareT = rand(38, 52) / fx.rareRate;
+    S.rareT = rand(30, 42) / fx.rareRate;
     const [x, y] = spawnPoint(30);
     const e = spawnEnemy(waveType(), x, y, 2);
     for (let i = 0; i < 4; i++) spawnEnemy(e.type, x + rand(-50, 50), y + rand(-50, 50), 0);

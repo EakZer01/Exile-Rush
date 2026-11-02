@@ -30,8 +30,10 @@ const WAVES = [
 ];
 
 // Health multiplier over time (minutes)
-const hpScale = (min) => 1 + min * 0.32 + min * min * 0.042;
-const dmgScale = (min) => 1 + min * 0.08;
+// steeper late game: builds come online around 8–12 min, monsters keep pace
+const hpScale = (min) => 1 + min * 0.45 + min * min * 0.08;
+const dmgScale = (min) => 1 + min * 0.15 + min * min * 0.006;
+const speedScale = (min) => 1 + min * 0.01;
 
 // Magic (blue) and Rare (yellow) monster modifiers
 const MONSTER_MODS = {
@@ -54,13 +56,13 @@ const rareName = () => pick(RARE_PREFIX) + ' ' + pick(RARE_SUFFIX);
 
 // Bosses — patterns used by enemies.js boss AI
 const BOSSES = [
-  { at: 300, id: 'warden', name: 'Infernal Warden', th: 'ผู้คุมนรกเพลิง', hp: 2200, speed: 72, dmg: 18, r: 36,
+  { at: 300, id: 'warden', name: 'Infernal Warden', th: 'ผู้คุมนรกเพลิง', hp: 3300, speed: 72, dmg: 22, r: 36,
     color: '#c43a1a', glow: '#ff7a2a', patterns: ['radial', 'charge', 'ring'], ptype: 'fire' },
-  { at: 600, id: 'colossus', name: 'Frostbound Colossus', th: 'ยักษ์น้ำแข็งนิรันดร์', hp: 9000, speed: 60, dmg: 30, r: 44,
+  { at: 600, id: 'colossus', name: 'Frostbound Colossus', th: 'ยักษ์น้ำแข็งนิรันดร์', hp: 20000, speed: 60, dmg: 36, r: 44,
     color: '#3a7fb8', glow: '#9fe0ff', patterns: ['ring', 'radial', 'slam', 'summon'], ptype: 'cold' },
-  { at: 900, id: 'herald', name: 'Herald of Storms', th: 'ผู้ประกาศพายุ', hp: 24000, speed: 85, dmg: 36, r: 40,
+  { at: 900, id: 'herald', name: 'Herald of Storms', th: 'ผู้ประกาศพายุ', hp: 120000, speed: 85, dmg: 44, r: 40,
     color: '#b8a03a', glow: '#fff07a', patterns: ['strike', 'radial', 'charge', 'summon'], ptype: 'lightning' },
-  { at: 1200, id: 'sovereign', name: 'The Void Sovereign', th: 'จักรพรรดิแห่งความว่างเปล่า', hp: 65000, speed: 70, dmg: 40, r: 54,
+  { at: 1200, id: 'sovereign', name: 'The Void Sovereign', th: 'จักรพรรดิแห่งความว่างเปล่า', hp: 600000, speed: 70, dmg: 50, r: 54,
     color: '#3a1a5a', glow: '#b060ff', patterns: ['spiral', 'strike', 'ring', 'radial', 'summon', 'charge'], ptype: 'chaos', final: true },
 ];
 const RUN_LENGTH = 1200; // seconds — final boss spawns at 20:00

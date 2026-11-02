@@ -34,6 +34,7 @@ defPassive({ id: 'vampirism', name: 'Vampirism', th: 'แวมไพร์', ic
 defPassive({ id: 'flask', name: 'Alchemist', th: 'นักเล่นแร่แปรธาตุ', icon: '⚗', max: 3, desc: 'ฟลาสก์ได้ชาร์จเพิ่ม 30%, ฟื้นฟูมากขึ้น 20%', apply(m) { m.flaskCharge += 0.3; m.flaskEff += 0.2; } });
 
 const KEYSTONES = {};
+const MAX_KEYSTONES = 3;   // per run — each one is a real build decision
 function defKeystone(d) { d.max = 1; d.keystone = true; KEYSTONES[d.id] = d; }
 
 defKeystone({ id: 'elemental_overload', name: 'Elemental Overload', th: 'ธาตุล้นพลัง', icon: '❂',

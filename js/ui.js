@@ -76,7 +76,7 @@ function generateChoices(n) {
     if (fits.length && free) cats.support.push({ type: 'support', id });
   }
   for (const id in PASSIVES) if ((P.passives[id] || 0) < PASSIVES[id].max) cats.passive.push({ type: 'passive', id });
-  if (P.level >= 8) for (const id in KEYSTONES) if (!P.keystones[id]) cats.keystone.push({ type: 'keystone', id });
+  if (P.level >= 8 && Object.keys(P.keystones).length < MAX_KEYSTONES) for (const id in KEYSTONES) if (!P.keystones[id]) cats.keystone.push({ type: 'keystone', id });
   if (P.skills.some((s) => s.sockets < MAX_SOCKETS)) cats.fusing.push({ type: 'fusing' });
   cats.awaken = [];
   if (P.level >= 12) {
@@ -192,7 +192,7 @@ function cardHtml(c, idx) {
     const d = KEYSTONES[c.id];
     return `<div class="card card-keystone">${key}
       <div class="card-head"><span class="node node-key">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Keystone</div></div><div class="badge badge-key">KEYSTONE</div></div>
-      <div class="card-desc">${d.desc}</div><div class="card-note">เลือกได้ครั้งเดียว — เปลี่ยนแนวบิว!</div></div>`;
+      <div class="card-desc">${d.desc}</div><div class="card-note">Keystone ${Object.keys(P.keystones).length + 1}/${MAX_KEYSTONES} ของรอบนี้ — เลือกให้ดี!</div></div>`;
   }
   if (c.type === 'fusing') {
     return `<div class="card card-currency">${key}
