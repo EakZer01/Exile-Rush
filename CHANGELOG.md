@@ -1,5 +1,20 @@
 # Changelog
 
+## Browser build 35 — 2026-11-03
+
+- **อาวุธกำหนดสกิล**: เจมหลักใช้ได้กับอาวุธบางประเภท (ธนู / อาวุธประชิด / อาวุธเวท) ถ้าถืออาวุธไม่ตรง สกิลจะหยุดทำงานและขึ้นกากบาทแดง ส่วนเจมที่ใช้ได้กับทุกอาวุธ ได้แก่ Nova, Aura, Herald, Brand, Minion และ Firestorm การ์ดสกิลใหม่จะสุ่มเฉพาะเจมที่ใช้กับอาวุธที่ถืออยู่ได้ ไอเทมอาวุธบอกว่าจะปิดหรือเปิดสกิลไหน และอาวุธที่ดรอปมักเป็นประเภทที่บิวใช้ได้
+- **Passive Tree ระหว่างรอบ + Mastery**: Passive แบ่งเป็น 7 สาย (Projectile, Critical, Ailment, Defence, Caster, Warfare, Minion) ลงครบตามจำนวนแล้ว Milestone ถัดไปจะให้เลือก Mastery 1 ใน 2 ทาง เช่น Boomerang (กระสุนย้อนกลับ) หรือ Close Quarters (ใกล้แรง ไกลอ่อน) การ์ด Passive บอกความคืบหน้าของสาย
+- **Unique เปลี่ยนบิว + แหล่งดรอปเฉพาะ**: Unique ใหม่ 9 ชิ้น เช่น Stormheart Fang (Flicker เป็นสายฟ้า), Eye of the Gale (Tornado Shot ยิงเป็นแนวแคบ), The Pale Engine (Fireball เป็นน้ำแข็ง) และ Crown of the Hollow King (Keystone +1) Unique 21 ชิ้นดรอปเฉพาะบอสประจำพื้นที่, Pinnacle, Echo, Breach, Ritual, Delirium หรือ Strongbox โดย Codex มีตัวกรองตามแหล่งและบอกแหล่งดรอปแม้ยังไม่เจอ
+- **Unique Collection**: สะสมครบ 5/10/15/20/25/30/40 ชิ้นได้โบนัสถาวร
+- **Scarab**: ไอเทมใช้แล้วหมด 11 แบบ ใส่ที่ Map Device (เริ่ม 2 ช่อง) เพื่อกำหนดรอบถัดไป เช่น Breach บ่อยขึ้น หรือบอสสุดท้ายดรอป Unique ประจำพื้นที่แน่นอน ดรอปจากบอส, Rare และ league content หรือซื้อสุ่มด้วย Shards
+- **Gem Mastery**: เจมได้ XP ข้ามรอบ ทุกเลเวลเพิ่มดาเมจโดยไม่จำกัด ปลด Alternate Quality (Anomalous / Divergent / Phantasmal) และที่ Lv 15 เจมจะเริ่มสูงขึ้น +2 เลเวล ใช้ Shards เติม XP ได้ไม่จำกัด
+- **ห้องรางวัล (Vault)**: ชนะแผนที่แล้วเลือกรางวัล 1 จาก 3 การ์ด (ธรรมดา / หายาก / ตำนาน) เช่น Shards, Scarab, แผนที่ Tier สูง, Jewel, Unique ประจำพื้นที่, Gem XP หรือ Heirloom XP
+- **Heirloom**: ผูกไอเทมใน Stash (80 ✦, สูงสุด 4 ชิ้น) ไอเทมจะกลับเข้า Stash เองหลังจบรอบ และเก่งขึ้นถึง Lv 5 (+15% ดาเมจ/ชีวิต, +1 เลเวลเจม)
+- **Challenges 24 ข้อ**: ทำสำเร็จได้ Shards และทุก 4 ข้อได้โบนัสถาวร เช่น ช่อง Scarab, เก็บของเข้า Stash เพิ่ม หรือการ์ดในห้องรางวัลเพิ่ม
+- **Voidstone 4 อัน + Atlas Completion**: Voidstone ทำให้แผนที่ Tier 6 ขึ้นไปยากขึ้นแต่ดรอปดีขึ้น ส่วนการผ่านครบทุกพื้นที่ใน Tier เดียวกันให้แต้ม Atlas Tree และ Scarab
+- Altar of Legacy มีแท็บ Gem Mastery / Challenges / Voidstone & Atlas / Unique Collection และหน้าจบรอบสรุป XP เจม, Scarab, Heirloom, Challenge และ Voidstone ที่ได้
+- ชุดทดสอบเพิ่มเป็น 52 กรณี
+
 ## Browser build 34 — 2026-11-03
 
 - Flicker Strike วาร์ปตัวจริงเป็นชุดละ 3 ครั้ง กดเดินหรือ Dash เพื่อยกเลิกทันที และกด T หรือปุ่มบนจอเพื่อเปิด/พัก

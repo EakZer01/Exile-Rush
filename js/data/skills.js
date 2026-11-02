@@ -358,3 +358,29 @@ defSkill({
   levelNote: 'ทุกเลเวล: วงกว้างขึ้น',
   color: '#fff27a', core: '#ffffff',
 });
+
+// ---- weapon requirements: a gem only fires while you hold one of its weapons ----
+// Gems left out of this list are universal (any weapon, even unarmed):
+// novas, auras, heralds, brands, minions and Firestorm.
+const CASTER_WEAPONS = ['wand', 'staff', 'sceptre', 'dagger'];
+const SKILL_WEAPONS = {
+  fireball: CASTER_WEAPONS, arc: CASTER_WEAPONS, spark: CASTER_WEAPONS, frostbolt: CASTER_WEAPONS,
+  ball_lightning: CASTER_WEAPONS, freezing_pulse: CASTER_WEAPONS, essence_drain: CASTER_WEAPONS,
+  glacial_cascade: CASTER_WEAPONS, scorching_ray: CASTER_WEAPONS, ethereal_knives: CASTER_WEAPONS,
+  blade_vortex: ['sword', 'dagger', 'axe', 'wand'],
+  split_arrow: ['bow'], caustic_arrow: ['bow'], lightning_arrow: ['bow'], tornado_shot: ['bow'], toxic_rain: ['bow'],
+  kinetic_blast: ['wand'],
+  cyclone: ['sword', 'axe', 'mace', 'staff', 'dagger'],
+  flicker_strike: ['sword', 'axe', 'dagger', 'mace', 'staff'],
+  frost_blades: ['sword', 'dagger', 'axe'],
+  smite: ['mace', 'sceptre', 'sword', 'axe', 'staff'],
+  molten_strike: ['mace', 'sceptre', 'axe', 'sword', 'staff'],
+  earthquake: ['mace', 'sceptre', 'axe', 'staff'],
+};
+for (const id in SKILL_WEAPONS) SKILLS[id].weapons = SKILL_WEAPONS[id];
+// w = itemProps of the held weapon (or null when unarmed)
+function skillWeaponOk(id, w) {
+  const ws = SKILLS[id].weapons;
+  return !ws || (!!w && ws.includes(w.wtype));
+}
+const weaponReqText = (id) => (SKILLS[id].weapons ? SKILLS[id].weapons.map((t) => WEAPON_TYPE[t]).join(' / ') : 'ทุกอาวุธ');

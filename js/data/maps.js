@@ -126,5 +126,7 @@ const ATLAS_TREE = [
     { n: 'Wanderer', d: 'เก็บของเข้า Stash ได้ +1 ชิ้น · พกเข้ารอบได้ +1 ชิ้น · ไอเทมดรอปเพิ่ม 10%', a(f) { f.stashAdd += 1; f.itemQty *= 1.1; } }] },
 ];
 const ATLAS_FX_DEFAULT = { boxRate: 1, boxBonus: false, essRate: 1, essDouble: false, tribute: 1, ritualExtra: false, deliDur: 1, deliReward: 1, deliTwice: false,
-  breachRate: 1, breachLoot: 1, mapDrop: 1, itemQty: 1, stashAdd: 0 };
+  breachRate: 1, breachLoot: 1, mapDrop: 1, itemQty: 1, stashAdd: 0,
+  // endgame: scarabs, voidstones, collection and challenge bonuses
+  uniqueMul: 1, srcUnique: 1, srcBossSure: false, shardMul: 1, scarabDrop: 1, vaultExtra: 0, vaultLuck: 0, scarabSlots: 2 };
 const DEFAULT_MAP = { biome: 'graveyard', tier: 1, mods: [] };

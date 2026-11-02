@@ -56,6 +56,8 @@ function buildSkillStats(inst, p) {
     arrow: !!b.arrow, cloud: !!b.cloud,
     pen: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 }, ailMore: 1, hitMul: 1,
   };
+  // the gem stays socketed but goes quiet while the held weapon can't use it
+  s.disabled = !!(p && p.equip) && !skillWeaponOk(inst.id, p.weapon);
   // skill-specific base fields (zap, split, brand, beam...) pass straight through
   for (const k in b) if (!(k in s)) s[k] = b[k];
   const lvl = inst.level + m.gemLevel;
@@ -76,6 +78,19 @@ function buildSkillStats(inst, p) {
       if (AWAKEN_BONUS[sid]) AWAKEN_BONUS[sid].apply(s);
     }
   }
+
+  // build-changing uniques reshape their gem
+  for (const f of m.skillHooks) f(s, inst.id);
+  // cross-run Gem Mastery: more damage per level and the chosen alternate quality
+  const gm = gemMastery(inst.id);
+  if (gm) { s.more *= gemMasteryMore(gm.lv); if (gm.alt) applyAltQuality(s, gm.alt, inst.id); }
+
+  // run-path masteries
+  if (m.projReturn && tags.has('Projectile')) s.returning = true;
+  if (m.noAilment) s.noAilment = true;
+  s.ailMore *= m.ailMore; s.morePhys *= m.physMore;
+  if (tags.has('Spell')) s.speedInc += m.spellSpeed;
+  if (tags.has('Attack')) s.speedInc += m.attackSpeed;
 
   // player-wide modifiers
   s.crit += m.critAdd; s.critMulti += m.critMulti; s.speedInc += m.speedInc; s.areaInc += m.areaInc;
@@ -145,7 +160,7 @@ function buildSkillStats(inst, p) {
   s.dotMul = s.dotMore * (1 + m.incDot);
   s.auraDps = s.hitTotal * s.burnMore * s.dotMul;           // Righteous Fire style
   s.cloudDpsFinal = s.hitTotal * s.cloudDps * s.dotMul;     // Caustic cloud
-  s.ailmentDur = (1 + s.durInc * 0.5 + m.ailDurInc) * s.durMore;
+  s.ailmentDur = (1 + s.durInc * 0.5 + m.ailDurInc) * s.durMore * m.ailDurMore;
   s.minionSpeedMul = 1 + s.minionSpeed;
   return s;
 }

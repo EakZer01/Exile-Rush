@@ -66,6 +66,8 @@ function closeBreach(opened) {
     for (let i = 0; i < orbs; i++) spawnPickup(B.x + rand(-50, 50), B.y + rand(-50, 50), randomCraftOrb());
     if (k >= 20) spawnPickup(B.x, B.y, 'chest');
     if (k >= 40) dropItem(B.x + 30, B.y, k >= 80 && Math.random() < 0.3 ? 'unique' : 'rare');
+    if (k >= 40) maybeScarab(B.x, B.y + 30, 0.35);
+    if (k >= 60 && srcChance(0.25)) dropSourceUnique(B.x - 30, B.y, 'breach');
     addEffect({ kind: 'ring', x: B.x, y: B.y, r: B.r, t: 0, dur: 0.6, color: '#c070ff' });
     announce('Breach ปิดแล้ว', `สังหาร ${k} ตัว · รางวัลตกอยู่ที่ใจกลาง`, '#c070ff');
     G.stats.breaches = (G.stats.breaches || 0) + 1;

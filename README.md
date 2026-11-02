@@ -48,6 +48,16 @@
   - Rare/Unique มีลำแสงบนพื้น ไอเทมเก็บอัตโนมัติเมื่อเดินผ่าน (ถ้าช่องว่างจะสวมให้ทันที) ย่อยไอเทมเป็น Ancient Shards ได้
   - คลัง Unique ที่เคยค้นพบบันทึกถาวรและดูได้ที่ Altar of Legacy
   - **Unique 31 ชิ้น** รวม Ward of the Tempest (โล่ต้านธาตุ) และ Stillwater Vestment (ES / ต้านเคออส — เข้ากับ Chaos Inoculation)
+- **อาวุธกำหนดสกิล**: เจมธนู (Split/Caustic/Lightning Arrow, Tornado Shot, Toxic Rain) ต้องถือธนู · เจม Melee ต้องถืออาวุธประชิดตามชนิด (เช่น Earthquake ใช้กระบอง/คทา/ขวาน/คทายาว) · Kinetic Blast ใช้ไม้กายสิทธิ์ · เจมเวทยิงกระสุน (Fireball, Arc, Spark ฯลฯ) ใช้กับไม้กายสิทธิ์/คทายาว/คทา/มีดสั้น · **ใช้ได้ทุกอาวุธ**: Ice Nova, Shock Nova, Contagion, Righteous Fire, Herald of Ice, Brand, Minion, Firestorm · ถืออาวุธไม่ตรง สกิลจะหยุดทำงาน (กากบาทแดงบนแถบสกิล) · ดูได้ในการ์ด, Codex และ tooltip อาวุธ
+- **Passive Tree ระหว่างรอบ + Mastery**: Passive แบ่งเป็น 7 สาย — Projectile, Critical, Ailment, Defence, Caster, Warfare, Minion · ลงครบ 6 ระดับ (Defence 8) แล้ว **Milestone** ถัดไปจะให้เลือก Mastery 1 ใน 2 เช่น Projectile: Boomerang (กระสุนย้อนกลับ) หรือ Close Quarters (ใกล้แรง ไกลอ่อน) · Critical: Assassin's Edge หรือ Lucky Strikes · ดูความคืบหน้าในหน้าบิว (C) และ Codex
+- **Unique เฉพาะแหล่ง**: Unique บางชิ้นดรอปเฉพาะบอสประจำพื้นที่, Pinnacle, Echo, Breach, Ritual, Delirium หรือ Strongbox (ดูใน Codex → Unique ตัวกรองตามแหล่ง) · Unique ที่เปลี่ยนสกิล เช่น Stormheart Fang (Flicker → สายฟ้า), Eye of the Gale (Tornado Shot แนวแคบ), The Pale Engine (Fireball → น้ำแข็ง), Earthbreaker Maul, Voidweave Coil (Arc → เคออส), Crown of the Hollow King (Keystone +1)
+- **Scarab**: ใส่ที่ Map Device ก่อนเปิดแผนที่ (เริ่ม 2 ช่อง) ใช้แล้วหมด — Breach / Strongbox / Essence / Ritual / Delirium / Cartography / Gilded / Elites / Reliquary / Hunted / Vault · ดรอปจากบอส, Rare, league content, ห้องรางวัล หรือซื้อสุ่ม 45 ✦
+- **ห้องรางวัล (Vault)**: โค่นบอสสุดท้ายแล้วเลือกรางวัลถาวร 1 จาก 3 การ์ด (ธรรมดา / หายาก / ตำนาน — Tier และ mod สูงยิ่งได้ตำนานบ่อย)
+- **Gem Mastery** (Altar → Gem Mastery): เจมที่ใช้ได้ XP ข้ามรอบ · +2% ดาเมจต่อเลเวล (หลัง Lv 20 +0.5% ไม่จำกัด) · Lv 3/6/10 ปลด Alternate Quality Anomalous / Divergent / Phantasmal · Lv 15 ได้เจมนี้เริ่ม +2 เลเวล · เติม XP ด้วย Shards ได้ไม่จำกัด
+- **Heirloom**: ใน Stash กด "ผูกเป็น Heirloom" (80 ✦, สูงสุด 4 ชิ้น) · พกเข้ารอบแล้วกลับเข้า Stash เอง · ได้ XP ทุกรอบ (ชนะได้มากกว่า) · Lv 1–5: +3% ดาเมจและชีวิตต่อเลเวล, Lv 5 +1 เลเวลเจม · ตายใน Hardcore = หาย
+- **Challenges 24 ข้อ** (Altar → Challenges): ทำสำเร็จได้ Shards · ทุก 4 ข้อได้โบนัสถาวร (ช่อง Scarab, Stash +1, Shards +10%, การ์ดห้องรางวัล +1, ดาเมจ/ชีวิต, Unique บ่อยขึ้น)
+- **Unique Collection**: ค้นพบครบ 5/10/15/20/25/30/40 ชิ้นได้โบนัสถาวร
+- **Voidstone 4 อัน**: โค่น The Hollow Crown, ผ่านครบทุกพื้นที่ใน Tier 6+, โค่น Echo รวม 10 ตัว, ชนะ Tier 8+ ใน Hardcore · แต่ละอันทำให้แผนที่ Tier 6 ขึ้นไปมอนสเตอร์แข็งขึ้นแต่ไอเทม/Unique/Shards/Scarab เพิ่มขึ้น · **Atlas Completion**: ผ่านครบทุกพื้นที่ใน Tier เดียวกัน = +1 แต้ม Atlas Tree + 2 Scarab
 - **Stash (เก็บของข้ามรอบ)**: จบรอบเลือกไอเทมเก็บได้ (ตาย 2 ชิ้น, ชนะ 4 ชิ้น) Jewel เก็บอัตโนมัติ · ที่ Map Device เลือกพกของจาก Stash เข้ารอบได้ 2 ชิ้น (จ่าย Shards ตามความหายาก) · ดู/ย่อยของได้ที่ปุ่ม 📦 Stash ในเมนูหลัก
 - **Jewel**: Crimson / Viridian / Cobalt ดรอปจากบอส, Rare, Strongbox, Ritual, Delirium ใส่ใน **Jewel Socket 6 ช่องบน Legacy Tree** (ช่องละสาย) เพื่อรับ mod ทุกรอบ
 - **Atlas / Map Device**: หลังเลือกคลาสจะเข้าหน้า Map Device เพื่อเลือกแผนที่
@@ -92,6 +102,9 @@
 | `js/meta.js` | บันทึก/โหลดข้อมูลถาวร, จัดสรร/คืนแต้มโหนด, สรุปรางวัลตอนจบรอบ |
 | `js/breach.js` | Breach event (เกิด, เปิด, ขยายวง, รางวัลตอนปิด) |
 | `js/leagues.js` | Strongbox, Essence, Ritual (+หน้าต่างแลกรางวัล), Delirium |
+| `js/data/runtree.js` | สาย Passive ระหว่างรอบ และ Mastery ของแต่ละสาย |
+| `js/data/endgame.js` | แหล่งดรอป Unique + Unique เปลี่ยนบิว, Scarab, Gem Mastery / Alternate Quality, Heirloom, ห้องรางวัล, Challenges, Unique Collection, Voidstone |
+| `js/progression.js` | ระบบข้ามรอบข้างต้นตอนเล่นจริง: ดรอป Scarab/Unique ตามแหล่ง, สรุปจบรอบ, หน้า Altar และ Scarab ที่ Map Device |
 | `js/stash.js` | แผนที่/Jewel ที่ดรอป, Stash, ของที่พกเข้ารอบ, Atlas Tree, Jewel Socket, Daily Challenge |
 | `js/settings.js` | ตั้งค่า (บันทึกถาวร), เพลงประกอบแบบสังเคราะห์, ลดคุณภาพอัตโนมัติ, Tips |
 | `js/codex.js` | หน้า Codex, คอมโบแนะนำ, หน้าตั้งค่า |
@@ -121,4 +134,4 @@
 node --test tests/*.test.cjs
 ```
 
-ครอบคลุม Flicker และการยกเลิกด้วยปุ่มเดิน, ลูปเบื้องหลัง, Tornado Shot/Fork และ Jeweller เพิ่มช่อง Support รวมถึงการย้ายข้อมูล Stash รุ่นเก่า
+ครอบคลุม Flicker และการยกเลิกด้วยปุ่มเดิน, ลูปเบื้องหลัง, Tornado Shot/Fork และ Jeweller เพิ่มช่อง Support รวมถึงการย้ายข้อมูล Stash รุ่นเก่า · อาวุธกำหนดสกิล, Mastery, Unique ตามแหล่ง, Scarab, ห้องรางวัล, Heirloom และ Gem Mastery

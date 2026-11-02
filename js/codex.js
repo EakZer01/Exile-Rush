@@ -28,7 +28,7 @@ const COMBOS = [
     desc: 'ลำแสงเผาต่อเนื่อง ยิ่งยืนยิงยิ่งร้อน · Infused Channelling ลดดาเมจที่ได้รับขณะยิง' },
 ];
 
-const CODEX_TABS = [['skills', 'Skill Gem'], ['supports', 'Support Gem'], ['passives', 'Passive / Keystone'], ['ascend', 'Ascendancy'], ['uniques', 'Unique'], ['maps', 'Map Mods'], ['monsters', 'มอนสเตอร์'], ['combos', 'คอมโบแนะนำ']];
+const CODEX_TABS = [['skills', 'Skill Gem'], ['supports', 'Support Gem'], ['passives', 'Passive / Keystone'], ['ascend', 'Ascendancy'], ['uniques', 'Unique'], ['maps', 'Map Mods'], ['scarabs', 'Scarab'], ['monsters', 'มอนสเตอร์'], ['combos', 'คอมโบแนะนำ']];
 let codexTab = 'skills', codexFilter = '', codexSearch = '';
 
 function openCodex() {
@@ -69,6 +69,7 @@ function renderCodexBody() {
       h += `<div class="codex-card">${skillGemHtml(id)}<div class="codex-info">
         <div class="card-name">${d.name} <small class="muted">${d.th}</small>${lock ? ` <span class="bad">🔒 ${lock.req}</span>` : ''}</div>
         ${tagsHtml(d.tags)}<div class="card-desc">${d.desc}</div><div class="card-note">${d.levelNote}</div>
+        <div class="card-note muted">🗡 ใช้กับ: ${weaponReqText(id)}${gemLv(id) ? ` · 💎 Gem Mastery Lv ${gemLv(id)}` : ''}</div>
         ${ev ? `<div class="card-note evo-hint">✦ ${ev.name} (Lv ${EVOLVE_LEVEL}+ ใส่ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}): ${ev.desc}</div>` : ''}</div></div>`;
     }
   } else if (codexTab === 'monsters') {
@@ -97,6 +98,13 @@ function renderCodexBody() {
   } else if (codexTab === 'passives') {
     h += '<h3 class="altar-h">Keystone (สูงสุด ' + MAX_KEYSTONES + ' อันต่อรอบ)</h3>';
     for (const id in KEYSTONES) { const d = KEYSTONES[id]; if (codexMatch(d.name, d.th, d.desc)) h += `<div class="codex-row"><span class="node node-key">${d.icon}</span><div><b>${d.name}</b> <small class="muted">${d.th}</small><br>${d.desc}</div></div>`; }
+    h += '<h3 class="altar-h">สาย Passive + Mastery <span class="muted">(ลง Passive ในสายเดียวกันครบตามจำนวน แล้ว Milestone ถัดไปจะให้เลือก Mastery 1 ใน 2)</span></h3>';
+    for (const pid in RUN_PATHS) {
+      const p = RUN_PATHS[pid];
+      if (!codexMatch(p.name, p.th, p.mastery.map((o) => o.name + o.desc).join(' '), p.passives.map((id) => PASSIVES[id].name).join(' '))) continue;
+      h += `<div class="codex-row"><span class="node" style="color:${p.color}">${p.icon}</span><div><b style="color:${p.color}">${p.name}</b> <small class="muted">${p.th} · ต้องการ ${p.need} ระดับ · ${p.passives.map((id) => PASSIVES[id].name).join(', ')}</small>
+        ${p.mastery.map((o) => `<br>◆ <b>${o.name}</b> — ${o.desc}`).join('')}</div></div>`;
+    }
     h += '<h3 class="altar-h">Passive</h3>';
     for (const id in PASSIVES) { const d = PASSIVES[id]; if (codexMatch(d.name, d.th, d.desc)) h += `<div class="codex-row"><span class="node">${d.icon}</span><div><b>${d.name}</b> <small class="muted">${d.th} · สูงสุด ${d.max}</small><br>${d.desc}</div></div>`; }
   } else if (codexTab === 'ascend') {
@@ -108,16 +116,21 @@ function renderCodexBody() {
     }
   } else if (codexTab === 'uniques') {
     const found = loadMeta().found || {};
-    h += `<div class="muted" style="margin-bottom:8px">ค้นพบแล้ว ${Object.keys(UNIQUES).filter((u) => found[u]).length}/${Object.keys(UNIQUES).length} — Unique ที่ยังไม่เจอจะแสดงเป็น ???</div><div class="codex-uniques">`;
+    filters = `<div class="codex-filters"><span class="tag${!codexFilter ? ' on' : ''}" data-cf="">ทุกแหล่ง</span>${Object.keys(UNIQUE_SOURCES).map((s) => `<span class="tag${codexFilter === s ? ' on' : ''}" data-cf="${s}">${UNIQUE_SOURCES[s].th}</span>`).join('')}</div>`;
+    h += `<div class="muted" style="margin-bottom:8px">ค้นพบแล้ว ${Object.keys(UNIQUES).filter((u) => found[u]).length}/${Object.keys(UNIQUES).length} — Unique ที่ยังไม่เจอจะแสดงเป็น ??? แต่บอกแหล่งดรอปให้ไปฟาร์ม${codexFilter ? `<br><b>${UNIQUE_SOURCES[codexFilter].th}</b>: ${UNIQUE_SOURCES[codexFilter].where}` : ''}</div><div class="codex-uniques">`;
     for (const id in UNIQUES) {
       const u = UNIQUES[id];
-      if (!found[id]) { h += `<div class="poe-tip"><div class="pt-head" style="color:#6a5a40">???</div><div class="pt-body"><div class="pt-prop">Unique ${SLOT_NAME[u.slot]}</div></div></div>`; continue; }
+      if (codexFilter && uniqueSrc(id) !== codexFilter) continue;
+      if (!found[id]) { h += `<div class="poe-tip"><div class="pt-head" style="color:#6a5a40">???</div><div class="pt-body"><div class="pt-prop">Unique ${SLOT_NAME[u.slot]}</div><div class="pt-src">แหล่งดรอป: ${UNIQUE_SOURCES[uniqueSrc(id)].th}</div></div></div>`; continue; }
       if (codexMatch(u.name, u.th, u.lines.join(' '))) h += itemCardHtml({ rarity: 'unique', slot: u.slot, unique: id, name: u.name, affixes: [] });
     }
     h += '</div>';
   } else if (codexTab === 'maps') {
     h += '<h3 class="altar-h">พื้นที่</h3>' + Object.values(BIOMES).map((b) => `<div class="codex-row"><span class="node" style="color:${b.color}">🗺</span><div><b style="color:${b.color}">${b.name}</b> <small class="muted">${b.th} · เริ่ม Tier ${b.minTier}</small><br>${b.desc}${b.boss ? `<br><span class="muted">บอสประจำพื้นที่: ${b.boss}</span>` : ''}</div></div>`).join('');
     h += '<h3 class="altar-h">Map Mods</h3>' + Object.values(MAP_MODS).filter((m) => codexMatch(m.name, m.th)).map((m) => `<div class="codex-row"><span class="node">⚠</span><div><b>${m.name}</b> — ${m.th} <span class="muted">(Item Quantity +${m.qty}%)</span></div></div>`).join('');
+  } else if (codexTab === 'scarabs') {
+    h += `<div class="muted" style="margin-bottom:8px">ใส่ Scarab ที่ Map Device ก่อนเปิดแผนที่ (ช่องเริ่มต้น 2 ช่อง) · ใช้แล้วหมดไป · ดรอปจากบอส, Rare, Breach, Strongbox, Delirium, Ritual และห้องรางวัล หรือซื้อสุ่ม ${SCARAB_PRICE} ✦</div>`;
+    for (const id in SCARABS) { const s = SCARABS[id]; if (codexMatch(s.name, s.th)) h += `<div class="codex-row"><span class="node" style="color:${s.color}">✲</span><div><b style="color:${s.color}">${s.name}</b>${s.rare ? ' <span class="badge">หายาก</span>' : ''}<br>${s.th}</div></div>`; }
   } else if (codexTab === 'combos') {
     for (const c of COMBOS) {
       if (!codexMatch(c.name, c.desc)) continue;

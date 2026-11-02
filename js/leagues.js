@@ -141,6 +141,8 @@ function strongboxLoot(b) {
     if (ok.length) { const s = pick(ok); s.level++; recomputePlayer(); announce('Gemcutter', `${SKILLS[s.id].name} +1 เลเวล (Lv ${s.level})`, '#5ae0c0'); }
     else spawnPickup(x, y, 'chest');
   }
+  maybeScarab(x, y - 30, 0.25);
+  if (srcChance(0.06)) dropSourceUnique(x + 30, y - 30, 'strongbox');
   addEffect({ kind: 'ring', x, y, r: 120, t: 0, dur: 0.6, color: STRONGBOXES[b.kind].color });
 }
 
@@ -211,15 +213,19 @@ function ritualOffers() {
     { kind: 'map', tier: Math.min(MAX_MAP_TIER, t + 1), cost: 65, label: `แผนที่ Tier ${Math.min(MAX_MAP_TIER, t + 1)}` },
     { kind: 'jewel', cost: 70, label: 'Jewel สุ่ม' },
     { kind: 'chest', cost: 50, label: 'หีบสมบัติ (เลือกการ์ด)' },
+    { kind: 'scarab', cost: 50, label: 'Scarab สุ่ม' },
   ];
-  return shuffle(pool).slice(0, 6).map((o) => Object.assign({ bought: false }, o, { cost: Math.round(o.cost * (0.9 + Math.random() * 0.3)) }));
+  // the Ritual's own uniques are sometimes on the altar
+  if (Math.random() < 0.35 * G.atlasFx.srcUnique) pool.push({ kind: 'item', rarity: 'unique', src: 'ritual', cost: 210, label: 'Unique ของ Ritual', sticky: true });
+  return shuffle(pool).sort((a, b) => !!b.sticky - !!a.sticky).slice(0, 6).map((o) => Object.assign({ bought: false }, o, { cost: Math.round(o.cost * (0.9 + Math.random() * 0.3)) }));
 }
 function buyRitual(o) {
   const L = G.league, P = G.player;
   if (o.bought || L.tribute < o.cost) return false;
   L.tribute -= o.cost; o.bought = true;
   const x = P.x, y = P.y + 30;
-  if (o.kind === 'item') dropItem(x + rand(-30, 30), y, o.rarity, o.slot);
+  if (o.kind === 'item') dropItem(x + rand(-30, 30), y, o.rarity, o.slot, o.src);
+  else if (o.kind === 'scarab') dropScarab(x, y);
   else if (o.kind === 'orbs') for (let i = 0; i < o.n; i++) spawnPickup(x + rand(-40, 40), y, randomCraftOrb());
   else if (o.kind === 'cur') P.currency[o.cur] = (P.currency[o.cur] || 0) + o.n;
   else if (o.kind === 'ess') spawnPickup(x, y, 'essence', { ess: pick(Object.keys(ESSENCES)) });
@@ -270,6 +276,8 @@ function endDelirium(D) {
     else if (r < 0.82) dropMapItem(x, y, Math.min(MAX_MAP_TIER, G.map.tier + 1));
     else spawnPickup(x, y, 'chest');
   }
+  maybeScarab(P.x, P.y - 60, 0.4);
+  if (k >= 60 && srcChance(0.3)) dropSourceUnique(P.x, P.y + 60, 'delirium');
   announce('หมอกจางลง', `สังหาร ${k} ตัวในหมอก · รางวัล ${n} ชิ้น`, '#e8e8f0');
   G.stats.delirium = (G.stats.delirium || 0) + 1;
 }

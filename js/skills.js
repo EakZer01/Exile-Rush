@@ -38,6 +38,7 @@ function updateSkills(dt) {
   for (const inst of P.skills) {
     const s = inst.st;
     if (inst.vaalT > 0) inst.vaalT -= dt;
+    if (s.disabled) { if (inst.rt.blades) inst.rt.blades.length = 0; inst.rt.beamT = 0; continue; }
     if (s.behavior === 'flicker') { updateFlicker(inst, s, dt, speedMul); continue; }
     if (s.behavior === 'aura') { tickAura(inst, s, dt); continue; }
     if (s.behavior === 'herald') continue;          // works through on-kill only
@@ -204,9 +205,13 @@ function updateProjectiles(dt) {
 }
 
 function pointBlankMult(p) {
-  if (!G.player.mods.ks.pointBlank) return 1;
+  const ks = G.player.mods.ks;
+  if (!ks.pointBlank && !ks.closeRange) return 1;
   const d = Math.hypot(p.x - p.ox, p.y - p.oy);
-  return clamp(1.5 - (d / 500) * 0.8, 0.7, 1.5);
+  let k = 1;
+  if (ks.pointBlank) k *= clamp(1.5 - (d / 500) * 0.8, 0.7, 1.5);
+  if (ks.closeRange) k *= clamp(1.4 - (d / 500) * 0.65, 0.75, 1.4);   // Close Quarters mastery
+  return k;
 }
 
 function onProjectileHit(p, e) {
@@ -489,8 +494,10 @@ function lightningStrikes(p, hitE) {
 function splitProjectile(p) {
   if (p.child || p.splitDone || !p.s.split) return;
   p.splitDone = true;
-  for (let i = 0; i < p.s.split; i++) {
-    spawnProjectile(p.inst, p.s, p.x, p.y, rand(0, TAU), p.hit);
+  const n = p.s.split, dir = Math.atan2(p.vy, p.vx);
+  for (let i = 0; i < n; i++) {
+    // Eye of the Gale: a tight forward line instead of a ring
+    spawnProjectile(p.inst, p.s, p.x, p.y, p.s.splitFocus ? dir + (i - (n - 1) / 2) * 0.08 : rand(0, TAU), p.hit);
     const np = G.projectiles[G.projectiles.length - 1];
     np.child = true; np.life = p.s.lifeFinal * 0.6; np.ox = p.ox; np.oy = p.oy;
     np.splitDone = true; np.forked = p.forked; np.returned = p.returned;

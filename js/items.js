@@ -30,10 +30,11 @@ function lootVisible(it) {
 function rollRarity(w) {
   return weightedSample(Object.keys(w).filter((k) => w[k] > 0), 1, (k) => w[k])[0];
 }
-function dropItem(x, y, rarity, slot) {
-  slot = slot || weightedSample(Object.keys(DROP_SLOT_W), 1, (k) => DROP_SLOT_W[k])[0];
+// src: drop a unique from that source's pool (bosses, Breach, Ritual...)
+function dropItem(x, y, rarity, slot, src) {
+  if (!src) slot = slot || weightedSample(Object.keys(DROP_SLOT_W), 1, (k) => DROP_SLOT_W[k])[0];
   if (slot === 'flask' && rarity === 'unique') slot = 'ring';
-  const item = makeItem(rarity, slot, G.time, G.map.tier);
+  const item = makeItem(rarity, slot, G.time, G.map.tier, src);
   if (!lootVisible(item)) { G.stats.salvage += SALVAGE_SHARDS[item.rarity] || 0; G.stats.filtered = (G.stats.filtered || 0) + 1; return; }
   G.items.push({ x: x + rand(-14, 14), y: y + rand(-14, 14), item, t: 0 });
   if (rarity === 'unique') Sfx.play('boss');
@@ -41,7 +42,7 @@ function dropItem(x, y, rarity, slot) {
 function rollItemDrop(e) {
   if (e.rarity === 3) {
     dropItem(e.x - 40, e.y + 20, 'rare');
-    dropItem(e.x + 40, e.y + 20, Math.random() < 0.6 ? 'unique' : 'rare');
+    dropItem(e.x + 40, e.y + 20, Math.random() < Math.min(0.9, 0.6 * G.atlasFx.uniqueMul) ? 'unique' : 'rare');
     return;
   }
   const d = ITEM_DROP[e.rarity];
@@ -49,7 +50,7 @@ function rollItemDrop(e) {
   // map quantity raises drop chance, higher tiers favour rarer items
   const qty = 1 + mapQuantity(G.map) / 100, t = G.map.tier - 1;
   if (Math.random() < d.chance * qty * GAME_PACE * (1 + 0.08 * t) * (e.deli ? 1 + 2 * deliP() : 1) * (G.atlasFx.itemQty || 1)) {
-    dropItem(e.x, e.y, rollRarity({ magic: d.w.magic, rare: d.w.rare * (1 + 0.1 * t), unique: d.w.unique * (1 + 0.2 * t) }));
+    dropItem(e.x, e.y, rollRarity({ magic: d.w.magic, rare: d.w.rare * (1 + 0.1 * t), unique: d.w.unique * (1 + 0.2 * t) * G.atlasFx.uniqueMul }));
   }
 }
 
@@ -211,7 +212,11 @@ function onItemPickup(it) {
     announce(it.name, 'Unique ' + SLOT_NAME[it.slot] + ' — ' + UNIQUES[it.unique].th, RARITY_COLOR.unique);
     const M = loadMeta();
     if (!M.found) M.found = {};
-    if (!M.found[it.unique]) { M.found[it.unique] = true; saveMeta(); lootLog('Unique ใหม่เข้าคลัง!', RARITY_COLOR.unique); }
+    if (!M.found[it.unique]) {
+      M.found[it.unique] = true; saveMeta(); lootLog('Unique ใหม่เข้าคลัง!', RARITY_COLOR.unique);
+      const n = Object.keys(M.found).length, b = COLLECTION_BONUS.find((x) => x.n === n);
+      if (b) announce(`Unique Collection ${n}`, 'โบนัสถาวร: ' + b.desc, RARITY_COLOR.unique);
+    }
   }
 }
 

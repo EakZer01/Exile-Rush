@@ -7,7 +7,8 @@ let Meta = null;
 
 function freshMeta() {
   return { v: 2, shards: 0, alloc: {}, unlocked: {}, found: {}, atlas: { maxTier: 1, done: {} }, lastMap: null, life: { runs: 0, wins: 0, kills: 0, bosses: 0, time: 0 },
-    stash: [], maps: [], jewels: {}, atlasAlloc: {}, daily: null };
+    stash: [], maps: [], jewels: {}, atlasAlloc: {}, daily: null,
+    scarabs: {}, gems: {}, chal: {}, voids: {}, atlasTiers: {}, winCls: {} };
 }
 
 function loadMeta() {
@@ -108,6 +109,7 @@ function applyMetaMods(m) {
   for (const id in loadMeta().alloc) { const n = TREE_NODES[id]; if (n.apply) n.apply(m); }
   // jewels socketed into allocated sockets
   for (const id in Meta.jewels) if (Meta.alloc[id]) for (const a of Meta.jewels[id].affixes) JEWEL_MODS[a.id].apply(m, a.v);
+  permanentMods(m);
 }
 
 // ---- Stash (items kept between runs) and jewel sockets ----
@@ -142,11 +144,12 @@ const loadoutLimit = () => 2 + atlasFx().stashAdd;
 const LOADOUT_COST = { normal: 1, magic: 2, rare: 5, unique: 10 };
 
 // ---- Atlas passive tree ----
-function atlasPoints() { const M = loadMeta(); return atlasDoneCount() + Math.floor(M.life.bosses / 8); }
+function atlasPoints() { const M = loadMeta(); return atlasDoneCount() + Math.floor(M.life.bosses / 8) + Object.keys(M.atlasTiers).length; }
 const atlasUsed = () => Object.keys(loadMeta().atlasAlloc).length;
 function atlasFx() {
   const f = Object.assign({}, ATLAS_FX_DEFAULT), A = loadMeta().atlasAlloc;
   for (const B of ATLAS_TREE) B.nodes.forEach((n, i) => { if (A[B.id + '_' + i]) n.a(f); });
+  permanentFx(f);
   return f;
 }
 // nodes in a branch are taken in order and refunded from the end
@@ -186,6 +189,10 @@ function settleRun(r) {
   if (r.map && reward.total > 0) {
     const mult = mapRewardMult(r.map);
     if (mult > 1) { const bonus = Math.round(reward.total * (mult - 1)); reward.parts.push(['โบนัสแผนที่', bonus]); reward.total += bonus; }
+  }
+  if (r.shardMul > 1 && reward.total > 0) {
+    const bonus = Math.round(reward.total * (r.shardMul - 1));
+    reward.parts.push(['โบนัส Scarab / Voidstone / Collection', bonus]); reward.total += bonus;
   }
   M.shards += reward.total;
   let atlas = null;

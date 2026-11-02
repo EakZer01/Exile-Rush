@@ -400,7 +400,9 @@ function magicName(it) {
 
 function pickBase(slot) {
   const pool = Object.values(BASES).filter((b) => b.slot === slot);
-  return weightedSample(pool, 1, (b) => (b.rare ? 0.3 : 1))[0];
+  // weapons lean towards types your gems can use, so upgrades stay usable
+  const P = typeof G !== 'undefined' && G.player, fits = (b) => P && b.w && P.skills.some((i) => SKILLS[i.id].weapons && SKILLS[i.id].weapons.includes(b.w.type));
+  return weightedSample(pool, 1, (b) => (b.rare ? 0.3 : 1) * (fits(b) ? 3 : 1))[0];
 }
 function rollFlaskAffixes(it, n) {
   const ids = shuffle(Object.keys(FLASK_AFFIXES));
@@ -420,12 +422,14 @@ function magicFlaskName(it) {
   return `${p ? FLASK_AFFIXES[p.id].nm + ' ' : ''}${BASES[it.base].name}${s ? ' ' + FLASK_AFFIXES[s.id].nm : ''}`;
 }
 
-function makeItem(rarity, slot, time, tier) {
+// src: a unique source (UNIQUE_SOURCES); without one only "drops anywhere" uniques roll
+function makeItem(rarity, slot, time, tier, src) {
   const ilvl = itemLevel(time || 0, tier || 1);
   if (slot === 'flask') return makeFlask(pick(Object.keys(BASES).filter((k) => BASES[k].slot === 'flask')), rarity === 'normal' ? 'normal' : 'magic', ilvl);
   if (rarity === 'unique') {
-    const pool = Object.keys(UNIQUES).filter((u) => !slot || UNIQUES[u].slot === slot);
-    const id = pick(pool.length ? pool : Object.keys(UNIQUES)), u = UNIQUES[id];
+    const from = Object.keys(UNIQUES).filter((u) => (UNIQUES[u].src || 'any') === (src || 'any'));
+    const pool = from.filter((u) => !slot || UNIQUES[u].slot === slot);
+    const id = pick(pool.length ? pool : from.length ? from : Object.keys(UNIQUES)), u = UNIQUES[id];
     const it = { uid: uid(), rarity, slot: u.slot, base: u.base, unique: id, name: u.name, ilvl, affixes: [], quality: 0 };
     return it;
   }
@@ -484,7 +488,8 @@ function applyItem(it, m) {
   if (pr.es) m.es += pr.es;
   if (pr.block) m.block += pr.block / 100;
   if (it.corruptMod !== undefined) CORRUPT_MODS[it.corruptMod].apply(m);
-  if (it.unique) { UNIQUES[it.unique].apply(m); return; }
+  if (it.heir) { const lv = heirLevel(it.heir.xp); m.moreAll *= 1 + 0.03 * lv; m.lifeInc += 0.03 * lv; if (lv >= 5) m.gemLevel += 1; }
+  if (it.unique) { const u = UNIQUES[it.unique]; u.apply(m); if (u.skill) m.skillHooks.push(u.skill); return; }
   if (it.implicit) AFFIXES[it.implicit.id].apply(m, it.implicit.v);
   for (const a of it.affixes) AFFIXES[a.id].apply(m, a.v);
 }

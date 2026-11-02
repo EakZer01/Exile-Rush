@@ -6,7 +6,7 @@
 <title>Exile Survivors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=34">
+<link rel="stylesheet" href="css/style.css?v=35">
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -61,6 +61,8 @@
         <div class="muted">ตาย = เสีย Shard, แผนที่และ Jewel ของรอบนั้น และเก็บของเข้า Stash ไม่ได้ · ชนะ = Shard ×1.5 และเก็บของได้ +2 ชิ้น</div>
       </div>
     </div>
+    <h3 class="altar-h">✲ Scarab <span class="muted" id="map-scarab-n"></span></h3>
+    <div id="map-scarabs" class="map-scarabs"></div>
     <div id="map-atlas" class="altar-life muted"></div>
     <div id="map-atlastree" class="atlas-tree hidden"></div>
     <div class="levelup-actions">
@@ -84,6 +86,7 @@
         <div id="tree-summary" class="bv-box tree-summary"></div>
       </div>
     </div>
+    <div id="altar-prog" class="altar-prog"></div>
     <h3 class="altar-h">ปลดล็อก <span class="muted">(ทำตามเงื่อนไขในเกม หรือซื้อด้วย Shards)</span></h3>
     <div id="altar-unlocks" class="altar-unlocks"></div>
     <h3 class="altar-h" id="altar-uniques-h">คลัง Unique</h3>
@@ -179,6 +182,8 @@
   <div class="panel">
     <h2 class="panel-title win">ชัยชนะ!</h2>
     <div class="panel-sub" id="vic-sub"></div>
+    <div id="vic-vault" class="vic-vault"></div>
+    <div class="panel-sub bad" id="vic-hint"></div>
     <div class="cards">
       <div class="card" id="btn-vic-leave"><div class="card-name">🏆 ออกจากแผนที่</div><div class="card-desc">จบรอบตอนนี้ รับรางวัลชัยชนะ เก็บของเข้า Stash</div></div>
       <div class="card" id="btn-vic-endless"><div class="card-name" style="color:#ff6a5a">∞ เข้าสู่ Endgame</div><div class="card-desc">อยู่ต่อไม่มีที่สิ้นสุด มอนสเตอร์แข็งขึ้นเรื่อยๆ · Echo บอสทุก 100 วิ (ดรอปแผนที่ Tier ถัดไป, Orb, Unique) · +15 ✦ ต่อนาที +40 ✦ ต่อ Echo · ตายแล้วยังนับว่าชนะ</div></div>
@@ -230,38 +235,41 @@
 <div id="tip" class="tip hidden"></div>
 <div id="tooltip" class="tooltip hidden"></div>
 
-<script src="js/util.js?v=34"></script>
-<script src="js/data/skills.js?v=34"></script>
-<script src="js/data/supports.js?v=34"></script>
-<script src="js/data/passives.js?v=34"></script>
-<script src="js/data/monsters.js?v=34"></script>
-<script src="js/data/classes.js?v=34"></script>
-<script src="js/data/ascendancy.js?v=34"></script>
-<script src="js/data/evolutions.js?v=34"></script>
-<script src="js/data/meta.js?v=34"></script>
-<script src="js/data/items.js?v=34"></script>
-<script src="js/data/maps.js?v=34"></script>
-<script src="js/data/sprite_art.js?v=34"></script>
-<script src="js/stats.js?v=34"></script>
-<script src="js/fx.js?v=34"></script>
-<script src="js/combat.js?v=34"></script>
-<script src="js/skills.js?v=34"></script>
-<script src="js/enemies.js?v=34"></script>
-<script src="js/player.js?v=34"></script>
-<script src="js/settings.js?v=34"></script>
-<script src="js/meta.js?v=34"></script>
-<script src="js/items.js?v=34"></script>
-<script src="js/breach.js?v=34"></script>
-<script src="js/lighting.js?v=34"></script>
-<script src="js/world.js?v=34"></script>
-<script src="js/icons.js?v=34"></script>
-<script src="js/sprites.js?v=34"></script>
-<script src="js/render.js?v=34"></script>
-<script src="js/ui.js?v=34"></script>
-<script src="js/compare.js?v=34"></script>
-<script src="js/leagues.js?v=34"></script>
-<script src="js/stash.js?v=34"></script>
-<script src="js/codex.js?v=34"></script>
-<script src="js/game.js?v=34"></script>
+<script src="js/util.js?v=35"></script>
+<script src="js/data/skills.js?v=35"></script>
+<script src="js/data/supports.js?v=35"></script>
+<script src="js/data/passives.js?v=35"></script>
+<script src="js/data/runtree.js?v=35"></script>
+<script src="js/data/monsters.js?v=35"></script>
+<script src="js/data/classes.js?v=35"></script>
+<script src="js/data/ascendancy.js?v=35"></script>
+<script src="js/data/evolutions.js?v=35"></script>
+<script src="js/data/meta.js?v=35"></script>
+<script src="js/data/items.js?v=35"></script>
+<script src="js/data/maps.js?v=35"></script>
+<script src="js/data/endgame.js?v=35"></script>
+<script src="js/data/sprite_art.js?v=35"></script>
+<script src="js/stats.js?v=35"></script>
+<script src="js/fx.js?v=35"></script>
+<script src="js/combat.js?v=35"></script>
+<script src="js/skills.js?v=35"></script>
+<script src="js/enemies.js?v=35"></script>
+<script src="js/player.js?v=35"></script>
+<script src="js/settings.js?v=35"></script>
+<script src="js/meta.js?v=35"></script>
+<script src="js/items.js?v=35"></script>
+<script src="js/breach.js?v=35"></script>
+<script src="js/lighting.js?v=35"></script>
+<script src="js/world.js?v=35"></script>
+<script src="js/icons.js?v=35"></script>
+<script src="js/sprites.js?v=35"></script>
+<script src="js/render.js?v=35"></script>
+<script src="js/ui.js?v=35"></script>
+<script src="js/compare.js?v=35"></script>
+<script src="js/leagues.js?v=35"></script>
+<script src="js/stash.js?v=35"></script>
+<script src="js/progression.js?v=35"></script>
+<script src="js/codex.js?v=35"></script>
+<script src="js/game.js?v=35"></script>
 </body>
 </html>

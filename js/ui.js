@@ -108,12 +108,27 @@ function generateChoices(n, milestone) {
   if (milestone) return milestoneChoices(n);
   return regularChoices(n);
 }
+// ranks put into a run path (sum of its passives' ranks)
+const pathRanks = (P, pid) => RUN_PATHS[pid].passives.reduce((a, id) => a + (P.passives[id] || 0), 0);
+// the path whose Mastery is waiting (most ranks first), or null
+function readyMasteryPath(P) {
+  let best = null;
+  for (const pid in RUN_PATHS) {
+    if (P.masteries.some((id) => MASTERY_OPT[id].path === pid)) continue;
+    const r = pathRanks(P, pid);
+    if (r >= RUN_PATHS[pid].need && (!best || r > best.r)) best = { pid, r };
+  }
+  return best && best.pid;
+}
 function milestoneChoices(n) {
   const P = G.player, pool = [];
+  // a path ready for its Mastery takes over two of the cards: pick one side
+  const mp = readyMasteryPath(P), mastery = mp ? RUN_PATHS[mp].mastery.map((o) => ({ type: 'mastery', id: o.id })) : [];
+  if (mastery.length) n = Math.max(1, n - mastery.length);
   // only keystones that can matter for the skills you have
   const tags = new Set(P.skills.flatMap((s) => [...s.st.tags]));
   const fits = (k) => !KS_NEED[k] || KS_NEED[k].some((t) => tags.has(t));
-  if (Object.keys(P.keystones).length < MAX_KEYSTONES) for (const id of weightedSample(Object.keys(KEYSTONES).filter((k) => !P.keystones[k] && fits(k)), 2, () => 1)) pool.push({ type: 'keystone', id });
+  if (Object.keys(P.keystones).length < MAX_KEYSTONES + P.mods.keystoneAdd) for (const id of weightedSample(Object.keys(KEYSTONES).filter((k) => !P.keystones[k] && fits(k)), 2, () => 1)) pool.push({ type: 'keystone', id });
   const aw = [];
   for (const inst of P.skills) for (const sid of activeSupports(inst).active) if (!inst.awakened.includes(sid)) aw.push({ type: 'awaken', inst, id: sid });
   for (const a of weightedSample(aw, Math.min(2, aw.length), () => 1)) pool.push(a);
@@ -121,12 +136,14 @@ function milestoneChoices(n) {
   const out = weightedSample(pool, Math.min(n, pool.length), (c) => (c.type === 'keystone' ? 2 : 1));
   const evo = P.skills.find(evolveRecipeMet);
   if (evo) { if (out.length >= n) out.pop(); out.unshift({ type: 'evolve', inst: evo }); }
+  if (mastery.length) return mastery.concat(out);
   return out.length ? out : regularChoices(n);
 }
 function regularChoices(n) {
   const P = G.player, owned = new Set(P.skills.map((s) => s.id));
   const cats = { skill: [], level: [], support: [], passive: [], keystone: [] };
-  if (P.skills.length < MAX_SKILLS + P.mods.skillSlots) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id)) cats.skill.push({ type: 'skill', id });
+  // new gems must work with the weapon in hand (universal gems always do)
+  if (P.skills.length < MAX_SKILLS + P.mods.skillSlots) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id) && skillWeaponOk(id, P.weapon)) cats.skill.push({ type: 'skill', id });
   for (const inst of P.skills) if (inst.level < MAX_GEM_LEVEL) cats.level.push({ type: 'level', inst });
   for (const id in SUPPORTS) {
     if (P.skills.some((inst) => canSocketSupport(id, inst))) cats.support.push({ type: 'support', id });
@@ -143,7 +160,9 @@ function regularChoices(n) {
     const avail = Object.keys(cats).filter((k) => cats[k].length);
     if (!avail.length) break;
     const cat = weightedSample(avail, 1, (k) => cw[k])[0];
-    const idx = Math.floor(Math.random() * cats[cat].length);
+    // passives lean towards the paths you already invest in, so a path can be finished
+    const idx = cat === 'passive' ? cats.passive.indexOf(weightedSample(cats.passive, 1, (c) => 1 + (PASSIVE_PATH[c.id] ? pathRanks(P, PASSIVE_PATH[c.id]) * 0.3 : 0))[0])
+      : Math.floor(Math.random() * cats[cat].length);
     out.push(cats[cat][idx]); cats[cat].splice(idx, 1);
   }
   // guarantee a support if a skill has a free socket and none rolled
@@ -175,7 +194,7 @@ function cardHtml(c, idx) {
   if (c.type === 'skill') {
     const d = SKILLS[c.id];
     return `<div class="card card-skill" title="${d.desc}">${key}
-      <div class="card-head">${skillGemHtml(d.id)}<div><div class="card-name">${d.name}</div><div class="card-th">สกิลใหม่ · เริ่ม Lv ${newSkillLevel()}</div></div><div class="badge badge-new">ใหม่</div></div>
+      <div class="card-head">${skillGemHtml(d.id)}<div><div class="card-name">${d.name}</div><div class="card-th">สกิลใหม่ · เริ่ม Lv ${newSkillLevel() + gemStartBonus(d.id)}${gemLv(d.id) ? ` · Mastery Lv ${gemLv(d.id)}` : ''}</div></div><div class="badge badge-new">ใหม่</div></div>
       ${tagsHtml(d.tags)}<div class="card-desc clamp">${d.desc}</div>${weaponNoteHtml(d)}</div>`;
   }
   if (c.type === 'empower') {
@@ -238,18 +257,32 @@ function cardHtml(c, idx) {
   }
   if (c.type === 'passive') {
     const d = PASSIVES[c.id], r = P.passives[c.id] || 0;
-    const to = Math.min(d.max, r + PASSIVE_RANKS);
+    const to = Math.min(d.max, r + PASSIVE_RANKS), pid = PASSIVE_PATH[c.id];
     return `<div class="card card-passive">${key}
       <div class="card-head"><span class="node">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">Passive · ระดับ ${r} → ${to}/${d.max}</div></div></div>
-      ${star}<div class="card-desc">${to - r > 1 ? `×${to - r}: ` : ''}${d.desc}</div></div>`;
+      ${star}<div class="card-desc">${to - r > 1 ? `×${to - r}: ` : ''}${d.desc}</div>${pid ? pathNoteHtml(P, pid, to - r) : ''}</div>`;
+  }
+  if (c.type === 'mastery') {
+    const o = MASTERY_OPT[c.id], path = RUN_PATHS[o.path], other = path.mastery.find((x) => x.id !== o.id);
+    return `<div class="card card-mastery card-ms" style="--cc:${path.color}">${key}
+      <div class="card-head"><span class="node node-key" style="color:${path.color}">${path.icon}</span><div><div class="card-name">${o.name}</div><div class="card-th">${path.name} Mastery · ${path.th}</div></div><div class="badge badge-key">MASTERY</div></div>
+      <div class="card-desc">${o.desc}</div><div class="card-note muted">เลือกได้ทางเดียว — อีกทางคือ ${other.name}</div></div>`;
   }
   if (c.type === 'keystone') {
     const d = KEYSTONES[c.id];
     return `<div class="card card-keystone card-ms">${key}
       <div class="card-head"><span class="node node-key">${d.icon}</span><div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Keystone</div></div><div class="badge badge-key">KEYSTONE</div></div>
-      <div class="card-desc">${d.desc}</div><div class="card-note">Keystone ${Object.keys(P.keystones).length + 1}/${MAX_KEYSTONES} ของรอบนี้ — เลือกให้ดี!</div></div>`;
+      <div class="card-desc">${d.desc}</div><div class="card-note">Keystone ${Object.keys(P.keystones).length + 1}/${MAX_KEYSTONES + P.mods.keystoneAdd} ของรอบนี้ — เลือกให้ดี!</div></div>`;
   }
   return `<div class="card card-passive">${key}<div class="card-head"><span class="node">❤</span><div><div class="card-name">Life Potion</div><div class="card-th">ฟื้นฟู</div></div></div><div class="card-desc">ฟื้นชีวิต 50%</div></div>`;
+}
+
+// "Projectile path 4/6 → Mastery" under a passive card
+function pathNoteHtml(P, pid, add) {
+  const path = RUN_PATHS[pid], r = pathRanks(P, pid), done = P.masteries.some((id) => MASTERY_OPT[id].path === pid);
+  if (done) return `<div class="card-note" style="color:${path.color}">${path.icon} สาย ${path.name} · Mastery แล้ว</div>`;
+  const to = r + add, ready = to >= path.need;
+  return `<div class="card-note" style="color:${path.color}">${path.icon} สาย ${path.name} ${r} → <b>${Math.min(to, path.need)}</b>/${path.need}${ready ? ' · ปลด Mastery ที่ Milestone ถัดไป!' : ''}</div>`;
 }
 
 // does this support complete an evolution recipe for an owned skill?
@@ -289,7 +322,7 @@ function openLevelUp(isChest) {
   else if (G.choices.some((c) => c.type === 'support')) showTip('support');
   else showTip('levelup');
   $('levelup-title').textContent = isChest ? 'หีบสมบัติของบอส!' : G.milestone ? `★ MILESTONE — เลเวล ${lv} ★` : 'LEVEL UP!';
-  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่าง' : G.milestone ? 'การ์ดพิเศษทุก 10 เลเวล — Keystone, Awaken, Empower · อ่านให้ดี!'
+  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่าง' : G.milestone ? (G.choices.some((c) => c.type === 'mastery') ? 'Mastery พร้อมแล้ว — เลือกทางใดทางหนึ่ง หรือรับการ์ด Milestone อื่นแทน' : 'การ์ดพิเศษทุก 10 เลเวล — Keystone, Awaken, Empower · อ่านให้ดี!')
     : `เลเวล ${lv} — เลือก 1 อย่าง${G.pendingLevels > 1 ? ` (เหลืออีก ${G.pendingLevels - 1})` : ''} · ★ = เข้ากับบิลด์`;
   renderCards();
   Sfx.play('levelup');
@@ -357,11 +390,17 @@ function skipLevel() {
 function chooseCard(i) {
   const c = G.choices[i], P = G.player;
   if (!c) return;
-  if (c.type === 'skill') { const inst = newSkillInstance(c.id); inst.level = newSkillLevel(); P.skills.push(inst); recomputePlayer(); finishChoice(); }
+  if (c.type === 'skill') { const inst = newSkillInstance(c.id); inst.level = newSkillLevel() + gemStartBonus(c.id); P.skills.push(inst); recomputePlayer(); finishChoice(); }
   else if (c.type === 'level') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + GEM_LEVELS); recomputePlayer(); finishChoice(); }
   else if (c.type === 'empower') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + 3); recomputePlayer(); finishChoice(); }
   else if (c.type === 'passive') { P.passives[c.id] = Math.min(PASSIVES[c.id].max, (P.passives[c.id] || 0) + PASSIVE_RANKS); recomputePlayer(); finishChoice(); }
   else if (c.type === 'keystone') { P.keystones[c.id] = 1; recomputePlayer(); finishChoice(); }
+  else if (c.type === 'mastery') {
+    const o = MASTERY_OPT[c.id];
+    P.masteries.push(c.id); if (o.take) o.take(P); recomputePlayer();
+    announce(o.name, RUN_PATHS[o.path].name + ' Mastery', RUN_PATHS[o.path].color);
+    finishChoice();
+  }
   else if (c.type === 'evolve') {
     c.inst.evo = true; recomputePlayer();
     announce(EVOLUTIONS[c.inst.id].name, 'เจมวิวัฒนาการแล้ว! เก็บวิญญาณแล้วกด V', '#ff5050');
@@ -479,6 +518,7 @@ function buildViewHtml(final) {
       <div>${socketsHtml(inst)} <span class="muted">${skillSocketLabel(inst)}</span></div>
       ${!final ? `<small class="muted">Jeweller · เพิ่มช่อง Support</small><div class="inv-actions jeweller-actions">${jewellerButtonsHtml(inst)}</div>` : ''}
       <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
+      ${s.disabled ? `<div class="bad">⚠ หยุดทำงาน — ต้องถือ ${weaponReqText(inst.id)}</div>` : ''}
       <div class="bv-stats">${describeStats(s).join(' · ')}</div>
       ${inst.evo ? `<div class="bv-vaal">Vaal: วิญญาณ ${inst.souls}/${vaalSouls()}${inst.souls >= vaalSouls() ? ' — <b>พร้อม! กด V</b>' : ''}</div>` : evolveHintHtml(inst.id)}
       <div class="bv-dmg"><div class="bar"><div style="width:${(inst.dmgDealt / total) * 100}%"></div></div>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills} · <b>DPS ${fmtNum(skillDps(inst))}</b> <span class="muted">(10 วิล่าสุด) · Hit เฉลี่ยรวมคริ ${fmtNum(avgHit(s))}</span></div>
@@ -495,8 +535,7 @@ function buildViewHtml(final) {
     <span class="muted">Hit ใหญ่สุดที่รับได้: ${maxHitHtml(P)}</span><br>
     ⚔ อาวุธ: ${P.weapon ? WEAPON_TYPE[P.weapon.wtype] + ' ×' + weaponPower(P.weapon).toFixed(2) + ' (สกิล Attack)' : 'มือเปล่า ×0.60'}<br>
     ✪ Chaos ${P.currency.chaos} · ⬡ Jeweller ${Object.keys(JEWELLERS).reduce((n, k) => n + (P.currency[k] || 0), 0)}${m.ks.rage ? '<br>✊ Rage ' + Math.floor(P.rage) + '/30' : ''}</div>`;
-  const ps = Object.keys(P.passives);
-  h += '<div class="bv-box"><div class="bv-title">Passive</div>' + (ps.length ? ps.map((id) => `${PASSIVES[id].icon} ${PASSIVES[id].name} <b>${P.passives[id]}</b>/${PASSIVES[id].max}`).join('<br>') : '<span class="muted">ยังไม่มี</span>') + '</div>';
+  h += runPathsHtml(P);
   h += `<div class="bv-box"><div class="bv-title" style="color:${BIOMES[G.map.biome].color}">🗺 ${mapLabel(G.map)}</div>` +
     (G.map.mods.length ? G.map.mods.map((id) => `<div class="muted">${MAP_MODS[id].th}</div>`).join('') : '<span class="muted">ไม่มี map mod</span>') + '</div>';
   const eq = ITEM_SLOTS.filter((sl) => P.equip[sl]);
@@ -511,6 +550,23 @@ function buildViewHtml(final) {
   if (ks.length) h += '<div class="bv-box bv-key"><div class="bv-title">Keystone</div>' + ks.map((id) => `<b>${KEYSTONES[id].name}</b><br><span class="muted">${KEYSTONES[id].desc}</span>`).join('<br>') + '</div>';
   h += '</div>';
   return h;
+}
+
+// in-run passive tree: each path's ranks, its Mastery progress and the passives in it
+function runPathsHtml(P) {
+  let h = '<div class="bv-box"><div class="bv-title">Passive Tree ของรอบนี้</div>';
+  for (const pid in RUN_PATHS) {
+    const path = RUN_PATHS[pid], r = pathRanks(P, pid), mid = P.masteries.find((id) => MASTERY_OPT[id].path === pid);
+    if (!r && !mid) continue;
+    const ps = path.passives.filter((id) => P.passives[id]);
+    h += `<div class="rp-row" style="--cc:${path.color}"><div>${path.icon} <b>${path.name}</b> <span class="muted">${r}/${path.need}</span>${mid ? ` · <b style="color:${path.color}">${MASTERY_OPT[mid].name}</b>` : r >= path.need ? ' · <span class="ok">Mastery รอที่ Milestone</span>' : ''}</div>
+      <div class="bar rp-bar"><div style="width:${Math.min(100, (r / path.need) * 100)}%"></div></div>
+      <div class="muted">${ps.map((id) => `${PASSIVES[id].name} ${P.passives[id]}`).join(' · ')}</div></div>`;
+  }
+  const loose = Object.keys(P.passives).filter((id) => !PASSIVE_PATH[id]);
+  if (loose.length) h += `<div class="muted">อื่นๆ: ${loose.map((id) => `${PASSIVES[id].name} ${P.passives[id]}`).join(' · ')}</div>`;
+  if (!Object.keys(P.passives).length) h += '<span class="muted">ยังไม่มี — ลง Passive สายเดียวกันให้ครบ 6 ระดับเพื่อปลด Mastery ที่ Milestone</span>';
+  return h + '</div>';
 }
 
 // ---- character sheet helpers (PoB-style numbers) ----
@@ -593,13 +649,16 @@ function showGameOver(win) {
     overPick = null;
     const jewels = P.backpack.filter((it) => it.slot === 'jewel');
     const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle,
-      hc: G.hc, daily: G.daily, maps: G.runMaps, jewels, endless: endT, echoes: G.stats.echoes || 0 }, rec));
+      hc: G.hc, daily: G.daily, maps: G.runMaps, jewels, endless: endT, echoes: G.stats.echoes || 0, shardMul: G.atlasFx.shardMul }, rec));
+    const prog = settleProgression(win, endT);
     metaHtml = `<div class="over-meta"><div class="over-shards">+${res.reward.total} ✦ Ancient Shards</div>
       <div class="muted">${res.reward.parts.filter((p) => p[1] !== 0).map((p) => `${p[0]} ${p[1] > 0 ? '+' : ''}${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
       ${res.maps || res.jewels ? `<div class="over-unlock">🗺 ได้แผนที่ ${res.maps} ใบ${res.jewels ? ` · ⬡ Jewel ${res.jewels} ชิ้นเข้า Stash` : ''}</div>` : ''}
       ${G.daily && Meta.daily ? `<div class="over-unlock">📅 Daily: ${Meta.daily.newBest ? 'สถิติใหม่ของวันนี้!' : `ดีที่สุดวันนี้ ${fmtTime(Math.min(Meta.daily.best, RUN_LENGTH))}`}</div>` : ''}
       ${res.atlas ? `<div class="over-unlock">🗺 ผ่านแผนที่ ${mapLabel(G.map)}${res.atlas.first ? ' ครั้งแรก! (+1 แต้ม Legacy Tree)' : ''}${res.atlas.tierUp ? ` · ปลดล็อก Tier ${res.atlas.maxTier}` : ''}</div>` : ''}
-      ${res.newly.map((u) => `<div class="over-unlock">🔓 ปลดล็อก${u.kind === 'class' ? 'คลาส' : 'เจม'}: <b>${unlockLabel(u)}</b></div>`).join('')}</div>`;
+      ${res.newly.map((u) => `<div class="over-unlock">🔓 ปลดล็อก${u.kind === 'class' ? 'คลาส' : 'เจม'}: <b>${unlockLabel(u)}</b></div>`).join('')}
+      ${G.vault && G.vault.pick !== null ? `<div class="over-unlock">🗝 ห้องรางวัล: <b>${G.vault.cards[G.vault.pick].label}</b></div>` : ''}
+      ${progressionSummaryHtml(prog)}</div>`;
   }
   $('over-stats').innerHTML = `<div class="over-summary">
       ⏱ รอด <b>${fmtTime(G.time)}</b> · Lv <b>${P.level}</b> · ☠ ฆ่า <b>${G.stats.kills}</b> · บอส <b>${G.stats.bosses}</b> · ดาเมจรวม <b>${fmtNum(G.stats.dmg)}</b>
@@ -624,6 +683,7 @@ function openAltar() {
   renderTree();
   renderTreeInfo();
   renderTreeSummary();
+  renderAltarProgress();
   $('altar-unlocks').innerHTML = UNLOCKS.map((u) => {
     const done = !!M.unlocked[u.id];
     return `<div class="meta-unlock${done ? ' done' : ''}">
@@ -773,8 +833,10 @@ function itemCardHtml(it, label) {
   const lines = u ? u.lines.map((l) => ({ t: l })) : it.affixes.map((a) => ({ t: affixText(a), a }));
   if (lines.length) h += '<div class="pt-sep"></div>' + lines.map((l) => `<div class="pt-mod${l.a && l.a.crafted ? ' pt-crafted' : ''}">${l.t}${l.a ? tierTag(l.a) : ''}</div>`).join('');
   if (it.slot === 'jewel') h += '<div class="pt-flavor">ใส่ใน Jewel Socket ของ Legacy Tree</div>';
-  if (u) h += `<div class="pt-flavor">"${u.flavor}"</div>`;
+  if (u) h += `<div class="pt-flavor">"${u.flavor}"</div><div class="pt-src">แหล่งดรอป: ${UNIQUE_SOURCES[u.src || 'any'].th}${u.src ? ' เท่านั้น' : ''}</div>`;
+  h += heirLineHtml(it);
   if (it.corrupted) h += '<div class="pt-corrupted">Corrupted</div>';
+  h += weaponSkillNoteHtml(it);
   return h + '</div></div>';
 }
 
@@ -1136,10 +1198,19 @@ function mapChaos() {
 function mapClear() { mapCfg.mods = []; syncMapItem(); openMapDevice(); }
 function mapBack() { hide('mapdev'); buildMenu(); show('menu'); }
 
-// Attack skill cards: how hard the skill hits with the weapon you hold now
+// skill cards: which weapons the gem needs, and how hard an Attack hits with the one in hand
 function weaponNoteHtml(d) {
-  if (!d.tags.includes('Attack') || !G.player) return '';
+  const req = `<div class="card-note muted">🗡 ใช้กับ: ${weaponReqText(d.id)}</div>`;
+  if (!d.tags.includes('Attack') || !G.player) return req;
   const w = G.player.weapon, mul = attackWeaponMul(new Set(d.tags), w);
-  const need = d.tags.includes('Bow') && (!w || w.wtype !== 'bow') ? ' — ต้องใช้ธนูถึงจะแรงเต็มที่' : '';
-  return `<div class="card-note ${mul < 0.8 ? 'bad' : 'ok'}">⚔ Attack: ใช้พลังอาวุธ ×${mul.toFixed(2)} (${w ? WEAPON_TYPE[w.wtype] : 'มือเปล่า'})${need}</div>`;
+  return req + `<div class="card-note ${mul < 0.8 ? 'bad' : 'ok'}">⚔ Attack: ใช้พลังอาวุธ ×${mul.toFixed(2)} (${w ? WEAPON_TYPE[w.wtype] : 'มือเปล่า'})</div>`;
+}
+// skills a weapon would silence (or wake up) if it were held instead
+function weaponSkillNoteHtml(it) {
+  const P = G.player;
+  if (!P || G.state === 'menu' || it.slot !== 'weapon' || !P.skills.length) return '';
+  const pr = itemProps(Object.assign({ ilvl: 1, affixes: [] }, it, { base: it.base || UNIQUES[it.unique].base }));
+  const off = P.skills.filter((i) => !skillWeaponOk(i.id, pr)), on = P.skills.filter((i) => i.st.disabled && skillWeaponOk(i.id, pr));
+  return (off.length ? `<div class="pt-warn">⚠ ถ้าถืออาวุธนี้ สกิลจะหยุดทำงาน: ${off.map((i) => SKILLS[i.id].name).join(', ')}</div>` : '')
+    + (on.length ? `<div class="pt-good">✓ ใช้สกิลที่ปิดอยู่ได้อีกครั้ง: ${on.map((i) => SKILLS[i.id].name).join(', ')}</div>` : '');
 }

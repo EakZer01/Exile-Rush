@@ -188,6 +188,7 @@ function bossDefeated(e) {
   G.stats.bosses++;
   if (G.bossRef === e) G.bossRef = null;
   if (e.bossDef.pinnacle) G.stats.pinnacle = true;
+  rollBossUniques(e);
   if (e.final) { G.victoryT = 2.5; announce('ชัยชนะ!', `คุณโค่น ${e.name} ได้แล้ว`, '#ffd84a'); }
   else if (e.bossDef.echo) {
     G.stats.echoes = (G.stats.echoes || 0) + 1;

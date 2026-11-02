@@ -102,11 +102,12 @@ function resize() {
 }
 
 function startGame(cls, map) {
-  G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice() } : Object.assign({}, DEFAULT_MAP, { mods: [] });
-  G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.runMaps = [];
+  G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), scarabs: (map.scarabs || []).slice() } : Object.assign({}, DEFAULT_MAP, { mods: [], scarabs: [] });
+  G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.runMaps = []; G.runScarabs = []; G.vault = null;
   if (!G.daily) restoreRandom();
   G.mapFx = mapFx(G.map);
   G.atlasFx = atlasFx();
+  applyMapBonuses(G.atlasFx, G.mapFx, G.map);
   G.lastMap = G.map;
   G.mapHazT = 4;
   resetBreach();
@@ -128,8 +129,12 @@ function startGame(cls, map) {
   const P = createPlayer(cls);
   G.player = P;
   // Scion's random start must be a skill that deals damage on its own (not a Herald)
-  const startId = cls.start || pick(Object.keys(SKILLS).filter((id) => !isLocked('gem', id) && SKILLS[id].behavior !== 'herald'));
+  // and that works with the class's starting weapon
+  const startW = BASES[START_WEAPON[cls.id] || 'rusted_sword'].w.type;
+  const startId = cls.start || pick(Object.keys(SKILLS).filter((id) => !isLocked('gem', id) && SKILLS[id].behavior !== 'herald'
+    && (!SKILLS[id].weapons || SKILLS[id].weapons.includes(startW))));
   P.skills.push(newSkillInstance(startId));
+  P.skills[0].level += gemStartBonus(startId);
   if (cls.id === 'scion') P.currency.jeweller3++;
   giveStartingGear(P);
   applyMetaStart(P);
@@ -329,7 +334,7 @@ function init() {
   $('btn-resume').onclick = resume;
   $('btn-inv').onclick = openInventory;
   $('btn-ritual-close').onclick = closeRitual;
-  $('btn-vic-leave').onclick = () => { hide('victory'); G.state = 'dying'; showGameOver(true); };
+  $('btn-vic-leave').onclick = () => { if (G.vault && G.vault.pick === null) return; hide('victory'); G.state = 'dying'; showGameOver(true); };
   $('btn-vic-endless').onclick = startEndgame;
   $('btn-inv-close').onclick = closeInventory;
   $('btn-quit').onclick = () => { hide('pause'); G.state = 'menu'; G.player = null; buildMenu(); show('menu'); };
@@ -355,9 +360,14 @@ window.addEventListener('load', init);
 function openVictory() {
   G.state = 'victory';
   $('vic-sub').textContent = `เคลียร์ ${mapLabel(G.map)} ใน ${fmtTime(G.time)} · ออกไปรับรางวัลตอนนี้ หรืออยู่ต่อใน Endgame`;
+  // the Vault is rolled once per cleared map (the Daily has none)
+  if (!G.vault && !G.daily) G.vault = { cards: rollVault(), pick: null };
+  if (G.vault) renderVault(); else $('vic-vault').innerHTML = '';
+  setVictoryButtons();
   show('victory');
 }
 function startEndgame() {
+  if (G.vault && G.vault.pick === null) return;
   hide('victory');
   Object.assign(G, { endless: true, endStart: G.time, nextEcho: G.time + 40, state: 'play' });
   resetGameClock();

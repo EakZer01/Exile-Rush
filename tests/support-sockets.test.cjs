@@ -231,12 +231,13 @@ test('all skill behaviors run with six independent slots and finite damage', () 
     for (const id of Object.keys(SKILLS)) {
       startGame(CLASSES[2]);
       const player = G.player, skill = newSkillInstance(id); player.skills = [skill]; skill.level = 20; skill.evo = true;
+      const ws = SKILLS[id].weapons; if (ws) player.equip.weapon = makeNormal(Object.keys(BASES).find(b => BASES[b].w && ws.includes(BASES[b].w.type)));
       player.currency.jeweller6 = 1; G.state = 'inventory'; useSkillJeweller(skill, 'jeweller6'); G.state = 'play';
       for (const sid of Object.keys(SUPPORTS)) if (!supportBlockReason(sid, skill)) skill.supports.push(sid);
       recomputePlayer();
       for (let k = 0; k < 12; k++) { const e = makeEnemy('zombie', 90 + k * 8, (k % 3 - 1) * 40, 0); e.hp = e.maxHp = 1e8; e.dmg = 0; e.speed = 0; G.enemies.push(e); }
       for (let k = 0; k < 120; k++) { player.life = player.maxLife; update(1/60); }
-      results.push({id, valid: Number.isFinite(skill.dmgDealt) && Number.isFinite(skill.st.hitTotal) && activeSupports(skill).active.length <= 6});
+      results.push({id, valid: !skill.st.disabled && Number.isFinite(skill.dmgDealt) && Number.isFinite(skill.st.hitTotal) && activeSupports(skill).active.length <= 6});
     }
     return results;
   })()`);

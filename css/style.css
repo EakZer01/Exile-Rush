@@ -285,6 +285,8 @@ canvas#game { display: block; position: fixed; inset: 0; touch-action: none; }
 .pt-tier { color: #8a8a6a; font-size: 11px; }
 .pt-flavor { color: #af6025; font-style: italic; margin-top: 6px; }
 .pt-corrupted, .pt-corrupt-imp { color: #d02020; }
+.pt-warn { color: #ff7060; margin-top: 6px; }
+.pt-good { color: #6ad07a; margin-top: 6px; }
 @media (max-width: 760px) {
   .inv-main { grid-template-columns: 1fr; }
   .doll { grid-template-columns: 56px 36px 64px 36px 56px; grid-template-rows: 46px 46px 46px 46px; margin: 0 auto; }
@@ -427,3 +429,45 @@ details.bench summary { cursor: pointer; color: #d8c8a0; }
 .flicker-toggle[aria-pressed="false"] { border-color: #b89250; color: #e6c888; }
 .flicker-toggle[hidden] { display: none; }
 @media (max-width: 699px) { .flicker-toggle { top: 124px; bottom: auto; left: 8px; max-width: calc(100vw - 16px); } }
+
+/* ---- run paths + mastery ---- */
+.card-mastery { border-left: 3px solid var(--cc); background: linear-gradient(180deg, #1c1a24, #100d12); box-shadow: 0 0 14px color-mix(in srgb, var(--cc) 30%, transparent); }
+.rp-row { margin: 6px 0; }
+.rp-row .rp-bar { width: 100%; margin: 3px 0; }
+.rp-row .rp-bar div { background: var(--cc); }
+
+/* ---- endgame: scarabs, vault, heirlooms, altar panels ---- */
+.pt-src { color: #c8a860; margin-top: 4px; font-size: 0.92em; }
+.pt-heir { color: #ffd890; margin-top: 6px; border-top: 1px solid #5a4020; padding-top: 4px; }
+.map-scarabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; }
+.scarab { background: #16110c; border: 1px solid #4a3a24; color: var(--cc); text-align: left; padding: 6px 8px; border-radius: 4px; cursor: pointer; font: inherit; max-width: 260px; }
+.scarab.rare { border-color: #8a5a2a; }
+.scarab.on { border-color: var(--cc); box-shadow: 0 0 10px color-mix(in srgb, var(--cc) 45%, transparent); background: #22180e; }
+.scarab .muted { font-size: 0.85em; }
+.stash-cell { position: relative; }
+.stash-cell.heir { box-shadow: inset 0 0 0 2px #e8b860; }
+.heir-badge { position: absolute; right: 1px; bottom: 0; font-size: 10px; color: #ffd890; text-shadow: 0 0 2px #000; }
+.vic-vault { margin: 8px 0; }
+.vault-cards .vault-card { border-color: var(--cc); cursor: pointer; animation: vault-in 0.45s ease-out both; }
+.vault-cards .vault-card:nth-child(2) { animation-delay: 0.12s; } .vault-cards .vault-card:nth-child(3) { animation-delay: 0.24s; } .vault-cards .vault-card:nth-child(4) { animation-delay: 0.36s; }
+.vault-card.v-legendary { box-shadow: 0 0 18px rgba(232, 136, 58, 0.55); }
+.vault-card.v-rare { box-shadow: 0 0 10px rgba(255, 232, 102, 0.3); }
+.vault-card.picked { outline: 2px solid var(--cc); }
+.vault-card.dim { opacity: 0.4; cursor: default; }
+@keyframes vault-in { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+.card.disabled { opacity: 0.45; pointer-events: none; }
+.altar-prog { margin: 12px 0; }
+.gm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; margin-top: 6px; }
+.gm-card { background: #14100b; border: 1px solid #3a2e1e; padding: 6px 8px; border-radius: 4px; }
+.gm-card.fresh { opacity: 0.7; }
+.gm-lv { float: right; color: var(--gold); font-weight: 700; }
+.gm-bar { width: 100%; margin: 4px 0 2px; }
+.gm-alts { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.gm-lock { font-size: 0.8em; color: #6a5a40; }
+.gm-altdesc { font-size: 0.85em; color: #a8c8ff; margin-bottom: 4px; }
+.chal-ms { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0; font-size: 0.9em; }
+.chal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.chal { background: #14100b; border: 1px solid #3a2e1e; padding: 6px 8px; border-radius: 4px; }
+.chal.done { border-color: #6a8a3a; }
+.atlas-tiers { display: flex; flex-wrap: wrap; gap: 10px; }
+.coll-src { margin: 8px 0; }

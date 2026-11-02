@@ -38,9 +38,10 @@ function giveLoadoutItem(P, it) {
 
 // ---------------- game over: choose what to keep ----------------
 let overPick = null;
-function runItems() {
+// heirlooms go home on their own, so the keep-list leaves them out unless asked
+function runItems(withHeir) {
   const P = G.player;
-  return ITEM_SLOTS.map((k) => P.equip[k]).concat(P.flasks, P.backpack).filter((it) => it && it.slot !== 'jewel');
+  return ITEM_SLOTS.map((k) => P.equip[k]).concat(P.flasks, P.backpack).filter((it) => it && it.slot !== 'jewel' && (withHeir || !it.heir));
 }
 function renderOverStash(r) {
   const box = $('over-stash');
@@ -49,6 +50,7 @@ function renderOverStash(r) {
   if (G.daily) { box.innerHTML = '<div class="muted">Daily Challenge: เก็บของเข้า Stash ไม่ได้</div>'; return; }
   if (!limit) { box.innerHTML = '<div class="bad">Hardcore: ตายแล้ว — เก็บของเข้า Stash ไม่ได้</div>'; return; }
   if (overPick.done) { box.innerHTML = `<div class="ok">เก็บเข้า Stash แล้ว ${overPick.sel.size} ชิ้น ✓</div>`; return; }
+  if (!items.length) { box.innerHTML = '<div class="muted">ไม่มีไอเทมให้เก็บ (Heirloom กลับเข้า Stash เองแล้ว)</div>'; return; }
   const room = STASH_CAP - M.stash.length;
   box.innerHTML = `<div class="bv-title">📦 เลือกไอเทมเก็บเข้า Stash (${overPick.sel.size}/${Math.min(limit, room)})</div>
     <div class="stash-grid small">${items.map((it, i) => stashCellHtml(it, 'op', i, overPick.sel.has(i))).join('')}</div>
@@ -68,7 +70,7 @@ function renderOverStash(r) {
   };
 }
 function stashCellHtml(it, key, i, sel) {
-  return `<div class="stash-cell r-${it.rarity}${sel ? ' sel' : ''}" data-${key}="${i}" title="${it.name}"><img src="${itemIconURL(it)}" alt="" draggable="false"></div>`;
+  return `<div class="stash-cell r-${it.rarity}${sel ? ' sel' : ''}${it.heir ? ' heir' : ''}" data-${key}="${i}" title="${it.name}"><img src="${itemIconURL(it)}" alt="" draggable="false">${it.heir ? `<span class="heir-badge">❖${heirLevel(it.heir.xp)}</span>` : ''}</div>`;
 }
 
 // ---------------- Stash window ----------------
@@ -79,9 +81,13 @@ function openStash() {
   $('stash-sub').textContent = `${M.stash.length}/${STASH_CAP} ชิ้น · Jewel ใส่ได้ที่ Legacy Tree · ไอเทมอื่นพกเข้ารอบได้ที่ Map Device · ✦ ${M.shards}`;
   $('stash-grid').innerHTML = M.stash.map((it, i) => stashCellHtml(it, 'si', i, stashView === i)).join('') || '<div class="muted">Stash ว่าง — จบรอบแล้วเลือกไอเทมเก็บได้</div>';
   const it = M.stash[stashView];
-  $('stash-detail').innerHTML = it ? itemCardHtml(it) + `<div class="inv-actions"><button class="btn btn-small btn-dim" id="btn-stash-salv">ย่อย (+${SALVAGE_SHARDS[it.rarity] || 1} ✦)</button></div>` : '<div class="muted inv-help">แตะไอเทมเพื่อดูรายละเอียด</div>';
+  const canBind = it && !it.heir && it.slot !== 'jewel';
+  $('stash-detail').innerHTML = it ? itemCardHtml(it) + `<div class="inv-actions">
+      ${canBind ? `<button class="btn btn-small" id="btn-stash-heir" ${M.shards < HEIR_BIND_COST || heirCount() >= HEIR_MAX ? 'disabled' : ''} title="ไอเทมโตขึ้นทุกครั้งที่พกเข้ารอบ และกลับเข้า Stash เอง">❖ ผูกเป็น Heirloom (${HEIR_BIND_COST} ✦ · ${heirCount()}/${HEIR_MAX})</button>` : ''}
+      ${it.heir ? '' : `<button class="btn btn-small btn-dim" id="btn-stash-salv">ย่อย (+${SALVAGE_SHARDS[it.rarity] || 1} ✦)</button>`}</div>` : '<div class="muted inv-help">แตะไอเทมเพื่อดูรายละเอียด · ไอเทมที่ผูกเป็น ❖ Heirloom จะเก่งขึ้นทุกครั้งที่พกเข้ารอบ</div>';
   $('stash').querySelectorAll('[data-si]').forEach((el) => { el.onclick = () => { stashView = +el.dataset.si; openStash(); }; });
-  if (it) $('btn-stash-salv').onclick = () => { M.shards += SALVAGE_SHARDS[it.rarity] || 1; M.stash.splice(stashView, 1); stashView = null; saveMeta(); Sfx.play('pickup'); openStash(); };
+  if (it && !it.heir) $('btn-stash-salv').onclick = () => { M.shards += SALVAGE_SHARDS[it.rarity] || 1; M.stash.splice(stashView, 1); stashView = null; saveMeta(); Sfx.play('pickup'); openStash(); };
+  if (canBind) $('btn-stash-heir').onclick = () => { if (heirBind(stashView)) { Sfx.play('levelup'); openStash(); } };
   show('stash');
 }
 function closeStash() { hide('stash'); buildMenu(); show('menu'); }
@@ -116,12 +122,15 @@ function renderMapExtras() {
     el.title = M.stash[+el.dataset.lo].name + ` (${LOADOUT_COST[M.stash[+el.dataset.lo].rarity]} ✦)`;
   });
   $('map-hc').checked = mapHC;
-  $('map-hc').onchange = () => { mapHC = $('map-hc').checked; };
+  $('map-hc').onchange = () => { mapHC = $('map-hc').checked; openMapDevice(); };
+  if (mapHC && [...mapLoadout].some((i) => M.stash[i] && M.stash[i].heir)) $('map-loadout-n').textContent += ' · ⚠ Hardcore: ตายแล้ว Heirloom หาย';
   // start button shows what it costs
   const cost = mapEntryCost() + loadoutCost();
   $('btn-map-start').textContent = mapCfg.itemUid ? `🗺 เปิดแผนที่ (ใช้แผนที่ T${mapCfg.tier})${loadoutCost() ? ` · ${loadoutCost()} ✦` : ''}` : cost ? `🗺 ซื้อและเปิดแผนที่ (${cost} ✦)` : '🗺 เปิดแผนที่';
   $('btn-map-start').disabled = M.shards < cost;
   $('map-atlas').textContent = `Atlas: ผ่านแล้ว ${atlasDoneCount()} แผนที่ · Tier สูงสุด ${A.maxTier} · แต้ม Legacy Tree จาก Atlas +${atlasBonusPoints()}/${ATLAS_POINT_CAP} · แต้ม Atlas Tree ${atlasUsed()}/${atlasPoints()} · ✦ ${M.shards}`;
+  renderMapScarabs();
+  $('map-atlas').innerHTML += '<br>' + voidAtlasHtml(mapCfg.tier);
   renderAtlasTree();
 }
 function renderAtlasTree() {
@@ -152,7 +161,7 @@ function mapStartPaid() {
   if (mapCfg.itemUid) M.maps = M.maps.filter((m) => m.uid !== mapCfg.itemUid);
   const loadout = [...mapLoadout].sort((a, b) => b - a).map((i) => M.stash.splice(i, 1)[0]).filter(Boolean);
   mapLoadout = new Set();
-  const cfg = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice(), hc: mapHC, loadout };
+  const cfg = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice(), hc: mapHC, loadout, scarabs: spendMapScarabs() };
   M.lastMap = { biome: cfg.biome, tier: cfg.tier, mods: cfg.mods.slice() };
   mapCfg.itemUid = null;
   saveMeta();

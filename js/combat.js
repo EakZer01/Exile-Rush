@@ -29,9 +29,13 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (e.immuneT > G.time) { if (Math.random() < 0.05) addText(e.x, e.y - e.r - 10, 'IMMUNE', '#c8c8c8', 0.8); return 0; }
   const P = G.player, ks = P.mods.ks;
   let crit = false;
-  if (!ks.resolute) crit = G.buffs.diamond > 0 || P.critT > 0 || Math.random() < s.critChance * P.flaskFx.critMul;
+  if (!ks.resolute) {
+    const cc = s.critChance * P.flaskFx.critMul;
+    crit = G.buffs.diamond > 0 || P.critT > 0 || Math.random() < cc || (ks.luckyCrit && Math.random() < cc);
+  }
   let m = (mult || 1) * situationalMore(e, inst);
   if (crit) m *= s.critMulti;
+  else if (ks.nonCritLess) m *= 0.85;
   if (e.shock.t > 0) m *= 1 + e.shock.eff;
   if ((e.chill.t > 0 || e.freeze > 0) && s.vsChilled !== 1) m *= s.vsChilled;
   if (ks.painAttune && s.tags.has('Spell') && P.life < P.maxLife * 0.5) m *= 1.4;
@@ -186,6 +190,7 @@ function killEnemy(e, inst) {
   if (e.rarity === 3) bossDefeated(e);
   rollItemDrop(e);
   rollLeagueDrops(e);
+  rollScarabDrops(e);
   onKillAscendancy(e, inst);
   onKillSkills(e);
 
@@ -306,6 +311,7 @@ const PICKUPS = {
 for (const [id, def] of Object.entries(JEWELLERS)) PICKUPS[id] = { ...def, craft: true };
 function spawnPickup(x, y, kind, extra) { G.pickups.push(Object.assign({ x, y, kind, t: 0 }, extra)); }
 const pickupDef = (it) => (it.kind === 'essence' ? { name: ESSENCES[it.ess].name, color: ESSENCES[it.ess].color, icon: '◆' }
+  : it.kind === 'scarab' ? { name: SCARABS[it.scarab].name, color: SCARABS[it.scarab].color, icon: '✲' }
   : it.kind === 'map' ? { name: `แผนที่ T${it.map.tier}`, color: RARITY_COLOR[it.map.rarity], icon: '▦' } : PICKUPS[it.kind]);
 
 // ---- Ascendancy on-kill effects + Vaal souls ----

@@ -932,8 +932,14 @@ function drawHUD(ctx, W, H, P) {
       const lbl = mobile ? 'VAAL' : 'V';
       ctx.strokeText(lbl, sx + sz / 2, sy - 6); ctx.fillStyle = '#ff6060'; ctx.fillText(lbl, sx + sz / 2, sy - 6);
     }
+    // gem silenced by the held weapon: dark slot with a red cross
+    if (inst.st.disabled) {
+      ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(sx + 1, sy + 1, sz - 2, sz - 2);
+      ctx.strokeStyle = '#e04040'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(sx + 8, sy + 8); ctx.lineTo(sx + sz - 8, sy + sz - 8); ctx.moveTo(sx + sz - 8, sy + 8); ctx.lineTo(sx + 8, sy + sz - 8); ctx.stroke();
+    }
     // cooldown
-    if (inst.st.behavior !== 'aura' && inst.timer > 0 && inst.st.cdFinal > 0.3) {
+    else if (inst.st.behavior !== 'aura' && inst.timer > 0 && inst.st.cdFinal > 0.3) {
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.beginPath(); ctx.moveTo(sx + sz / 2, sy + sz / 2);
       ctx.arc(sx + sz / 2, sy + sz / 2, sz / 2, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(inst.timer / inst.st.cdFinal, 0, 1));

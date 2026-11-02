@@ -18,9 +18,12 @@ function defaultMods() {
     // legacy tree keystones
     evolveLevelAdd: 0, vaalSoulMul: 1, unevolvedMore: 1, nonMinionMore: 1,
     gemLevel: 0, flaskGainMore: 1,
+    // run-path masteries
+    projReturn: false, noAilment: false, ailMore: 1, ailDurMore: 1, spellSpeed: 0, attackSpeed: 0, physMore: 1,
     incFire: 0, incCold: 0, incLight: 0, curseEff: 0,
     // unique item hooks
     brandAdd: 0, brandSpeed: 0, heraldMore: 1, beamRange: 0, beamMore: 1, summonAdd: 0, poisonMore: 1, aftershockAdd: 0,
+    skillHooks: [], keystoneAdd: 0,
     // gear defences
     lifeFlat: 0, armour: 0, evasion: 0, es: 0, esInc: 0, block: 0, esRechargeInc: 0,
     // resistances (fractions) and their caps
@@ -44,7 +47,7 @@ function createPlayer(cls) {
     currency: { chaos: 3, jeweller3: 0, jeweller4: 0, jeweller5: 0, jeweller6: 0, regal: 0, exalt: 0, divine: 0, annul: 0, whetstone: 0, scrap: 0, vaal: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
     // ascendancy state
     asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
-    critT: 0, frenzyT: 0, revives: 0,
+    critT: 0, frenzyT: 0, revives: 0, masteries: [],
     essences: {},
     equip: { weapon: null, offhand: null, helm: null, body: null, gloves: null, boots: null, belt: null, amulet: null, ring: null, ring2: null }, backpack: [], newItems: 0,
   };
@@ -58,6 +61,7 @@ function buildPlayerMods(equip) {
   for (const id in P.passives) for (let i = 0; i < P.passives[id]; i++) PASSIVES[id].apply(m);
   for (const id in P.keystones) KEYSTONES[id].apply(m);
   for (const id of P.ascNodes) ASC_NODES[id].apply(m);
+  for (const id of P.masteries) MASTERY_OPT[id].apply(m);
   for (const slot of ITEM_SLOTS) if (equip[slot]) applyItem(equip[slot], m);
   const fx = G.mapFx;
   m.lifeMore *= fx.pLife; m.regen *= fx.pRegen; m.leechCap *= fx.pRegen; m.flaskGainMore *= fx.pFlask;
@@ -201,6 +205,7 @@ function collectPickup(kind, x, y, it) {
   else if (kind === 'chest') { if (it && it.boss) G.pendingChests++; else openChestInstant(x, y); }
   else if (kind === 'map') collectMap(it.map);
   else if (kind === 'essence') { P.essences[it.ess] = (P.essences[it.ess] || 0) + 1; lootLog(def.name, def.color); showTip('essence'); }
+  else if (kind === 'scarab') collectScarab(it.scarab);
 }
 
 function gainXp(v) {
