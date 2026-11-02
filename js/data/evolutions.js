@@ -1,0 +1,126 @@
+'use strict';
+// ============================================================
+//  GEM EVOLUTIONS
+//  A skill gem at EVOLVE_LEVEL with one of its recipe supports linked
+//  can evolve into its Vaal form: a permanent upgrade (apply) plus a
+//  Vaal ultimate that charges from souls (kills) and fires on V.
+//  Awakened supports: a socketed support can be awakened once for
+//  20% more damage plus the bonus listed in AWAKEN_BONUS.
+// ============================================================
+const EVOLVE_LEVEL = 10;
+const VAAL_SOULS = 90;        // souls needed per Vaal ultimate
+const VAAL_SURGE = 6;         // seconds of surge after unleashing
+
+const EVOLUTIONS = {
+  fireball: { name: 'Vaal Fireball', req: ['multiple_projectiles', 'gmp', 'spell_echo'],
+    desc: 'ยิงลูกไฟเป็นวงรอบตัว +4 ลูก · ระเบิดกว้างขึ้น 25%',
+    apply(s) { s.pattern = 'ring'; s.proj += 4; s.area *= 1.25; } },
+  ice_nova: { name: 'Vaal Ice Nova', req: ['inc_aoe', 'concentrated', 'hypothermia'],
+    desc: 'ปล่อยโนวา 2 ระลอก · Chill แรงขึ้น 40% · ดาเมจ 20% more',
+    apply(s) { s.novaPulses = 2; s.chillEff += 0.4; s.more *= 1.2; } },
+  arc: { name: 'Vaal Arc', req: ['chain', 'added_lightning', 'controlled_destruction'],
+    desc: 'กระโดด +5 · Shock ทุกครั้งที่โดน · คูลดาวน์สั้นลง 25%',
+    apply(s) { s.chain += 5; s.shock = 1; s.cd *= 0.75; } },
+  spark: { name: 'Vaal Spark', req: ['faster_projectiles', 'inc_duration', 'spell_echo'],
+    desc: '+4 ประกาย · ประกายวิ่งไล่หาศัตรูเอง',
+    apply(s) { s.proj += 4; s.seek = true; } },
+  split_arrow: { name: 'Vaal Split Arrow', req: ['multiple_projectiles', 'gmp', 'pierce'],
+    desc: '+2 ลูกธนู · ทะลุ +4 · ยิงซ้ำอีก 1 ชุด',
+    apply(s) { s.proj += 2; s.pierce += 4; s.echo += 1; } },
+  caustic_arrow: { name: 'Vaal Caustic Arrow', req: ['void_manipulation', 'swift_affliction', 'added_chaos'],
+    desc: '+2 ลูกธนู · หมอกพิษกว้างขึ้น 40% และแรงขึ้น 60%',
+    apply(s) { s.proj += 2; s.area *= 1.4; s.cloudDps *= 1.6; } },
+  ethereal_knives: { name: 'Vaal Ethereal Knives', req: ['pierce', 'faster_projectiles', 'multiple_projectiles', 'gmp'],
+    desc: 'มีดเพิ่มเป็นสองวง (+8) · ทะลุ +2',
+    apply(s) { s.proj += 8; s.pierce += 2; } },
+  blade_vortex: { name: 'Vaal Blade Vortex', req: ['inc_duration', 'inc_aoe', 'concentrated'],
+    desc: 'ใบมีดสูงสุด +5 · ฟันถี่ขึ้น 30%',
+    apply(s) { s.maxCount += 5; s.hitCd *= 0.7; } },
+  firestorm: { name: 'Vaal Firestorm', req: ['concentrated', 'inc_aoe', 'burning_damage'],
+    desc: 'อุกกาบาต +6 ลูก · ระเบิดกว้างขึ้น 25%',
+    apply(s) { s.count += 6; s.area *= 1.25; } },
+  righteous_fire: { name: 'Vaal Righteous Fire', req: ['burning_damage', 'swift_affliction', 'inc_aoe'],
+    desc: 'วงไฟกว้างขึ้น 30% · ดาเมจเผา 50% more',
+    apply(s) { s.area *= 1.3; s.burnMore *= 1.5; } },
+  raging_spirit: { name: 'Vaal Raging Spirit', req: ['minion_damage', 'minion_speed', 'inc_duration'],
+    desc: 'วิญญาณสูงสุด +4 · วิญญาณระเบิดเมื่อหมดเวลา',
+    apply(s) { s.maxCount += 4; s.minionBoom = true; } },
+  cyclone: { name: 'Vaal Cyclone', req: ['melee_physical', 'faster_attacks', 'inc_aoe'],
+    desc: 'วงฟันกว้างขึ้น 35% · ดูดศัตรูเข้าหาตัวแทนการผลัก · ฟันเร็วขึ้น 25%',
+    apply(s) { s.area *= 1.35; s.knock = -45; s.cd *= 0.75; } },
+  frostbolt: { name: 'Vaal Frostbolt', req: ['pierce', 'multiple_projectiles', 'gmp', 'hypothermia'],
+    desc: '+2 ลูก · แตกเป็นระเบิดน้ำแข็งเมื่อหมดระยะ',
+    apply(s) { s.proj += 2; s.explode = true; s.area = Math.max(s.area, 70); } },
+  ball_lightning: { name: 'Vaal Ball Lightning', req: ['inc_aoe', 'spell_echo', 'light_pen'],
+    desc: '+2 ลูก · ช็อตเพิ่มอีก 2 ตัวต่อครั้ง',
+    apply(s) { s.proj += 2; s.zapN += 2; } },
+  freezing_pulse: { name: 'Vaal Freezing Pulse', req: ['multiple_projectiles', 'gmp', 'cold_pen'],
+    desc: '+2 ลูก · ดาเมจไม่ลดลงตามระยะ',
+    apply(s) { s.proj += 2; s.decay = false; } },
+  lightning_arrow: { name: 'Vaal Lightning Arrow', req: ['multiple_projectiles', 'gmp', 'added_lightning'],
+    desc: '+1 ลูกธนู · สายฟ้าฟาดเพิ่ม +3',
+    apply(s) { s.proj += 1; s.strikes += 3; } },
+  tornado_shot: { name: 'Vaal Tornado Shot', req: ['gmp', 'pierce', 'returning'],
+    desc: 'ลูกธนูย่อย +3 · ลูกธนูย่อยทะลุ +2',
+    apply(s) { s.split += 3; s.pierce += 2; } },
+  toxic_rain: { name: 'Vaal Toxic Rain', req: ['void_manipulation', 'swift_affliction', 'deadly_ailments'],
+    desc: '+4 ดอก · หมอกพิษแรงขึ้น 50%',
+    apply(s) { s.count += 4; s.cloudDps *= 1.5; } },
+  contagion: { name: 'Vaal Contagion', req: ['void_manipulation', 'inc_aoe', 'deadly_ailments'],
+    desc: 'วงกว้างขึ้น 40% · ดาเมจ 30% more',
+    apply(s) { s.area *= 1.4; s.more *= 1.3; } },
+  essence_drain: { name: 'Vaal Essence Drain', req: ['spell_echo', 'gmp', 'deadly_ailments'],
+    desc: '+2 ลูก · พิษแรงขึ้นอีก 40%',
+    apply(s) { s.proj += 2; s.dotMore *= 1.4; } },
+  storm_brand: { name: 'Vaal Storm Brand', req: ['chain', 'added_lightning', 'inc_duration'],
+    desc: 'ตราสูงสุด +2 · กระโดด +2',
+    apply(s) { s.maxCount += 2; s.chain += 2; } },
+  armageddon_brand: { name: 'Vaal Armageddon Brand', req: ['concentrated', 'inc_aoe', 'fire_pen'],
+    desc: 'ตราสูงสุด +2 · ระเบิดกว้างขึ้น 30%',
+    apply(s) { s.maxCount += 2; s.area *= 1.3; } },
+  molten_strike: { name: 'Vaal Molten Strike', req: ['multiple_projectiles', 'gmp', 'multistrike'],
+    desc: 'ลูกลาวา +4 · ระเบิดกว้างขึ้น 20%',
+    apply(s) { s.balls += 4; s.area *= 1.2; } },
+  earthquake: { name: 'Vaal Earthquake', req: ['melee_physical', 'multistrike', 'brutality'],
+    desc: 'Aftershock 2 ครั้ง · วงกว้างขึ้น 25%',
+    apply(s) { s.aftershocks = 2; s.area *= 1.25; } },
+  scorching_ray: { name: 'Vaal Scorching Ray', req: ['infused_channelling', 'burning_damage', 'fire_pen'],
+    desc: 'ลำแสงยาวขึ้น 40% กว้างขึ้น 50% · ดาเมจ 25% more',
+    apply(s) { s.range *= 1.4; s.size *= 1.5; s.more *= 1.25; } },
+  herald_of_ice: { name: 'Vaal Herald of Ice', req: ['inc_aoe', 'hypothermia', 'elemental_prolif'],
+    desc: 'ระเบิดกว้างขึ้น 40% · ดาเมจ 40% more',
+    apply(s) { s.area *= 1.4; s.more *= 1.4; } },
+  summon_skeletons: { name: 'Vaal Summon Skeletons', req: ['minion_damage', 'minion_speed', 'inc_duration'],
+    desc: 'โครงกระดูกสูงสุด +4 · อัญเชิญทีละ 3 ตัว',
+    apply(s) { s.maxCount += 4; s.summonN = 3; } },
+};
+
+// extra effect of an awakened support (on top of 20% more damage)
+const AWAKEN_BONUS = {
+  multiple_projectiles: { desc: '+1 Projectile', apply(s) { s.proj += 1; } },
+  gmp: { desc: '+1 Projectile', apply(s) { s.proj += 1; } },
+  pierce: { desc: 'ทะลุ +2', apply(s) { s.pierce += 2; } },
+  chain: { desc: 'กระโดด +1', apply(s) { s.chain += 1; } },
+  fork: { desc: 'ความเร็วกระสุน +20%', apply(s) { s.projSpeedInc += 0.2; } },
+  inc_aoe: { desc: 'พื้นที่ +20%', apply(s) { s.areaInc += 0.2; } },
+  spell_echo: { desc: 'ความเร็วร่าย +15%', apply(s) { s.speedInc += 0.15; } },
+  faster_casting: { desc: 'ความเร็วร่าย +15%', apply(s) { s.speedInc += 0.15; } },
+  faster_attacks: { desc: 'ความเร็วโจมตี +15%', apply(s) { s.speedInc += 0.15; } },
+  inc_crit: { desc: 'โอกาสคริ +1% (base)', apply(s) { s.crit += 0.01; } },
+  inc_crit_dmg: { desc: 'ตัวคูณคริ +30%', apply(s) { s.critMulti += 0.3; } },
+  inc_duration: { desc: 'ระยะเวลา +20%', apply(s) { s.durInc += 0.2; } },
+  minion_speed: { desc: 'มินเนียนเร็วขึ้น +20%', apply(s) { s.minionSpeed += 0.2; } },
+  minion_damage: { desc: 'มินเนียนสูงสุด +1', apply(s) { s.maxCount += 1; } },
+  life_leech: { desc: 'ดูดชีวิต +1%', apply(s) { s.leech += 0.01; } },
+  culling_strike: { desc: 'ประหารที่ 15%', apply(s) { s.cull = Math.max(s.cull, 0.15); } },
+};
+
+function evolveRecipeMet(inst) {
+  const ev = EVOLUTIONS[inst.id];
+  return !!ev && !inst.evo && inst.level >= evolveLevel() && ev.req.some((r) => inst.supports.includes(r));
+}
+// both can be lowered by the Gem Savant keystone on the Legacy Tree
+function evolveLevel() { return EVOLVE_LEVEL + (G.player ? G.player.mods.evolveLevelAdd : 0); }
+function vaalSouls() { return Math.round(VAAL_SOULS * (G.player ? G.player.mods.vaalSoulMul : 1)); }
+function skillDisplayName(inst) { return inst.evo ? EVOLUTIONS[inst.id].name : SKILLS[inst.id].name; }
+function supportDisplayName(inst, sid) { return (inst && inst.awakened && inst.awakened.includes(sid) ? 'Awakened ' : '') + SUPPORTS[sid].name; }

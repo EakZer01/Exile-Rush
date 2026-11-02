@@ -1,0 +1,244 @@
+'use strict';
+// ============================================================
+//  Player: stats, movement, Flame Dash, flasks, pickups, XP
+// ============================================================
+function defaultMods() {
+  return {
+    lifeInc: 0, lifeMore: 1, moveInc: 0, moveMore: 1,
+    incSpell: 0, incAttack: 0, incProj: 0, incAoE: 0, incMinion: 0,
+    incPhys: 0, incEle: 0, incChaos: 0, incDot: 0,
+    critAdd: 0, critMulti: 0, speedInc: 0, areaInc: 0, durInc: 0, projSpeedInc: 0,
+    regen: 0.002, pickupInc: 0, xpInc: 0, dmgTaken: 1, evade: 0, leech: 0, minionSpeed: 0,
+    flaskCharge: 0, flaskEff: 0, ks: {},
+    // ascendancy
+    projAdd: 0, pierceAdd: 0, chainAdd: 0, igniteAdd: 0, shockAdd: 0, poisonAdd: 0, ailDurInc: 0, shockEffInc: 0,
+    burnMore: 1, moreEle: 1, dotMore: 1, moreMinion: 1, moreAll: 1, moreVsRare: 1, vsIgnited: 1,
+    minionCount: 0, minionLeech: 0, cullAdd: 0, dmgCap: 0, leechCap: 1, flaskRegen: 0, dashCdMul: 1,
+    lifeOnKill: 0, skillSlots: 0, startSockets: 0, extraChoices: 0,
+    // legacy tree keystones
+    evolveLevelAdd: 0, vaalSoulMul: 1, unevolvedMore: 1, nonMinionMore: 1,
+    gemLevel: 0, flaskGainMore: 1,
+    incFire: 0, incCold: 0, incLight: 0, curseEff: 0,
+  };
+}
+
+const xpReq = (lv) => Math.floor(5 + (lv - 1) * 5 + Math.pow(lv - 1, 2) * 0.32);
+const LIFE_PER_LEVEL = 3;
+
+function createPlayer(cls) {
+  return {
+    x: 0, y: 0, vx: 0, vy: 0, r: 14, cls, baseLife: cls.life, life: cls.life, maxLife: cls.life,
+    facing: 0, skills: [], passives: {}, keystones: {}, level: 1, xp: 0, xpNext: xpReq(1),
+    mods: defaultMods(), iframes: 0, dashCd: 0, dashT: 0, dashVx: 0, dashVy: 0, hurtFlash: 0, leechPool: 0,
+    flasks: [
+      { kind: 'life', name: 'Life Flask', key: 'Q', charges: 45, max: 60, use: 20, active: 0, dur: 2.5 },
+      { kind: 'quick', name: 'Quicksilver Flask', key: 'E', charges: 30, max: 50, use: 25, active: 0, dur: 4 },
+    ],
+    currency: { chaos: 3, fusing: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
+    // ascendancy state
+    asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
+    critT: 0, frenzyT: 0, revives: 0,
+    equip: { helm: null, body: null, gloves: null, boots: null, amulet: null, ring: null }, backpack: [], newItems: 0,
+  };
+}
+
+function recomputePlayer() {
+  const P = G.player;
+  const ratio = P.maxLife > 0 ? P.life / P.maxLife : 1;
+  const m = defaultMods();
+  P.cls.apply(m);
+  applyMetaMods(m);
+  for (const id in P.passives) for (let i = 0; i < P.passives[id]; i++) PASSIVES[id].apply(m);
+  for (const id in P.keystones) KEYSTONES[id].apply(m);
+  for (const id of P.ascNodes) ASC_NODES[id].apply(m);
+  for (const slot of ITEM_SLOTS) if (P.equip[slot]) applyItem(P.equip[slot], m);
+  const fx = G.mapFx;
+  m.lifeMore *= fx.pLife; m.regen *= fx.pRegen; m.leechCap *= fx.pRegen; m.flaskGainMore *= fx.pFlask;
+  P.mods = m;
+  P.maxLife = (P.baseLife + LIFE_PER_LEVEL * (P.level - 1)) * (1 + m.lifeInc) * m.lifeMore;
+  P.life = Math.min(P.maxLife, ratio * P.maxLife);
+  P.moveSpeed = 200 * (1 + m.moveInc) * m.moveMore;
+  P.pickupR = 90 * (1 + m.pickupInc);
+  for (const inst of P.skills) inst.st = buildSkillStats(inst, P);
+}
+
+function updatePlayer(dt) {
+  const P = G.player;
+  const inp = G.input;
+  let ix = 0, iy = 0;
+  if (inp.left) ix -= 1; if (inp.right) ix += 1; if (inp.up) iy -= 1; if (inp.down) iy += 1;
+  if (inp.joy) { ix = inp.joy.x; iy = inp.joy.y; }
+  const il = Math.hypot(ix, iy);
+  if (il > 1) { ix /= il; iy /= il; }
+  if (il > 0.1) P.facing = Math.atan2(iy, ix);
+
+  let spd = P.moveSpeed;
+  if (P.flasks[1].active > 0) spd *= 1.4;
+  if (G.buffs.acceleration > 0) spd *= 1.4;
+
+  if (P.dashT > 0) {
+    P.dashT -= dt;
+    P.vx = P.dashVx; P.vy = P.dashVy;
+    if (Math.random() < 0.8) addEffect({ kind: 'trail', x: P.x, y: P.y, r: 12, t: 0, dur: 0.35, color: '#ff8a3d' });
+    emit('ember', P.x, P.y, 2, { jitter: 6 });
+  } else {
+    P.vx = ix * spd; P.vy = iy * spd;
+  }
+  P.x += P.vx * dt; P.y += P.vy * dt;
+
+  if (P.iframes > 0) P.iframes -= dt;
+  if (P.dashCd > 0) P.dashCd -= dt;
+  if (P.hurtFlash > 0) P.hurtFlash -= dt;
+
+  // Flame Dash
+  if (inp.dash && P.dashCd <= 0) {
+    inp.dash = false;
+    const a = il > 0.1 ? Math.atan2(iy, ix) : P.facing;
+    P.dashVx = Math.cos(a) * 1100; P.dashVy = Math.sin(a) * 1100;
+    P.dashT = 0.16; P.iframes = 0.3; P.dashCd = 3 * P.mods.dashCdMul;
+    if (P.mods.ks.shadowstep) P.critT = 1.5;
+    emit('ember', P.x, P.y, 14, { speed: 1.5 });
+    Sfx.play('dash');
+  }
+  inp.dash = false;
+
+  // flasks
+  for (let i = 0; i < 2; i++) {
+    const f = P.flasks[i];
+    if (inp['flask' + i]) {
+      inp['flask' + i] = false;
+      if (f.charges >= f.use && f.active <= 0) {
+        f.charges -= f.use; f.active = f.dur;
+        Sfx.play('flask');
+      }
+    }
+    if (f.active > 0) {
+      f.active -= dt;
+      if (f.kind === 'life') { P.life += (P.maxLife * 0.55 * (1 + P.mods.flaskEff) / f.dur) * dt; if (Math.random() < 0.4) emit('heal', P.x, P.y, 1, { jitter: 12 }); }
+    }
+  }
+
+  // regen + leech
+  const lowRegen = P.mods.ks.lowRegen && P.life < P.maxLife * 0.35 ? 3 : 1;
+  if (!P.mods.ks.vaalPact) P.life += P.maxLife * P.mods.regen * lowRegen * dt;
+  if (P.leechPool > 0) {
+    const cap = P.maxLife * (P.mods.ks.vaalPact ? 0.2 : 0.08) * P.mods.leechCap * dt;
+    const amt = Math.min(P.leechPool, cap);
+    P.life += amt; P.leechPool -= amt;
+    P.leechPool = Math.min(P.leechPool, P.maxLife * 0.5);
+  }
+  if (P.life > P.maxLife) P.life = P.maxLife;
+
+  updateAscendancy(dt);
+  updatePickups(dt);
+  updateItems(dt);
+}
+
+function updatePickups(dt) {
+  const P = G.player;
+  const R2 = P.pickupR * P.pickupR;
+  for (let i = G.orbs.length - 1; i >= 0; i--) {
+    const o = G.orbs[i];
+    const d2 = dist2(o.x, o.y, P.x, P.y);
+    if (!o.pull && d2 < R2) o.pull = true;
+    if (o.pull) {
+      const d = Math.sqrt(d2) || 1;
+      const acc = 1600;
+      o.vx += ((P.x - o.x) / d) * acc * dt; o.vy += ((P.y - o.y) / d) * acc * dt;
+      const sp = Math.hypot(o.vx, o.vy), max = 900;
+      if (sp > max) { o.vx *= max / sp; o.vy *= max / sp; }
+      o.x += o.vx * dt; o.y += o.vy * dt;
+      if (d < P.r + 8) {
+        gainXp(o.v);
+        Sfx.play('pickup');
+        G.orbs[i] = G.orbs[G.orbs.length - 1]; G.orbs.pop();
+      }
+    }
+  }
+  for (let i = G.pickups.length - 1; i >= 0; i--) {
+    const it = G.pickups[i];
+    it.t += dt;
+    const d2 = dist2(it.x, it.y, P.x, P.y);
+    if (d2 < (P.pickupR * 0.6) * (P.pickupR * 0.6)) {
+      const d = Math.sqrt(d2) || 1;
+      it.x += ((P.x - it.x) / d) * 380 * dt; it.y += ((P.y - it.y) / d) * 380 * dt;
+    }
+    if (d2 < (P.r + 12) * (P.r + 12)) {
+      collectPickup(it.kind, it.x, it.y);
+      G.pickups.splice(i, 1);
+    }
+  }
+}
+
+function collectPickup(kind, x, y) {
+  const P = G.player, def = PICKUPS[kind];
+  Sfx.play('currency');
+  addText(x, y - 20, def.name, def.color, 1.1);
+  emit('gold', x, y, 14, { color: def.color });
+  if (kind === 'chaos') P.currency.chaos++;
+  else if (kind === 'fusing') P.currency.fusing++;
+  else if (kind === 'life') P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3);
+  else if (kind === 'magnet') for (const o of G.orbs) o.pull = true;
+  else if (kind === 'chest') G.pendingChests++;
+}
+
+function gainXp(v) {
+  const P = G.player;
+  P.xp += v * (1 + P.mods.xpInc);
+  while (P.xp >= P.xpNext) {
+    P.xp -= P.xpNext;
+    P.level++;
+    P.xpNext = xpReq(P.level);
+    G.pendingLevels++;
+    emit('gold', P.x, P.y, 30, { speed: 1.5, jitter: 10 });
+  }
+  if (G.pendingLevels) recomputePlayer();
+}
+
+// ---- Ascendancy runtime: timers, Rage, Divine Aegis, Thunderclap ----
+function updateAscendancy(dt) {
+  const P = G.player, ks = P.mods.ks;
+  if (P.critT > 0) P.critT -= dt;
+  if (P.frenzyT > 0) P.frenzyT -= dt;
+  if (P.retaliateCd > 0) P.retaliateCd -= dt;
+  if (P.mods.flaskRegen) for (const f of P.flasks) f.charges = Math.min(f.max, f.charges + P.mods.flaskRegen * dt);
+  if (ks.rage && P.rage > 0) {
+    P.rageDecay -= dt;
+    if (P.rageDecay <= 0) { P.rage = Math.max(0, P.rage - 6 * dt); }
+  }
+  if (ks.aegis && !P.aegis) {
+    P.aegisCd -= dt;
+    if (P.aegisCd <= 0) { P.aegis = 1; emit('gold', P.x, P.y, 12, { color: '#ffe9a0', jitter: 14 }); }
+  }
+  if (ks.thunder) {
+    P.thunderT -= dt;
+    if (P.thunderT <= 0) {
+      P.thunderT = 2.5;
+      const s = procStats('thunder');
+      const list = enemiesInRadius(P.x, P.y, 380, []);
+      for (let i = 0; i < 4 && list.length; i++) {
+        const e = list.splice(Math.floor(Math.random() * list.length), 1)[0];
+        hitEnemy(e, s, null, 1, e.x, e.y - 10);
+        addEffect({ kind: 'bolt', pts: [[e.x + rand(-20, 20), e.y - 260], [e.x + rand(-12, 12), e.y - 120], [e.x, e.y]], t: 0, dur: 0.2, color: '#fff27a' });
+        emit('spark', e.x, e.y, 6);
+      }
+    }
+  }
+}
+
+// Synthetic stat block for damage that doesn't come from a gem
+// (Thunderclap, Retribution, death bursts). Scales with level and mods.
+function procStats(kind, dmgOverride) {
+  const P = G.player, m = P.mods;
+  const lv = P.level;
+  const base = dmgOverride !== undefined ? dmgOverride : 10 + lv * 2.4;
+  const type = kind === 'thunder' ? 'lightning' : kind === 'poison' ? 'chaos' : 'fire';
+  const inc = 1 + (type === 'chaos' ? m.incChaos : m.incEle) + (kind === 'thunder' || kind === 'retaliate' ? m.incSpell : 0);
+  const more = (type === 'chaos' ? 1 : m.moreEle) * m.moreAll;
+  const hit = {}; hit[type] = base * (dmgOverride !== undefined ? 1 : inc * more);
+  return {
+    hit, tags: new Set(kind === 'thunder' ? ['Spell', 'Lightning'] : ['AoE']), critChance: 0.05, critMulti: 1.5, vsChilled: 1,
+    noAilment: false, ignite: type === 'fire' ? 0.2 : 0, shock: type === 'lightning' ? 0.5 : 0, poison: type === 'chaos' ? 0.6 : 0,
+    burnMore: 1, dotMul: 1 + m.incDot, ailmentDur: 1, chillEff: 1, shockEff: 1 + m.shockEffInc, knock: 0, leech: 0, cull: 0, proc: true,
+  };
+}

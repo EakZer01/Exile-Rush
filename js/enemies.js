@@ -1,0 +1,362 @@
+'use strict';
+// ============================================================
+//  Enemies: spawning director, AI, ailments ticking, bosses,
+//  hazards (telegraphed boss attacks), shrines, events
+// ============================================================
+
+function makeEnemy(type, x, y, rarity) {
+  const d = MONSTERS[type];
+  const min = G.time / 60;
+  const hpMul = hpScale(min) * (rarity === 1 ? 3.2 : rarity === 2 ? 9 : 1);
+  const M = G.map, fx = G.mapFx;
+  const mapHp = tierHp(M.tier) * fx.monHp * (BIOMES[M.biome].hpMul || 1);
+  const e = {
+    id: uid(), type, def: d, x, y, kx: 0, ky: 0,
+    r: d.r * (rarity === 2 ? 1.4 : rarity === 1 ? 1.15 : 1),
+    hp: d.hp * hpMul * mapHp, maxHp: d.hp * hpMul * mapHp,
+    speed: d.speed * rand(0.9, 1.1) * fx.monSpeed, dmg: d.dmg * dmgScale(min) * tierDmg(M.tier) * fx.monDmg,
+    color: d.color, shape: d.shape, xp: d.xp * (rarity === 1 ? 4 : rarity === 2 ? 25 : 1),
+    rarity, mods: [], name: null,
+    res: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 }, dmgTakenMul: 1, regen: 0,
+    ign: { dps: 0, t: 0, src: null }, chill: { eff: 0, t: 0 }, freeze: 0, shock: { eff: 0, t: 0 }, poison: [],
+    hitCd: {}, contactCd: 0, flash: 0, dotAcc: 0, dotShowT: 0, rcd: rand(1, 2.5), wob: rand(0, TAU), dead: false,
+  };
+  if (fx.eleResAdd) e.res.fire = e.res.cold = e.res.lightning = fx.eleResAdd;
+  if (fx.physResAdd) e.res.physical = fx.physResAdd;
+  if (fx.deathBoomAdd && Math.random() < fx.deathBoomAdd) e.deathBoom = true;
+  if (rarity === 1) {
+    addMod(e, pick(MAGIC_MODS));
+  } else if (rarity === 2) {
+    e.name = rareName();
+    const keys = shuffle(Object.keys(MONSTER_MODS)).slice(0, randi(2, 3));
+    for (const k of keys) addMod(e, k);
+  }
+  return e;
+}
+function addMod(e, k) { e.mods.push(k); MONSTER_MODS[k].apply(e); }
+
+const MAX_ENEMIES = 520;
+function spawnEnemy(type, x, y, rarity) {
+  const e = makeEnemy(type, x, y, rarity || 0);
+  G.enemies.push(e);
+  return e;
+}
+
+function viewRadius() { return Math.hypot(G.W, G.H) / 2 / G.zoom; }
+function spawnPoint(extra) {
+  const P = G.player, a = rand(0, TAU), d = viewRadius() + 40 + (extra || 0);
+  return [P.x + Math.cos(a) * d, P.y + Math.sin(a) * d];
+}
+function waveType() {
+  const min = G.time / 60, B = BIOMES[G.map.biome];
+  let base = WAVES[0].w;
+  for (const wv of WAVES) if (min >= wv.t) base = wv.w;
+  // the biome reweights the wave and brings its own monsters in early
+  const w = Object.assign({}, base);
+  if (min >= 1.5) for (const k in B.add) w[k] = Math.max(w[k] || 0, B.add[k]);
+  for (const k in B.mult) if (w[k]) w[k] *= B.mult[k];
+  const keys = Object.keys(w);
+  return weightedSample(keys, 1, (k) => w[k])[0];
+}
+
+function announce(text, sub, color) {
+  G.announce = { text, sub: sub || '', color: color || '#e8c870', t: 0, dur: 3 };
+}
+
+// ---------------- Spawn director ----------------
+function updateSpawner(dt) {
+  const S = G.spawn, min = G.time / 60;
+  const bossAlive = G.enemies.some((e) => e.rarity === 3 && !e.dead);
+  const fx = G.mapFx;
+  const target = Math.min((26 + min * 22) * fx.spawn, 360 * Math.min(1.25, fx.spawn)) * (bossAlive ? 0.6 : 1);
+  const rate = (2.0 + min * 1.25) * fx.spawn * (bossAlive ? 0.5 : 1);
+  if (G.enemies.length < target) {
+    S.acc += rate * dt * (G.enemies.length < target * 0.4 ? 3 : 1);
+    while (S.acc >= 1) {
+      S.acc -= 1;
+      const [x, y] = spawnPoint();
+      spawnEnemy(waveType(), x, y, 0);
+    }
+  }
+
+  // magic pack
+  S.magicT -= dt;
+  if (S.magicT <= 0 && min >= 1) {
+    S.magicT = rand(18, 26) / fx.magicRate;
+    const [x, y] = spawnPoint(30), type = waveType(), n = randi(3, 5);
+    for (let i = 0; i < n; i++) spawnEnemy(type, x + rand(-40, 40), y + rand(-40, 40), 1);
+  }
+  // rare monster
+  S.rareT -= dt;
+  if (S.rareT <= 0 && min >= 1.5) {
+    S.rareT = rand(38, 52) / fx.rareRate;
+    const [x, y] = spawnPoint(30);
+    const e = spawnEnemy(waveType(), x, y, 2);
+    for (let i = 0; i < 4; i++) spawnEnemy(e.type, x + rand(-50, 50), y + rand(-50, 50), 0);
+    announce('มอนสเตอร์ Rare ปรากฏตัว!', e.name, '#ffd84a');
+  }
+  // horde ring
+  S.hordeT -= dt;
+  if (S.hordeT <= 0 && min >= 2 && G.enemies.length < MAX_ENEMIES - 80) {
+    S.hordeT = rand(70, 90);
+    const P = G.player, type = pick(['zombie', 'skeleton', 'bat', 'wraith', 'brute']);
+    const n = Math.floor(24 + min * 3), R = viewRadius() * 0.85;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      const e = spawnEnemy(type, P.x + Math.cos(a) * R, P.y + Math.sin(a) * R, 0);
+      e.speed *= 0.8;
+    }
+    announce('ฝูงมอนสเตอร์ล้อมกรอบ!', 'Horde', '#ff6a5a');
+  }
+  // shrines
+  S.shrineT -= dt;
+  if (S.shrineT <= 0 && !fx.noShrine) {
+    S.shrineT = rand(40, 55);
+    const P = G.player, a = rand(0, TAU), d = rand(350, 600);
+    G.shrines.push({ x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, kind: pick(Object.keys(SHRINES)), t: 0 });
+  }
+  // bosses
+  const nb = BOSSES[S.bossIdx];
+  if (nb && G.time >= nb.at) {
+    S.bossIdx++;
+    spawnBoss(nb);
+  }
+}
+
+function spawnBoss(def) {
+  const [x, y] = spawnPoint(-80);
+  const min = G.time / 60;
+  const e = makeEnemy('golem', x, y, 0);
+  Object.assign(e, {
+    rarity: 3, bossDef: def, name: def.name, r: def.r, hp: def.hp * bossHpMul(), maxHp: def.hp * bossHpMul(), speed: def.speed,
+    dmg: def.dmg * (1 + min * 0.03) * tierDmg(G.map.tier) * G.mapFx.monDmg * G.mapFx.bossDmg,
+    color: def.color, shape: 'boss', xp: 400, final: !!def.final, deathBoom: false,
+    boss: { cd: 2.5, state: 'chase', st: 0, spiral: 0, spiralA: 0, cvx: 0, cvy: 0 },
+  });
+  G.enemies.push(e);
+  G.bossRef = e;
+  Sfx.play('boss');
+  announce(def.name, def.th, def.glow);
+}
+
+function bossDefeated(e) {
+  spawnPickup(e.x, e.y, 'chest');
+  spawnPickup(e.x + 30, e.y, 'chest');
+  spawnPickup(e.x - 30, e.y, 'fusing');
+  spawnPickup(e.x, e.y + 30, 'chaos');
+  spawnPickup(e.x, e.y - 30, 'life');
+  for (let i = 0; i < 12; i++) spawnOrb(e.x + rand(-60, 60), e.y + rand(-60, 60), 8 + G.time / 30);
+  G.stats.bosses++;
+  if (G.bossRef === e) G.bossRef = null;
+  if (e.final) { G.victoryT = 2.5; announce('ชัยชนะ!', 'คุณโค่น The Void Sovereign ได้แล้ว', '#ffd84a'); }
+  else {
+    G.pendingAscend++;
+    announce('การทดสอบ Ascendancy สำเร็จ!', G.player.asc ? 'ปลดล็อกโหนด Ascendancy ใหม่' : 'เลือกคลาสย่อยของคุณ', '#ffd84a');
+  }
+}
+
+// ---------------- Enemy update ----------------
+const _sep = [];
+function updateEnemies(dt) {
+  const P = G.player, far = viewRadius() * 1.6;
+  for (const e of G.enemies) {
+    if (e.dead) continue;
+    // ailments
+    if (e.ign.t > 0) { e.ign.t -= dt; dotDamage(e, e.ign.dps * dt, e.ign.src, '#ff8a3d', true); if (e.dead) continue; }
+    if (e.poison.length) {
+      let dps = 0, src = null;
+      for (let i = e.poison.length - 1; i >= 0; i--) {
+        const p = e.poison[i]; p.t -= dt; dps += p.dps; src = p.src;
+        if (p.t <= 0) e.poison.splice(i, 1);
+      }
+      dotDamage(e, dps * dt, src, '#9be05a', true); if (e.dead) continue;
+    }
+    if (e.chill.t > 0) e.chill.t -= dt;
+    if (e.shock.t > 0) e.shock.t -= dt;
+    if (e.freeze > 0) e.freeze -= dt;
+    if (e.flash > 0) e.flash -= dt;
+    if (e.punch > 0) e.punch -= dt;
+    if (e.dotShowT > 0) e.dotShowT -= dt;
+    if (e.contactCd > 0) e.contactCd -= dt;
+    if (e.fuse) { e.fuse -= dt; if (e.fuse <= 0) { killEnemy(e, null); continue; } }
+    if (e.regen) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.regen * dt);
+
+    const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy) || 1;
+
+    // relocate stragglers (survivor-genre convention)
+    if (d > far && e.rarity < 3) {
+      const [nx, ny] = spawnPoint();
+      e.x = nx; e.y = ny; continue;
+    }
+
+    let spd = e.speed * (1 - (e.chill.t > 0 ? e.chill.eff : 0));
+    if (e.freeze > 0 || e.fuse) spd = 0;
+    let mx = dx / d, my = dy / d;
+
+    if (e.rarity === 3) {
+      const r = updateBoss(e, dt, d, mx, my);
+      if (r) { mx = r[0]; my = r[1]; spd = r[2]; if (e.freeze > 0) spd *= 0.3; }
+    } else if (e.def.ranged) {
+      const R = e.def.ranged;
+      if (d < R.range * 0.75) { const t = mx; mx = -my * 0.6 - mx * 0.4; my = t * 0.6 - my * 0.4; }
+      e.rcd -= dt;
+      if (e.rcd <= 0 && d < R.range * 1.15 && e.freeze <= 0) {
+        e.rcd = R.cd * rand(0.85, 1.15);
+        const a = Math.atan2(dy, dx), n = R.burst || 1;
+        for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, a + (i - (n - 1) / 2) * 0.18, R.speed, R.dmg * dmgScale(G.time / 60) * (e.rarity === 2 ? 1.5 : 1), R.color);
+      }
+    }
+    if (e.def.flutter) { e.wob += dt * 8; mx += Math.cos(e.wob) * 0.5; my += Math.sin(e.wob) * 0.5; }
+
+    e.x += mx * spd * dt + e.kx * dt;
+    e.y += my * spd * dt + e.ky * dt;
+    const kd = Math.exp(-9 * dt); e.kx *= kd; e.ky *= kd;
+
+    // separation (cheap, a handful of neighbours)
+    G.hash.query(e.x, e.y, e.r * 2, _sep);
+    let pushed = 0;
+    for (const o of _sep) {
+      if (o === e || o.dead) continue;
+      const ox = e.x - o.x, oy = e.y - o.y, rr = e.r + o.r;
+      const dd = ox * ox + oy * oy;
+      if (dd < rr * rr && dd > 0.01) {
+        const dl = Math.sqrt(dd), push = (rr - dl) * 0.5 * (o.rarity === 3 ? 2 : e.rarity === 3 ? 0 : 1);
+        e.x += (ox / dl) * push; e.y += (oy / dl) * push;
+        if (++pushed > 5) break;
+      }
+    }
+
+    // contact
+    const cr = e.r + P.r - 2;
+    if (d < cr && e.contactCd <= 0 && e.freeze <= 0) {
+      if (e.def.explode && e.rarity < 3) { if (!e.fuse) e.fuse = 0.55; continue; }
+      hurtPlayer(e.dmg, e.name || e.def.name);
+      e.contactCd = e.rarity === 3 ? 0.6 : 0.8;
+    }
+  }
+  // compact dead
+  let j = 0;
+  for (let i = 0; i < G.enemies.length; i++) { const e = G.enemies[i]; if (!e.dead) G.enemies[j++] = e; }
+  G.enemies.length = j;
+}
+
+function enemyShoot(x, y, a, speed, dmg, color) {
+  G.eproj.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: 6, dmg, color, t: 0, life: 4 });
+}
+function updateEnemyProjectiles(dt) {
+  const P = G.player;
+  for (let i = G.eproj.length - 1; i >= 0; i--) {
+    const p = G.eproj[i];
+    p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    const rr = p.r + P.r - 3;
+    if (dist2(p.x, p.y, P.x, P.y) < rr * rr) { hurtPlayer(p.dmg, 'กระสุนศัตรู'); p.t = 99; }
+    if (p.t > p.life) { G.eproj[i] = G.eproj[G.eproj.length - 1]; G.eproj.pop(); }
+  }
+}
+
+// ---------------- Boss AI ----------------
+function updateBoss(e, dt, d, mx, my) {
+  const b = e.boss, P = G.player, def = e.bossDef;
+  const glow = def.glow, fin = e.final;
+  if (e.freeze > 0) return null;
+  // enrage below 40%
+  const enr = e.hp < e.maxHp * 0.4 ? 1.3 : 1;
+  if (b.spiral > 0) {
+    b.spiral -= dt; b.spiralT = (b.spiralT || 0) - dt;
+    if (b.spiralT <= 0) {
+      b.spiralT = 0.07; b.spiralA += 0.33;
+      for (let k = 0; k < 3; k++) enemyShoot(e.x, e.y, b.spiralA + (k * TAU) / 3, 180, e.dmg * 0.5, glow);
+    }
+  }
+  if (b.state === 'windup') {
+    b.st -= dt;
+    if (b.st <= 0) { b.state = 'charge'; b.st = 0.55; const a = Math.atan2(P.y - e.y, P.x - e.x); b.cvx = Math.cos(a); b.cvy = Math.sin(a); }
+    return [0, 0, 0];
+  }
+  if (b.state === 'charge') {
+    b.st -= dt;
+    if (b.st <= 0) b.state = 'chase';
+    if (Math.random() < 0.5) addEffect({ kind: 'spark', x: e.x, y: e.y, r: e.r, t: 0, dur: 0.25, color: glow });
+    return [b.cvx, b.cvy, 620];
+  }
+  b.cd -= dt * enr;
+  if (b.cd <= 0) {
+    b.cd = rand(2.3, 3.4) * (fin ? 0.75 : 1);
+    const pat = pick(def.patterns);
+    const dmg = e.dmg;
+    if (pat === 'radial') {
+      const n = fin ? 28 : 18, off = rand(0, TAU);
+      for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, off + (i * TAU) / n, 210, dmg * 0.55, glow);
+    } else if (pat === 'ring') {
+      const n = fin ? 8 : 6;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU, rr = rand(0, 140);
+        addHazard(P.x + Math.cos(a) * rr, P.y + Math.sin(a) * rr, 60, 1.0, dmg * 0.9, glow);
+      }
+      addHazard(P.x, P.y, 60, 1.0, dmg * 0.9, glow);
+    } else if (pat === 'charge') {
+      b.state = 'windup'; b.st = 0.7;
+    } else if (pat === 'slam') {
+      addHazard(e.x, e.y, 190, 1.0, dmg * 1.4, glow);
+    } else if (pat === 'strike') {
+      const n = fin ? 7 : 5;
+      for (let i = 0; i < n; i++) {
+        const px = P.x + P.vx * 0.5 * (i / n) + rand(-40, 40), py = P.y + P.vy * 0.5 * (i / n) + rand(-40, 40);
+        addHazard(px, py, 55, 0.8 + i * 0.2, dmg * 0.9, glow);
+      }
+    } else if (pat === 'summon' && G.enemies.length < MAX_ENEMIES - 20) {
+      const type = def.ptype === 'cold' ? 'wraith' : def.ptype === 'lightning' ? 'cultist' : 'volatile';
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; spawnEnemy(type, e.x + Math.cos(a) * 70, e.y + Math.sin(a) * 70, 0); }
+    } else if (pat === 'spiral') {
+      b.spiral = 2.2;
+    }
+  }
+  return [mx, my, e.speed * enr];
+}
+
+function bossHpMul() { return tierHp(G.map.tier) * G.mapFx.bossHp * (BIOMES[G.map.biome].hpMul || 1); }
+function addHazard(x, y, r, warn, dmg, color, src) {
+  G.hazards.push({ x, y, r, warn, t: 0, dmg, color, src });
+}
+// Burning Ground map mod: fire patches erupt near the player
+function updateMapHazards(dt) {
+  if (!G.mapFx.hazard || G.time < 45) return;
+  G.mapHazT -= dt;
+  if (G.mapHazT > 0) return;
+  G.mapHazT = rand(3.5, 5.5);
+  const P = G.player, a = rand(0, TAU), d = rand(0, 70);
+  addHazard(P.x + Math.cos(a) * d + P.vx * 0.4, P.y + Math.sin(a) * d + P.vy * 0.4, 75, 1.2,
+    (10 + G.time / 20) * tierDmg(G.map.tier), '#ff6a2a', 'พื้นลุกไหม้ (Burning Ground)');
+}
+function updateHazards(dt) {
+  const P = G.player;
+  for (let i = G.hazards.length - 1; i >= 0; i--) {
+    const h = G.hazards[i];
+    h.t += dt;
+    if (h.t >= h.warn) {
+      const rr = h.r + P.r * 0.5;
+      if (dist2(h.x, h.y, P.x, P.y) < rr * rr) hurtPlayer(h.dmg, h.src || 'การโจมตีของบอส');
+      addEffect({ kind: 'boom', x: h.x, y: h.y, r: h.r, t: 0, dur: 0.35, color: h.color });
+      G.hazards.splice(i, 1);
+    }
+  }
+}
+
+// ---------------- Shrines ----------------
+function updateShrines(dt) {
+  const P = G.player;
+  for (let i = G.shrines.length - 1; i >= 0; i--) {
+    const s = G.shrines[i];
+    s.t += dt;
+    if (s.t > 70) { G.shrines.splice(i, 1); continue; }
+    if (dist2(s.x, s.y, P.x, P.y) < 46 * 46) {
+      const def = SHRINES[s.kind];
+      if (s.kind === 'covetous') for (const o of G.orbs) o.pull = true;
+      else G.buffs[s.kind] = def.dur;
+      Sfx.play('shrine');
+      announce(def.name, def.th + ' — ' + def.desc, def.color);
+      addEffect({ kind: 'ring', x: s.x, y: s.y, r: 120, t: 0, dur: 0.5, color: def.color });
+      G.shrines.splice(i, 1);
+    }
+  }
+}

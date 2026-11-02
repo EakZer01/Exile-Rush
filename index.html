@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Exile Survivors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=9">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- Title / class select -->
+<div id="menu" class="overlay">
+  <div class="title-wrap">
+    <h1 class="game-title">EXILE SURVIVORS</h1>
+    <div class="subtitle">เอาตัวรอดในดินแดนต้องสาป · สร้างบิวด้วย Skill Gem + Support Gem</div>
+    <h2 class="section-title">เลือกคลาส</h2>
+    <div id="class-list" class="class-list"></div>
+    <div class="meta-bar"><span id="meta-shards" class="meta-shards"></span><button id="btn-altar" class="btn">⛩ แท่นบูชามรดก (Altar of Legacy)</button></div>
+    <div id="best-run" class="best-run"></div>
+    <div class="controls-help">
+      <b>WASD / ลูกศร</b> เดิน · <b>Space</b> Flame Dash · <b>Q</b> Life Flask · <b>E</b> Quicksilver Flask ·
+      <b>V</b> ท่าไม้ตาย Vaal · <b>I</b> กระเป๋า · <b>Tab</b> ดูบิว · <b>Esc</b> หยุดเกม · <b>M</b> ปิดเสียง · <b>L</b> เปิด/ปิดแสงเงา · <b>F</b> เปิด/ปิดเอฟเฟกต์
+    </div>
+  </div>
+</div>
+
+<!-- Map Device / Atlas -->
+<div id="mapdev" class="overlay hidden">
+  <div class="panel build-panel map-panel">
+    <h2 class="panel-title">Map Device</h2>
+    <div class="panel-sub" id="map-class"></div>
+    <h3 class="altar-h">พื้นที่</h3>
+    <div id="map-biomes" class="map-biomes"></div>
+    <h3 class="altar-h">Tier <span class="muted">(ชนะแผนที่เพื่อปลดล็อก Tier ถัดไป)</span></h3>
+    <div id="map-tiers" class="map-tiers"></div>
+    <div class="map-row">
+      <div class="map-modbox">
+        <h3 class="altar-h">Map Mods</h3>
+        <div id="map-mods"></div>
+        <div class="inv-actions map-actions">
+          <button id="btn-map-alch" class="btn btn-small">⚗ Alchemy: สุ่ม mod (ฟรี)</button>
+          <button id="btn-map-chaos" class="btn btn-small">สุ่ม mod ใหม่</button>
+          <button id="btn-map-clear" class="btn btn-small btn-dim">ล้าง mod</button>
+        </div>
+      </div>
+      <div id="map-summary" class="bv-box map-summary"></div>
+    </div>
+    <div id="map-atlas" class="altar-life muted"></div>
+    <div class="levelup-actions">
+      <button id="btn-map-start" class="btn">🗺 เปิดแผนที่</button>
+      <button id="btn-map-back" class="btn btn-dim">กลับ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Altar of Legacy: meta-progression -->
+<div id="altar" class="overlay hidden">
+  <div class="panel build-panel altar-panel">
+    <h2 class="panel-title">Altar of Legacy</h2>
+    <div class="panel-sub">Legacy Tree — ใช้ Ancient Shards จัดสรรโหนดถาวร เลือกเส้นทางให้เข้ากับบิว · คืนแต้มฟรีได้ทุกเมื่อ</div>
+    <div class="altar-top"><span id="altar-shards" class="altar-shards"></span><span id="altar-points" class="altar-points"></span><span id="altar-next" class="muted"></span></div>
+    <div class="altar-main">
+      <div id="tree-wrap" class="tree-wrap"><svg id="tree-svg" viewBox="-540 -540 1080 1080" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <div class="tree-side">
+        <div id="tree-info" class="bv-box tree-info"></div>
+        <div id="tree-summary" class="bv-box tree-summary"></div>
+      </div>
+    </div>
+    <h3 class="altar-h">ปลดล็อก <span class="muted">(ทำตามเงื่อนไขในเกม หรือซื้อด้วย Shards)</span></h3>
+    <div id="altar-unlocks" class="altar-unlocks"></div>
+    <h3 class="altar-h" id="altar-uniques-h">คลัง Unique</h3>
+    <div id="altar-uniques" class="altar-uniques"></div>
+    <div id="altar-life" class="altar-life muted"></div>
+    <div class="levelup-actions">
+      <button id="btn-altar-back" class="btn">กลับ</button>
+      <button id="btn-respec" class="btn btn-dim">คืนแต้มทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- Level up -->
+<div id="levelup" class="overlay hidden">
+  <div class="panel levelup-panel">
+    <h2 class="panel-title" id="levelup-title">LEVEL UP!</h2>
+    <div class="panel-sub" id="levelup-sub">เลือก 1 อย่าง</div>
+    <div id="cards" class="cards"></div>
+    <div class="levelup-actions">
+      <button id="btn-reroll" class="btn">🎲 Chaos Orb: สุ่มใหม่ (<span id="chaos-count">0</span>)</button>
+      <button id="btn-skip" class="btn btn-dim">ข้าม (ฟื้น 20% ชีวิต)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Socket target picker -->
+<div id="socket" class="overlay hidden">
+  <div class="panel socket-panel">
+    <h2 class="panel-title" id="socket-title">ใส่ Support Gem</h2>
+    <div class="panel-sub" id="socket-sub"></div>
+    <div id="socket-list" class="socket-list"></div>
+    <div class="levelup-actions"><button id="btn-socket-back" class="btn btn-dim">ย้อนกลับ</button></div>
+  </div>
+</div>
+
+<!-- Pause / build view -->
+<div id="pause" class="overlay hidden">
+  <div class="panel build-panel">
+    <h2 class="panel-title" id="pause-title">หยุดเกม</h2>
+    <div id="build-view" class="build-view"></div>
+    <div class="levelup-actions">
+      <button id="btn-resume" class="btn">เล่นต่อ</button>
+      <button id="btn-inv" class="btn">🎒 กระเป๋า / อุปกรณ์ (I)</button>
+      <button id="btn-quit" class="btn btn-dim">ออกไปเมนู</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory -->
+<div id="inventory" class="overlay hidden">
+  <div class="panel build-panel inv-panel">
+    <h2 class="panel-title">อุปกรณ์</h2>
+    <div class="panel-sub">คลิกไอเทมเพื่อดู/เปรียบเทียบ · สวมใส่ หรือย่อยเป็น Ancient Shards (ได้ตอนจบรอบ)</div>
+    <div class="inv-main">
+      <div><h3 class="altar-h">สวมใส่อยู่</h3><div id="inv-equip" class="inv-equip"></div>
+        <h3 class="altar-h">กระเป๋า <span id="inv-count" class="muted"></span></h3><div id="inv-bag" class="inv-bag"></div></div>
+      <div id="inv-detail" class="inv-detail"></div>
+    </div>
+    <div class="levelup-actions"><button id="btn-inv-close" class="btn">เล่นต่อ (I / Esc)</button></div>
+  </div>
+</div>
+
+<!-- Game over -->
+<div id="gameover" class="overlay hidden">
+  <div class="panel build-panel">
+    <h2 class="panel-title" id="over-title">คุณตายแล้ว</h2>
+    <div id="over-stats" class="build-view"></div>
+    <div class="levelup-actions">
+      <button id="btn-retry" class="btn">เล่นอีกครั้ง</button>
+      <button id="btn-menu" class="btn btn-dim">เมนูหลัก</button>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip" class="tooltip hidden"></div>
+
+<script src="js/util.js?v=9"></script>
+<script src="js/data/skills.js?v=9"></script>
+<script src="js/data/supports.js?v=9"></script>
+<script src="js/data/passives.js?v=9"></script>
+<script src="js/data/monsters.js?v=9"></script>
+<script src="js/data/classes.js?v=9"></script>
+<script src="js/data/ascendancy.js?v=9"></script>
+<script src="js/data/evolutions.js?v=9"></script>
+<script src="js/data/meta.js?v=9"></script>
+<script src="js/data/items.js?v=9"></script>
+<script src="js/data/maps.js?v=9"></script>
+<script src="js/data/sprite_art.js?v=9"></script>
+<script src="js/stats.js?v=9"></script>
+<script src="js/fx.js?v=9"></script>
+<script src="js/combat.js?v=9"></script>
+<script src="js/skills.js?v=9"></script>
+<script src="js/enemies.js?v=9"></script>
+<script src="js/player.js?v=9"></script>
+<script src="js/meta.js?v=9"></script>
+<script src="js/items.js?v=9"></script>
+<script src="js/lighting.js?v=9"></script>
+<script src="js/world.js?v=9"></script>
+<script src="js/icons.js?v=9"></script>
+<script src="js/sprites.js?v=9"></script>
+<script src="js/render.js?v=9"></script>
+<script src="js/ui.js?v=9"></script>
+<script src="js/game.js?v=9"></script>
+</body>
+</html>

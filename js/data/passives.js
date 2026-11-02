@@ -1,0 +1,62 @@
+'use strict';
+// ============================================================
+//  PASSIVE NODES (repeatable) and KEYSTONES (one-time, build-defining)
+//  apply(m) mutates player.mods (see player.js defaultMods)
+// ============================================================
+const PASSIVES = {};
+function defPassive(d) { d.max = d.max || 5; PASSIVES[d.id] = d; }
+
+defPassive({ id: 'life', name: 'Constitution', th: 'ร่างกายแกร่ง', icon: '❤', desc: '+15% พลังชีวิตสูงสุด', apply(m) { m.lifeInc += 0.15; } });
+defPassive({ id: 'move', name: 'Fleet Foot', th: 'เท้าไว', icon: '➹', desc: '+7% ความเร็วเคลื่อนที่', apply(m) { m.moveInc += 0.07; } });
+defPassive({ id: 'spell', name: 'Arcane Potency', th: 'พลังเวท', icon: '✧', desc: '+18% ดาเมจ Spell', apply(m) { m.incSpell += 0.18; } });
+defPassive({ id: 'attack', name: 'Martial Mastery', th: 'ศิลปะการต่อสู้', icon: '⚔', desc: '+18% ดาเมจ Attack', apply(m) { m.incAttack += 0.18; } });
+defPassive({ id: 'proj', name: 'Ballistics', th: 'วิถีกระสุน', icon: '➶', desc: '+15% ดาเมจ Projectile, +10% ความเร็วกระสุน', apply(m) { m.incProj += 0.15; m.projSpeedInc += 0.1; } });
+defPassive({ id: 'area', name: 'Blast Radius', th: 'รัศมีระเบิด', icon: '◎', desc: '+12% พื้นที่ (AoE), +8% ดาเมจ AoE', apply(m) { m.areaInc += 0.12; m.incAoE += 0.08; } });
+defPassive({ id: 'speed', name: 'Quickening', th: 'เร่งความเร็ว', icon: '⏱', desc: '+8% ความเร็วร่าย/โจมตี', apply(m) { m.speedInc += 0.08; } });
+defPassive({ id: 'ele', name: 'Elemental Adept', th: 'ผู้ชำนาญธาตุ', icon: '☀', desc: '+16% ดาเมจธาตุ (ไฟ/น้ำแข็ง/สายฟ้า)', apply(m) { m.incEle += 0.16; } });
+defPassive({ id: 'phys', name: 'Brutality', th: 'ความโหดเหี้ยม', icon: '✊', desc: '+18% ดาเมจกายภาพ', apply(m) { m.incPhys += 0.18; } });
+defPassive({ id: 'chaos', name: 'Toxic Mastery', th: 'ปรมาจารย์พิษ', icon: '☣', desc: '+18% ดาเมจเคออส, +15% ดาเมจ DoT', apply(m) { m.incChaos += 0.18; m.incDot += 0.15; } });
+defPassive({ id: 'crit', name: 'Precision', th: 'ความแม่นยำ', icon: '✪', desc: '+1.5% โอกาสคริ (base), +25% ตัวคูณคริ', apply(m) { m.critAdd += 0.015; m.critMulti += 0.25; } });
+defPassive({ id: 'regen', name: 'Regeneration', th: 'ฟื้นฟู', icon: '✚', desc: 'ฟื้นชีวิต 0.5% ต่อวินาที', apply(m) { m.regen += 0.005; } });
+defPassive({ id: 'armour', name: 'Iron Skin', th: 'ผิวเหล็ก', icon: '⛨', desc: 'รับดาเมจ 7% less', apply(m) { m.dmgTaken *= 0.93; } });
+defPassive({ id: 'duration', name: 'Persistence', th: 'ความคงทน', icon: '⧗', desc: '+15% ระยะเวลาสกิล', apply(m) { m.durInc += 0.15; } });
+defPassive({ id: 'minion', name: 'Necromantic Aegis', th: 'ผู้คุมวิญญาณ', icon: '☠', desc: '+20% ดาเมจมินเนียน, +10% ความเร็วมินเนียน', apply(m) { m.incMinion += 0.2; m.minionSpeed += 0.1; } });
+defPassive({ id: 'pickup', name: 'Magnetism', th: 'แม่เหล็ก', icon: '⊛', max: 3, desc: '+40% ระยะดูดของ', apply(m) { m.pickupInc += 0.4; } });
+defPassive({ id: 'wisdom', name: 'Wisdom', th: 'ปัญญา', icon: '✎', max: 3, desc: '+12% ค่าประสบการณ์ที่ได้รับ', apply(m) { m.xpInc += 0.12; } });
+defPassive({ id: 'inferno', name: 'Inferno', th: 'นรกเพลิง', icon: '♨', desc: '+18% ดาเมจไฟ', apply(m) { m.incFire += 0.18; } });
+defPassive({ id: 'winter', name: 'Heart of Winter', th: 'หัวใจเหมันต์', icon: '❆', desc: '+18% ดาเมจน้ำแข็ง', apply(m) { m.incCold += 0.18; } });
+defPassive({ id: 'thunder', name: 'Thunderous', th: 'เสียงฟ้าคำราม', icon: 'ϟ', desc: '+18% ดาเมจสายฟ้า', apply(m) { m.incLight += 0.18; } });
+defPassive({ id: 'affliction', name: 'Lingering Affliction', th: 'ทรมานยาวนาน', icon: '⧖', desc: 'Ailment นานขึ้น 12% · +10% ดาเมจ DoT', apply(m) { m.ailDurInc += 0.12; m.incDot += 0.1; } });
+defPassive({ id: 'ricochet', name: 'Ricochet', th: 'กระดอน', icon: '⟲', max: 2, desc: 'สกิล Projectile และ Chaining กระโดดเพิ่ม +1', apply(m) { m.chainAdd += 1; } });
+defPassive({ id: 'piercing', name: 'Piercing Shots', th: 'ยิงทะลุ', icon: '➵', max: 2, desc: 'Projectile ทะลุเพิ่ม +1 · +5% ดาเมจ Projectile', apply(m) { m.pierceAdd += 1; m.incProj += 0.05; } });
+defPassive({ id: 'malediction', name: 'Malediction', th: 'คำแช่ง', icon: '☾', max: 3, desc: 'ผลของคำสาป (Hextouch) แรงขึ้น 20%', apply(m) { m.curseEff += 0.2; } });
+defPassive({ id: 'vampirism', name: 'Vampirism', th: 'แวมไพร์', icon: '♥', max: 3, desc: 'ดูดชีวิต 0.4% ของดาเมจทุกสกิล', apply(m) { m.leech += 0.004; } });
+defPassive({ id: 'flask', name: 'Alchemist', th: 'นักเล่นแร่แปรธาตุ', icon: '⚗', max: 3, desc: 'ฟลาสก์ได้ชาร์จเพิ่ม 30%, ฟื้นฟูมากขึ้น 20%', apply(m) { m.flaskCharge += 0.3; m.flaskEff += 0.2; } });
+
+const KEYSTONES = {};
+function defKeystone(d) { d.max = 1; d.keystone = true; KEYSTONES[d.id] = d; }
+
+defKeystone({ id: 'elemental_overload', name: 'Elemental Overload', th: 'ธาตุล้นพลัง', icon: '❂',
+  desc: 'ดาเมจธาตุ 40% more · คริติคอลไม่ทำดาเมจเพิ่ม', apply(m) { m.ks.eo = true; } });
+defKeystone({ id: 'point_blank', name: 'Point Blank', th: 'ระยะเผาขน', icon: '◉',
+  desc: 'Projectile ทำดาเมจสูงสุด 50% more ในระยะใกล้ แต่ลดลงเมื่อไกล (ต่ำสุด 30% less)', apply(m) { m.ks.pointBlank = true; } });
+defKeystone({ id: 'acrobatics', name: 'Acrobatics', th: 'กายกรรม', icon: '↯',
+  desc: 'หลบการโจมตีได้ 30% · พลังชีวิตสูงสุด 20% less', apply(m) { m.evade += 0.3; m.lifeMore *= 0.8; } });
+defKeystone({ id: 'pain_attunement', name: 'Pain Attunement', th: 'ผูกพันความเจ็บปวด', icon: '♥',
+  desc: 'ดาเมจ Spell 40% more เมื่อชีวิตต่ำกว่า 50%', apply(m) { m.ks.painAttune = true; } });
+defKeystone({ id: 'avatar_of_fire', name: 'Avatar of Fire', th: 'อวตารเพลิง', icon: '❋',
+  desc: 'ดาเมจทุกชนิดเปลี่ยนเป็นไฟ · ดาเมจไฟ 25% more', apply(m) { m.ks.avatarFire = true; } });
+defKeystone({ id: 'vaal_pact', name: 'Vaal Pact', th: 'พันธสัญญาวาล', icon: '♆',
+  desc: 'ดูดชีวิต 1.5% ของดาเมจทุกสกิล (ลิมิตสูงขึ้นเป็น 20%/วิ) · ไม่ฟื้นชีวิตตามธรรมชาติ', apply(m) { m.leech += 0.015; m.ks.vaalPact = true; } });
+defKeystone({ id: 'resolute_technique', name: 'Resolute Technique', th: 'เทคนิคมั่นคง', icon: '⚒',
+  desc: 'ไม่สามารถคริติคอลได้ · ดาเมจ Hit 35% more', apply(m) { m.ks.resolute = true; } });
+defKeystone({ id: 'iron_reflexes', name: 'Iron Reflexes', th: 'ปฏิกิริยาเหล็ก', icon: '⛊',
+  desc: 'รับดาเมจ 25% less · ความเร็วเคลื่อนที่ 10% less', apply(m) { m.dmgTaken *= 0.75; m.moveMore *= 0.9; } });
+defKeystone({ id: 'elemental_equilibrium', name: 'Elemental Equilibrium', th: 'สมดุลธาตุ', icon: '☯',
+  desc: 'Hit ธาตุใดก็ตาม ทำให้ศัตรูรับดาเมจจากธาตุอื่น 30% more นาน 4 วิ (ผสมหลายธาตุให้คุ้ม)', apply(m) { m.ks.ee = true; } });
+defKeystone({ id: 'runebinder', name: 'Runebinder', th: 'ผู้ผูกอักขระ', icon: '⌘',
+  desc: 'สกิล Brand ติดตราได้เพิ่ม +1 · ตราทำงานเร็วขึ้น 20%', apply(m) { m.ks.runebinder = true; } });
+defKeystone({ id: 'hex_master', name: 'Hex Master', th: 'จอมคำสาป', icon: '☾',
+  desc: 'คำสาปไม่มีวันหมดเวลา · ผลของคำสาปแรงขึ้น 20%', apply(m) { m.ks.hexMaster = true; m.curseEff += 0.2; } });
+defKeystone({ id: 'minion_instability', name: 'Minion Instability', th: 'มินเนียนไม่เสถียร', icon: '✷',
+  desc: 'มินเนียนระเบิดเมื่อหมดเวลา ทำดาเมจไฟรอบตัว', apply(m) { m.ks.minionBoom = true; } });
