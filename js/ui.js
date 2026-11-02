@@ -130,7 +130,7 @@ function cardHtml(c, idx) {
     const d = SKILLS[c.id];
     return `<div class="card card-skill">${key}
       <div class="card-head">${skillGemHtml(d.id)}<div><div class="card-name">${d.name}</div><div class="card-th">${d.th} · Skill Gem</div></div><div class="badge badge-new">ใหม่!</div></div>
-      ${tagsHtml(d.tags)}<div class="card-desc">${d.desc}</div><div class="card-note">${d.levelNote}</div>${evolveHintHtml(d.id)}</div>`;
+      ${tagsHtml(d.tags)}<div class="card-desc">${d.desc}</div><div class="card-note">${d.levelNote}</div>${weaponNoteHtml(d)}${evolveHintHtml(d.id)}</div>`;
   }
   if (c.type === 'evolve') {
     const d = SKILLS[c.inst.id], ev = EVOLUTIONS[c.inst.id];
@@ -888,3 +888,11 @@ function mapStart() {
   startGame(mapCls, mapCfg);
 }
 function mapBack() { hide('mapdev'); buildMenu(); show('menu'); }
+
+// Attack skill cards: how hard the skill hits with the weapon you hold now
+function weaponNoteHtml(d) {
+  if (!d.tags.includes('Attack') || !G.player) return '';
+  const w = G.player.weapon, mul = attackWeaponMul(new Set(d.tags), w);
+  const need = d.tags.includes('Bow') && (!w || w.wtype !== 'bow') ? ' — ต้องใช้ธนูถึงจะแรงเต็มที่' : '';
+  return `<div class="card-note ${mul < 0.8 ? 'bad' : 'ok'}">⚔ Attack: ใช้พลังอาวุธ ×${mul.toFixed(2)} (${w ? WEAPON_TYPE[w.wtype] : 'มือเปล่า'})${need}</div>`;
+}

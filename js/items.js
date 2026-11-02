@@ -218,26 +218,31 @@ function hostOf(inst) {
   for (const k in P.hosts) if (P.hosts[k] === inst.uid) return k;
   return null;
 }
-// keep valid hosts, give unhosted skills the free slot with the biggest group
+// drop invalid hosts, then move each skill (unless placed by hand) to the
+// free slot whose link group beats both its current host and its base links
 function reassignHosts() {
   const P = G.player;
   if (!P.hosts) P.hosts = {};
+  if (!P.hostManual) P.hostManual = {};
   for (const k in P.hosts) if (!P.equip[k] || bestGroup(P.equip[k]).length < 2 || !P.skills.some((s) => s.uid === P.hosts[k])) delete P.hosts[k];
   for (const inst of P.skills) {
-    if (hostOf(inst)) continue;
-    let best = null, bs = 1;
+    if (P.hostManual[inst.uid]) continue;
+    const cur = hostOf(inst);
+    let best = null, bs = Math.max(cur ? bestGroup(P.equip[cur]).length : 0, inst.sockets + 1);
     for (const k of SOCKET_SLOTS) {
-      if (P.hosts[k] || !P.equip[k]) continue;
+      if ((P.hosts[k] && P.hosts[k] !== inst.uid) || !P.equip[k]) continue;
       const n = bestGroup(P.equip[k]).length;
       if (n > bs) { bs = n; best = k; }
     }
-    if (best) P.hosts[best] = inst.uid;
+    if (best) { if (cur) delete P.hosts[cur]; P.hosts[best] = inst.uid; }
   }
 }
 function setHost(inst, key) {
   const P = G.player, cur = hostOf(inst);
   if (cur) delete P.hosts[cur];
   if (key) { const other = P.hosts[key]; P.hosts[key] = inst.uid; if (other && cur) P.hosts[cur] = other; }
+  if (!P.hostManual) P.hostManual = {};
+  P.hostManual[inst.uid] = true;
   recomputePlayer();
 }
 const GEM_SOCKET = { r: 'R', g: 'G', b: 'B' };

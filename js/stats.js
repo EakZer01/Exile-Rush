@@ -65,12 +65,9 @@ function buildSkillStats(inst, p) {
   if (inst.evo) EVOLUTIONS[inst.id].apply(s);
   // Attack skills hit with the equipped weapon (≈1× for a starter weapon)
   if (tags.has('Attack') && p && p.equip) {
-    const w = p.weapon;
-    let wm = w ? weaponPower(w) : 0.6;
-    if (tags.has('Bow') && (!w || w.wtype !== 'bow')) wm *= 0.6;
-    if (tags.has('Melee') && w && w.wtype === 'bow') wm *= 0.7;
+    const wm = attackWeaponMul(tags, p.weapon);
     s.more *= wm;
-    if (w) s.crit = w.crit / 100;
+    if (p.weapon) s.crit = p.weapon.crit / 100;
     s.weaponMul = wm;
   }
   for (const sid of activeSupports(inst).active) {
@@ -170,4 +167,13 @@ function describeStats(s) {
   if (s.behavior !== 'aura') out.push('คริ: ' + pct(s.critChance) + ' ×' + s.critMulti.toFixed(2));
   if (s.echo) out.push('ร่ายซ้ำ: +' + s.echo);
   return out;
+}
+
+// damage multiplier an Attack skill gets from the equipped weapon
+// (bow skills need a bow, melee with a bow is clumsy, unarmed is weak)
+function attackWeaponMul(tags, w) {
+  let wm = w ? weaponPower(w) : 0.6;
+  if (tags.has('Bow') && (!w || w.wtype !== 'bow')) wm *= 0.6;
+  if (tags.has('Melee') && w && w.wtype === 'bow') wm *= 0.7;
+  return wm;
 }

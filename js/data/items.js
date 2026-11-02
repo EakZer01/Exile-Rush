@@ -454,7 +454,7 @@ const CRAFT = {
   chroma: { can: (it) => notLocked(it) && it.sockets && it.sockets.length > 0, use(it) { rollSocketColors(it); } },
   whetstone: { can: (it) => notLocked(it) && it.slot === 'weapon' && (it.quality || 0) < 20, use(it) { it.quality = Math.min(20, (it.quality || 0) + 5); } },
   scrap:  { can: (it) => notLocked(it) && !!BASES[it.base].def && (it.quality || 0) < 20, use(it) { it.quality = Math.min(20, (it.quality || 0) + 5); } },
-  vaal:   { can: (it) => notLocked(it), use(it) { corruptItem(it); } },
+  vaal:   { can: (it) => notLocked(it), use(it) { return corruptItem(it); } },
 };
 // Vaal Orb outcomes: nothing / corrupted implicit / reroll mods / reroll sockets / lose a mod
 function corruptItem(it) {
