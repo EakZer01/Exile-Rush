@@ -471,6 +471,13 @@ function drawEnemyOverlay(ctx, e, P) {
     ctx.beginPath(); ctx.ellipse(x, y + r * 0.7, r * 1.1, r * 0.4, 0, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 1;
   }
+  if (e.bleeds.length) {
+    ctx.fillStyle = 'rgba(210,30,30,0.85)';
+    for (let i = 0; i < Math.min(3, e.bleeds.length); i++) {
+      const ph = (G.time * 1.6 + i * 0.37 + e.id * 0.13) % 1;
+      ctx.beginPath(); ctx.arc(x + (i - 1) * r * 0.5, y - r * 0.2 + ph * r * 1.2, 2.2, 0, TAU); ctx.fill();
+    }
+  }
   if (e.poison.length) {
     ctx.fillStyle = 'rgba(140,230,80,0.8)';
     for (let i = 0; i < Math.min(4, e.poison.length); i++) {
@@ -638,6 +645,24 @@ function drawEffect(ctx, fx) {
     case 'spin': {
       ctx.strokeStyle = hexA(fx.color, 0.55 * a); ctx.lineWidth = 6;
       ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (0.85 + p * 0.15), 0, TAU); ctx.stroke();
+      break;
+    }
+    case 'slash': {
+      const x1 = fx.x + Math.cos(fx.a) * fx.r, y1 = fx.y + Math.sin(fx.a) * fx.r;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = hexA(fx.color, 0.35 * a); ctx.lineWidth = fx.w * 2 * (1 - p * 0.5);
+      ctx.beginPath(); ctx.moveTo(fx.x, fx.y); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.strokeStyle = hexA('#ffffff', 0.8 * a); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(fx.x, fx.y); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.lineCap = 'butt';
+      break;
+    }
+    case 'cone': {
+      const r = fx.r * (0.4 + p * 0.6);
+      ctx.fillStyle = hexA(fx.color, 0.3 * a);
+      ctx.beginPath(); ctx.moveTo(fx.x, fx.y); ctx.arc(fx.x, fx.y, r, fx.a - fx.arc / 2, fx.a + fx.arc / 2); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = hexA(fx.color, 0.85 * a); ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, r, fx.a - fx.arc / 2, fx.a + fx.arc / 2); ctx.stroke();
       break;
     }
     case 'bolt': {

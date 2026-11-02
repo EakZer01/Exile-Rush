@@ -27,6 +27,7 @@ defPassive({ id: 'inferno', name: 'Inferno', th: 'นรกเพลิง', ico
 defPassive({ id: 'winter', name: 'Heart of Winter', th: 'หัวใจเหมันต์', icon: '❆', desc: '+18% ดาเมจน้ำแข็ง', apply(m) { m.incCold += 0.18; } });
 defPassive({ id: 'thunder', name: 'Thunderous', th: 'เสียงฟ้าคำราม', icon: 'ϟ', desc: '+18% ดาเมจสายฟ้า', apply(m) { m.incLight += 0.18; } });
 defPassive({ id: 'affliction', name: 'Lingering Affliction', th: 'ทรมานยาวนาน', icon: '⧖', desc: 'Ailment นานขึ้น 12% · +10% ดาเมจ DoT', apply(m) { m.ailDurInc += 0.12; m.incDot += 0.1; } });
+defPassive({ id: 'bloodletting', name: 'Bloodletting', th: 'ปล่อยเลือด', icon: '❣', desc: '+8% โอกาส Bleed (Attack) · +15% ดาเมจ Bleed', apply(m) { m.bleedAdd += 0.08; m.bleedInc += 0.15; } });
 defPassive({ id: 'ricochet', name: 'Ricochet', th: 'กระดอน', icon: '⟲', max: 2, desc: 'สกิล Projectile และ Chaining กระโดดเพิ่ม +1', apply(m) { m.chainAdd += 1; } });
 defPassive({ id: 'piercing', name: 'Piercing Shots', th: 'ยิงทะลุ', icon: '➵', max: 2, desc: 'Projectile ทะลุเพิ่ม +1 · +5% ดาเมจ Projectile', apply(m) { m.pierceAdd += 1; m.incProj += 0.05; } });
 defPassive({ id: 'malediction', name: 'Malediction', th: 'คำแช่ง', icon: '☾', max: 3, desc: 'ผลของคำสาป (Hextouch) แรงขึ้น 20%', apply(m) { m.curseEff += 0.2; } });
@@ -78,3 +79,5 @@ defKeystone({ id: 'perfect_agony', name: 'Perfect Agony', th: 'ทรมาน�
   desc: 'Ignite และ Poison จากคริติคอลแรงขึ้น 80% · ดาเมจ Hit 20% less', apply(m) { m.ks.agony = true; } });
 defKeystone({ id: 'arrow_dancing', name: 'Arrow Dancing', th: 'ระบำหลบธนู', icon: '➷',
   desc: 'หลบ Projectile ได้เพิ่ม 40% · หลบการโจมตีระยะประชิดได้แค่ครึ่งเดียว', apply(m) { m.ks.arrowDance = true; } });
+defKeystone({ id: 'crimson_dance', name: 'Crimson Dance', th: 'ระบำโลหิต', icon: '♦',
+  desc: 'Bleed ซ้อนกันได้ 8 ชั้น แต่ละชั้นทำดาเมจ 50% (ปกติทำงานเฉพาะชั้นที่แรงที่สุด)', apply(m) { m.ks.crimsonDance = true; } });

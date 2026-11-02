@@ -48,7 +48,7 @@ function buildSkillStats(inst, p) {
     area: b.area || 0, duration: b.duration || 0, range: b.range || 0, chainRange: b.chainRange || 0,
     maxCount: b.maxCount || 0, count: b.count || 0, hitCd: b.hitCd || 0, knock: b.knock || 0,
     crit: b.crit !== undefined ? b.crit : 0.05, critInc: 0, critMore: 1, critMulti: 1.5,
-    ignite: b.ignite || 0, shock: b.shock || 0, poison: b.poison || 0, chillEff: 1, noAilment: false,
+    ignite: b.ignite || 0, shock: b.shock || 0, poison: b.poison || 0, bleed: b.bleed || 0, bleedMore: 1, chillEff: 1, noAilment: false,
     more: 1, moreEle: 1, moreChaos: 1, morePhys: 1, burnMore: 1, dotMore: 1, vsChilled: 1,
     speedInc: 0, areaInc: 0, areaMore: 1, durInc: 0, durMore: 1, projSpeedInc: 0,
     echo: 0, leech: 0, cull: 0, minionSpeed: 0, cloudDps: b.cloudDps || 0,
@@ -101,6 +101,8 @@ function buildSkillStats(inst, p) {
   if (tags.has('Projectile') || tags.has('Chaining')) s.chain += m.chainAdd;
   if (tags.has('Minion')) { s.maxCount += m.minionCount; s.more *= m.moreMinion; s.leech += m.minionLeech; }
   s.ignite += m.igniteAdd; s.shock += m.shockAdd; s.poison += m.poisonAdd;
+  if (tags.has('Attack')) s.bleed += m.bleedAdd;
+  s.bleedMore *= m.bleedMore * (1 + m.bleedInc);
   s.burnMore *= m.burnMore; s.moreEle *= m.moreEle; s.dotMore *= m.dotMore; s.more *= m.moreAll;
   s.cull = Math.max(s.cull, m.cullAdd);
   if (s.behavior === 'brand' && m.ks.runebinder) { s.maxCount += 1; s.hitCd /= 1.2; }

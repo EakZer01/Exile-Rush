@@ -243,6 +243,29 @@ const SYMBOLS = {
     g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 15, 0, TAU); g.stroke();
     g.beginPath(); g.moveTo(2, -10); g.lineTo(-4, 1); g.lineTo(1, 1); g.lineTo(-2, 10); g.lineTo(5, -2); g.lineTo(0, -2); g.closePath(); g.fill();
   },
+  lacerate(g) {
+    g.lineWidth = 4; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-15, 12); g.lineTo(13, -14); g.moveTo(-13, -12); g.lineTo(15, 13); g.stroke();
+    g.beginPath(); g.arc(6, 14, 3, 0, TAU); g.fill();
+  },
+  viper_strike(g) {
+    g.lineWidth = 3.5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-14, 10); g.quadraticCurveTo(-6, -8, 2, 2); g.quadraticCurveTo(8, 10, 14, -10); g.stroke();
+    g.beginPath(); g.moveTo(14, -16); g.lineTo(9, -7); g.lineTo(18, -9); g.closePath(); g.fill();
+  },
+  ground_slam(g) {
+    g.beginPath(); g.moveTo(0, 14); g.arc(0, 14, 26, -Math.PI * 0.8, -Math.PI * 0.2); g.closePath(); g.globalAlpha = 0.5; g.fill(); g.globalAlpha = 1;
+    g.fillRect(-4, -16, 8, 18); g.fillRect(-10, -18, 20, 7);
+  },
+  ice_shot(g) {
+    g.lineWidth = 3; g.beginPath(); g.moveTo(-16, 0); g.lineTo(4, 0); g.stroke();
+    g.beginPath(); g.moveTo(10, 0); g.lineTo(3, -5); g.lineTo(3, 5); g.closePath(); g.fill();
+    for (const a of [-0.5, 0, 0.5]) { g.beginPath(); g.moveTo(12, 0); g.lineTo(12 + Math.cos(a) * 9, Math.sin(a) * 9); g.stroke(); }
+  },
+  rain_of_arrows(g) {
+    g.lineWidth = 2.5;
+    for (const [x, y] of [[-10, -12], [0, -6], [10, -14], [-4, 4], [8, 6]]) { g.beginPath(); g.moveTo(x, y - 8); g.lineTo(x, y + 5); g.stroke(); g.beginPath(); g.moveTo(x - 3, y + 3); g.lineTo(x, y + 8); g.lineTo(x + 3, y + 3); g.closePath(); g.fill(); }
+  },
   support(g) {
     // two linked sockets — "support"
     g.lineWidth = 3;

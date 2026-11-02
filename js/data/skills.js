@@ -361,6 +361,58 @@ defSkill({
   color: '#fff27a', core: '#ffffff',
 });
 
+// ---- physical Attacks: Bleed (and Poison) skills that fill the bow / melee weapon gaps ----
+defSkill({
+  id: 'lacerate', name: 'Lacerate', th: 'ฟันฉีก', gem: 'g', icon: '⟋',
+  tags: ['Attack', 'Melee', 'AoE', 'Physical'],
+  desc: 'ฟันเป็นแนวยาว 2 แนวไขว้กันใส่ศัตรูที่ใกล้ที่สุด โอกาสสูงที่ศัตรูจะติด Bleed (เลือดไหล ดาเมจกายภาพต่อเนื่อง)',
+  behavior: 'strike',
+  base: { dmg: 15, types: { physical: 1 }, cd: 0.75, range: 170, area: 190, size: 20, slashes: 2, slashAng: 0.28, bleed: 0.5, balls: 0, crit: 0.06, knock: 8 },
+  scale(s, l) { s.area *= 1 + 0.02 * (l - 1); s.slashes += Math.floor(l / 10); },
+  levelNote: 'ทุกเลเวล: แนวฟันยาวขึ้น · Lv 10 / 20: +1 แนว',
+  color: '#e05050', core: '#ffd0d0',
+});
+defSkill({
+  id: 'viper_strike', name: 'Viper Strike', th: 'จู่โจมอสรพิษ', gem: 'g', icon: '§',
+  tags: ['Attack', 'Melee', 'Chaos', 'Physical'],
+  desc: 'แทงศัตรูที่ใกล้ที่สุดอย่างรวดเร็ว ติด Poison เกือบทุกครั้ง พิษซ้อนกันได้เรื่อยๆ — เหมาะกับบอส',
+  behavior: 'strike',
+  base: { dmg: 10, types: { physical: 0.7, chaos: 0.6 }, cd: 0.42, range: 125, balls: 0, poison: 0.65, crit: 0.07 },
+  scale(s, l) { s.cd *= 1 - 0.012 * (l - 1); s.poison += 0.01 * l; },
+  levelNote: 'ทุกเลเวล: แทงเร็วขึ้น · โอกาส Poison สูงขึ้น',
+  color: '#8fdc4a', core: '#e6ffb0',
+});
+defSkill({
+  id: 'ground_slam', name: 'Ground Slam', th: 'ทุบปฐพี', gem: 'r', icon: '⩤',
+  tags: ['Attack', 'Melee', 'AoE', 'Physical'],
+  desc: 'ทุบพื้นส่งคลื่นกระแทกเป็นรูปกรวยไปทางศัตรู ผลักกระเด็น และอาจทำให้ Bleed — สกิลระยะกลางของสายกระบอง',
+  behavior: 'cone',
+  base: { dmg: 17, types: { physical: 1 }, cd: 1.0, range: 210, area: 210, coneArc: 1.2, knock: 40, bleed: 0.12, crit: 0.05 },
+  scale(s, l) { s.area *= 1 + 0.02 * (l - 1); s.coneArc += 0.02 * (l - 1); },
+  levelNote: 'ทุกเลเวล: คลื่นไกลขึ้นและกว้างขึ้น',
+  color: '#c8a070', core: '#fff0d0',
+});
+defSkill({
+  id: 'ice_shot', name: 'Ice Shot', th: 'ธนูเยือกแข็ง', gem: 'g', icon: '❄',
+  tags: ['Attack', 'Projectile', 'Cold', 'AoE', 'Bow'],
+  desc: 'ยิงลูกธนูน้ำแข็ง เมื่อโดนเป้าจะแตกเป็นเศษน้ำแข็งพุ่งต่อเป็นรูปกรวยไปข้างหน้า ทำให้ Chill ทั้งแนว',
+  behavior: 'projectile',
+  base: { dmg: 12, types: { cold: 1, physical: 0.3 }, cd: 0.8, proj: 1, speed: 700, life: 0.8, size: 5, spread: 0.2, split: 4, splitFocus: true, splitSpread: 0.16, crit: 0.06, aim: 'nearest', arrow: true },
+  scale(s, l) { s.split += Math.floor(l / 5); },
+  levelNote: 'ทุก 5 เลเวล: +1 เศษน้ำแข็ง',
+  color: '#9fe0ff', core: '#ffffff',
+});
+defSkill({
+  id: 'rain_of_arrows', name: 'Rain of Arrows', th: 'ห่าฝนธนู', gem: 'g', icon: '⇊',
+  tags: ['Attack', 'AoE', 'Physical', 'Bow', 'Duration'],
+  desc: 'ยิงธนูขึ้นฟ้าให้ตกลงเป็นห่าฝนใส่ฝูงศัตรู แต่ละดอกมีโอกาสทำให้ Bleed',
+  behavior: 'ground',
+  base: { dmg: 10, types: { physical: 1 }, cd: 1.2, count: 6, area: 44, range: 340, duration: 0.5, bleed: 0.2, crit: 0.06 },
+  scale(s, l) { s.count += Math.floor(l / 3); },
+  levelNote: 'ทุก 3 เลเวล: +1 ดอก',
+  color: '#e8d6a0', core: '#ffffff',
+});
+
 // ---- weapon requirements: a gem only fires while you hold one of its weapons ----
 // Gems left out of this list are universal (any weapon, even unarmed):
 // novas, auras, heralds, brands, minions and Firestorm.
@@ -372,6 +424,8 @@ const SKILL_WEAPONS = {
   blade_vortex: ['sword', 'dagger', 'axe', 'wand'],
   split_arrow: ['bow'], caustic_arrow: ['bow'], lightning_arrow: ['bow'], tornado_shot: ['bow'], toxic_rain: ['bow'],
   kinetic_blast: ['wand'],
+  ice_shot: ['bow'], rain_of_arrows: ['bow'],
+  lacerate: ['sword', 'axe'], viper_strike: ['dagger', 'sword'], ground_slam: ['mace', 'sceptre', 'axe', 'staff'],
   cyclone: ['sword', 'axe', 'mace', 'staff', 'dagger'],
   flicker_strike: ['sword', 'axe', 'dagger', 'mace', 'staff'],
   frost_blades: ['sword', 'dagger', 'axe'],

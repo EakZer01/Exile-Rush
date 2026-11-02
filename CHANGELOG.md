@@ -1,5 +1,20 @@
 # Changelog
 
+## Browser build 37 — 2026-11-03
+
+- **Bleed**: Ailment ใหม่ของดาเมจกายภาพ ทำดาเมจต่อเนื่อง 70% ของ Hit ต่อวินาที นาน 4 วิ มีหยดเลือดบนศัตรู เก็บได้ 8 ชั้นแต่ทำงานเฉพาะชั้นที่แรงที่สุด
+- สกิลใหม่ 5 อัน เติมสายอาวุธที่ยังมีเจมน้อย:
+  - **Lacerate** (ดาบ/ขวาน): ฟันไขว้ 2 แนว ติด Bleed
+  - **Viper Strike** (มีดสั้น/ดาบ): แทงเร็ว ติด Poison ซ้อน
+  - **Ground Slam** (กระบอง/คทา/ขวาน/คทายาว): คลื่นกรวยระยะกลาง
+  - **Ice Shot** (ธนู): แตกเป็นกรวยน้ำแข็ง
+  - **Rain of Arrows** (ธนู): ห่าฝนธนู
+  - ทุกอันมีร่าง Vaal และไอคอนของตัวเอง
+- Support ใหม่: **Chance to Bleed** และ **Crimson Bleed** (ศัตรูที่ Bleed ตายแล้วแตกเป็นเลือดใส่รอบๆ)
+- Passive **Bloodletting** อยู่ในสาย Ailment · Keystone **Crimson Dance** ให้ Bleed ทุกชั้นทำงานที่ 50%
+- Deadly Ailments, Mastery สาย Ailment และ Divergent Quality ของเจมกายภาพใช้กับ Bleed ด้วย
+- คอมโบใน Codex: Blood Dancer และ Frost Volley · ชุดทดสอบ 56 กรณี
+
 ## Browser build 36 — 2026-11-03
 
 - ช่องสกิลเริ่มต้นลดจาก 6 เหลือ **4** เพื่อให้การ์ดเลเวลเจมและ Support ไม่กระจายเกินไป

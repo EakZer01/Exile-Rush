@@ -116,7 +116,8 @@ function castSkill(inst, s) {
     }
     case 'brand': return castBrand(inst, s);
     case 'flicker': return castFlicker(inst, s);
-    case 'strike': return castStrike(inst, s);
+    case 'strike': return s.slashes ? castSlashes(inst, s) : castStrike(inst, s);
+    case 'cone': return castCone(inst, s);
     case 'slam': return castSlam(inst, s);
     case 'beam': return castBeam(inst, s);
   }
@@ -497,7 +498,7 @@ function splitProjectile(p) {
   const n = p.s.split, dir = Math.atan2(p.vy, p.vx);
   for (let i = 0; i < n; i++) {
     // Eye of the Gale: a tight forward line instead of a ring
-    spawnProjectile(p.inst, p.s, p.x, p.y, p.s.splitFocus ? dir + (i - (n - 1) / 2) * 0.08 : rand(0, TAU), p.hit);
+    spawnProjectile(p.inst, p.s, p.x, p.y, p.s.splitFocus ? dir + (i - (n - 1) / 2) * (p.s.splitSpread || 0.08) : rand(0, TAU), p.hit);
     const np = G.projectiles[G.projectiles.length - 1];
     np.child = true; np.life = p.s.lifeFinal * 0.6; np.ox = p.ox; np.oy = p.oy;
     np.splitDone = true; np.forked = p.forked; np.returned = p.returned;
@@ -579,6 +580,47 @@ function castStrike(inst, s) {
     const a = rand(0, TAU), d = rand(30, 110);
     G.meteors.push({ x: tgt.x + Math.cos(a) * d, y: tgt.y + Math.sin(a) * d, delay: 0.25 + i * 0.03, fall: 0.25, r: s.radius, inst, s, mult: 0.6 });
   }
+  return true;
+}
+
+// enemies on a line from (x, y) at angle a, length L, half-width w
+const _lineList = [];
+function enemiesOnLine(x, y, a, L, w) {
+  const ax = Math.cos(a), ay = Math.sin(a), out = [];
+  G.hash.query(x + ax * L / 2, y + ay * L / 2, L / 2 + 40, _lineList);
+  for (const e of _lineList) {
+    if (e.dead) continue;
+    const rx = e.x - x, ry = e.y - y, along = rx * ax + ry * ay;
+    if (along >= 0 && along <= L + e.r && Math.abs(rx * ay - ry * ax) < w + e.r) out.push(e);
+  }
+  return out;
+}
+// Lacerate: slashes that cross on the nearest enemy, each one hits everything on its line
+function castSlashes(inst, s) {
+  const P = G.player, tgt = nearestEnemy(P.x, P.y, s.range);
+  if (!tgt) return false;
+  const a0 = angleTo(P.x, P.y, tgt.x, tgt.y), n = s.slashes, L = s.radius, w = s.size;
+  for (let k = 0; k < n; k++) {
+    const a = a0 + (n === 1 ? 0 : (k / (n - 1) - 0.5) * 2 * s.slashAng);
+    const x0 = tgt.x - Math.cos(a) * L / 2, y0 = tgt.y - Math.sin(a) * L / 2;
+    for (const e of enemiesOnLine(x0, y0, a, L, w)) hitEnemy(e, s, inst, 1, P.x, P.y);
+    addEffect({ kind: 'slash', x: x0, y: y0, a, r: L, w, t: 0, dur: 0.2, color: s.color });
+  }
+  emit('blood', tgt.x, tgt.y, 6, { color: '#c02020' });
+  return true;
+}
+// Ground Slam: a cone-shaped shockwave towards the nearest enemy
+function castCone(inst, s) {
+  const P = G.player, tgt = nearestEnemy(P.x, P.y, s.radius * 1.05);
+  if (!tgt) return false;
+  const a0 = angleTo(P.x, P.y, tgt.x, tgt.y), half = Math.min(Math.PI, s.coneArc / 2), R = s.radius;
+  for (const e of enemiesInRadius(P.x, P.y, R, [])) {
+    const da = Math.abs(((angleTo(P.x, P.y, e.x, e.y) - a0 + Math.PI * 3) % TAU) - Math.PI);
+    if (da <= half + e.r / Math.max(30, Math.hypot(e.x - P.x, e.y - P.y))) hitEnemy(e, s, inst, 1, P.x, P.y);
+  }
+  addEffect({ kind: 'cone', x: P.x, y: P.y, a: a0, arc: half * 2, r: R, t: 0, dur: 0.3, color: s.color });
+  for (let i = 0; i < 10; i++) { const a = a0 + rand(-half, half), d = rand(0.3, 1) * R; emit('phys', P.x + Math.cos(a) * d, P.y + Math.sin(a) * d, 1, { dir: a, spread: 0.2 }); }
+  G.shake = Math.max(G.shake, 3);
   return true;
 }
 

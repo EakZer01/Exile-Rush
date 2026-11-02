@@ -241,6 +241,6 @@ test('all skill behaviors run with six independent slots and finite damage', () 
     }
     return results;
   })()`);
-  assert.equal(results.length, 33);
+  assert.equal(results.length, run("Object.keys(SKILLS).length"));
   assert.deepEqual(Array.from(results).filter(r => !r.valid), []);
 });

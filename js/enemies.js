@@ -18,7 +18,7 @@ function makeEnemy(type, x, y, rarity) {
     color: d.color, shape: d.shape, xp: d.xp * (rarity === 1 ? 4 : rarity === 2 ? 25 : 1),
     rarity, mods: [], name: null, elem: d.elem || 'physical',
     res: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 }, dmgTakenMul: 1, regen: 0,
-    ign: { dps: 0, t: 0, src: null }, chill: { eff: 0, t: 0 }, freeze: 0, shock: { eff: 0, t: 0 }, poison: [],
+    ign: { dps: 0, t: 0, src: null }, chill: { eff: 0, t: 0 }, freeze: 0, shock: { eff: 0, t: 0 }, poison: [], bleeds: [],
     hitCd: {}, contactCd: 0, flash: 0, dotAcc: 0, dotShowT: 0, rcd: rand(1, 2.5), wob: rand(0, TAU), dead: false,
   };
   if (fx.eleResAdd) e.res.fire = e.res.cold = e.res.lightning = fx.eleResAdd;
@@ -218,6 +218,16 @@ function updateEnemies(dt) {
         if (p.t <= 0) e.poison.splice(i, 1);
       }
       dotDamage(e, dps * dt, src, '#9be05a', true); if (e.dead) continue;
+    }
+    // Bleed: only the strongest stack hurts, unless Crimson Dance lets every stack hit at 50%
+    if (e.bleeds.length) {
+      let top = null, sum = 0;
+      for (let i = e.bleeds.length - 1; i >= 0; i--) {
+        const b = e.bleeds[i]; b.t -= dt;
+        if (b.t <= 0) { e.bleeds.splice(i, 1); continue; }
+        sum += b.dps; if (!top || b.dps > top.dps) top = b;
+      }
+      if (top) { dotDamage(e, (P.mods.ks.crimsonDance ? sum * 0.5 : top.dps) * dt, top.src, '#d83030', true); if (e.dead) continue; }
     }
     if (e.chill.t > 0) e.chill.t -= dt;
     if (e.shock.t > 0) e.shock.t -= dt;

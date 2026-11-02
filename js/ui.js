@@ -74,7 +74,7 @@ const MILESTONE_EVERY = 10;
 const isMilestone = (lv) => lv > 0 && lv % MILESTONE_EVERY === 0;
 const KS_NEED = { runebinder: ['Brand'], minion_instability: ['Minion'], point_blank: ['Projectile'], pain_attunement: ['Spell'],
   elemental_overload: ['Fire', 'Cold', 'Lightning'], elemental_equilibrium: ['Fire', 'Cold', 'Lightning'], avatar_of_fire: ['Fire', 'Physical', 'Cold', 'Lightning'],
-  hex_master: ['Spell', 'Attack'], perfect_agony: ['Fire', 'Chaos'] };
+  hex_master: ['Spell', 'Attack'], perfect_agony: ['Fire', 'Chaos'], crimson_dance: ['Physical'] };
 const PASSIVE_RANKS = 2;      // a passive card gives two ranks
 const GEM_LEVELS = 2;         // a gem level-up card gives two levels
 
@@ -86,7 +86,7 @@ function buildTags() {
 }
 const PASSIVE_TAGS = { spell: ['Spell'], attack: ['Attack'], proj: ['Projectile'], area: ['AoE'], ele: ['Fire', 'Cold', 'Lightning'], phys: ['Physical'],
   chaos: ['Chaos'], minion: ['Minion'], inferno: ['Fire'], winter: ['Cold'], thunder: ['Lightning'], duration: ['Duration'], affliction: ['Chaos', 'Fire'],
-  ricochet: ['Projectile', 'Chaining'], piercing: ['Projectile'], blade_dance: ['Attack', 'Melee'], malediction: [], crit: ['Attack', 'Spell'], speed: ['Attack', 'Spell'] };
+  ricochet: ['Projectile', 'Chaining'], bloodletting: ['Physical'], piercing: ['Projectile'], blade_dance: ['Attack', 'Melee'], malediction: [], crit: ['Attack', 'Spell'], speed: ['Attack', 'Spell'] };
 // does this card fit the build? (shown as ★)
 function cardFits(c) {
   const P = G.player, tags = buildTags();

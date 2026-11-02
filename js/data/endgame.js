@@ -118,7 +118,7 @@ function altQualityDesc(alt, id) {
     return 'เร็วขึ้น 20% · ดาเมจ 10% less';
   }
   if (alt === 'divergent') {
-    const ail = { fire: 'Ignite', cold: 'Chill แรงขึ้น', lightning: 'Shock', chaos: 'Poison', physical: 'Poison' }[main];
+    const ail = { fire: 'Ignite', cold: 'Chill แรงขึ้น', lightning: 'Shock', chaos: 'Poison', physical: 'Bleed' }[main];
     return `โอกาส ${ail} +30% · ดาเมจ Ailment 25% more · ดาเมจ Hit 10% less`;
   }
   return '+5% โอกาสคริ (base) · +40% ตัวคูณคริ · ช้าลง 10%';
@@ -132,7 +132,7 @@ function applyAltQuality(s, alt, id) {
     else { s.speedInc += 0.2; s.more *= 0.9; }
   } else if (alt === 'divergent') {
     if (main === 'fire') s.ignite += 0.3; else if (main === 'cold') s.chillEff *= 1.5;
-    else if (main === 'lightning') s.shock += 0.3; else s.poison += 0.3;
+    else if (main === 'lightning') s.shock += 0.3; else if (main === 'physical') s.bleed += 0.3; else s.poison += 0.3;
     s.ailMore *= 1.25; s.more *= 0.9;
   } else if (alt === 'phantasmal') { s.crit += 0.05; s.critMulti += 0.4; s.speedInc -= 0.1; }
 }

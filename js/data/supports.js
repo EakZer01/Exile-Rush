@@ -135,6 +135,16 @@ defSupport({
   apply(s) { s.burnMore *= 1.7; s.ignite += 0.1; },
 });
 defSupport({
+  id: 'chance_to_bleed', name: 'Chance to Bleed', th: 'เลือดไหล', gem: 'r', req: ['Attack'],
+  desc: 'โอกาส Bleed +30% (Bleed: ดาเมจกายภาพต่อเนื่อง 70% ของ Hit ต่อวินาที นาน 4 วิ) · ดาเมจ Bleed 20% more',
+  apply(s) { s.bleed += 0.3; s.bleedMore *= 1.2; },
+});
+defSupport({
+  id: 'crimson_bleed', name: 'Crimson Bleed', th: 'เลือดแดงฉาน', gem: 'r', req: ['Physical'],
+  desc: 'ดาเมจ Bleed 35% more · ศัตรูที่ Bleed ตายแล้วแตกเป็นเลือด ทำดาเมจกายภาพรอบตัว 50% ของ Bleed ที่เหลือ',
+  apply(s) { s.bleedMore *= 1.35; s.bloodBurst = true; },
+});
+defSupport({
   id: 'swift_affliction', name: 'Swift Affliction', th: 'ทรมานรวดเร็ว', gem: 'g', req: ['DoT', 'Fire', 'Chaos'],
   desc: 'ดาเมจต่อเนื่อง (DoT ทุกชนิด) 45% more · ระยะเวลา 20% less',
   apply(s) { s.dotMore *= 1.45; s.durMore *= 0.8; },
@@ -233,7 +243,7 @@ defSupport({
 });
 defSupport({
   id: 'deadly_ailments', name: 'Deadly Ailments', th: 'สภาวะมรณะ', gem: 'g', req: ['Fire', 'Chaos', 'DoT'],
-  desc: 'ดาเมจ Ignite และ Poison 60% more · ดาเมจ Hit 25% less',
+  desc: 'ดาเมจ Ignite, Poison และ Bleed 60% more · ดาเมจ Hit 25% less',
   apply(s) { s.ailMore *= 1.6; s.hitMul *= 0.75; },
 });
 defSupport({

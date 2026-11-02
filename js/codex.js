@@ -24,6 +24,10 @@ const COMBOS = [
     desc: 'กองทัพมินเนียนสองแบบ · Ascendancy Bonecaller / Keystone Minion Lord บน Legacy Tree ช่วยเต็มที่' },
   { name: 'Storm Archer', parts: ['lightning_arrow', 'tornado_shot', 'gmp', 'light_pen'],
     desc: 'ลูกธนูสายฟ้าฟาดรอบเป้า + ลูกธนูย่อยกระจาย · Penetration ทะลุมอนสเตอร์ต้านธาตุในแผนที่ Tier สูง' },
+  { name: 'Blood Dancer', parts: ['lacerate', 'chance_to_bleed', 'crimson_bleed', 'multistrike'],
+    desc: 'ฟันไขว้ทำให้ทั้งฝูง Bleed · Crimson Bleed ทำให้ศพแตกเป็นเลือดต่อเนื่อง · เลือก Keystone Crimson Dance ให้ Bleed ซ้อนได้ 8 ชั้น' },
+  { name: 'Frost Volley', parts: ['ice_shot', 'gmp', 'hypothermia', 'herald_of_ice'],
+    desc: 'ลูกธนูน้ำแข็งแตกเป็นกรวยทำให้ทั้งแนว Chill · Herald of Ice ระเบิดศัตรูที่ติด Chill ตายต่อเป็นลูกโซ่' },
   { name: 'Burning Beam', parts: ['scorching_ray', 'infused_channelling', 'burning_damage', 'fire_pen'],
     desc: 'ลำแสงเผาต่อเนื่อง ยิ่งยืนยิงยิ่งร้อน · Infused Channelling ลดดาเมจที่ได้รับขณะยิง' },
 ];

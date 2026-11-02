@@ -47,7 +47,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (s.fortify && !s.proc) P.fortifyT = G.time + 4;
   const curse = e.curse && e.curse.t > G.time ? e.curse : null;
   const eeType = ks.ee && e.ee && e.ee.t > G.time ? e.ee.type : null;
-  let total = 0, fire = 0, cold = 0, light = 0, chaos = 0, mainType = 'physical', mainAmt = 0;
+  let total = 0, fire = 0, cold = 0, light = 0, chaos = 0, phys = 0, mainType = 'physical', mainAmt = 0;
   for (const t in s.hit) {
     // penetration and Elemental Weakness lower resistance (not below -50%)
     let res = e.res[t] - (s.pen ? s.pen[t] || 0 : 0);
@@ -61,7 +61,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
     const d = s.hit[t] * m * k * (1 - Math.max(-0.5, res));
     total += d;
     if (d > mainAmt) { mainAmt = d; mainType = t; }
-    if (t === 'fire') fire = d; else if (t === 'cold') cold = d; else if (t === 'lightning') light = d; else if (t === 'chaos') chaos = d;
+    if (t === 'fire') fire = d; else if (t === 'cold') cold = d; else if (t === 'lightning') light = d; else if (t === 'chaos') chaos = d; else phys = d;
   }
 
   // ailments
@@ -86,6 +86,11 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
     }
     if (chaos > 0 && Math.random() < s.poison) {
       if (e.poison.length < 40) e.poison.push({ dps: chaos * 0.3 * s.dotMul * (s.ailMore || 1) * P.mods.poisonMore * agony, t: 2.5 * s.ailmentDur, src: inst });
+    }
+    // Bleed: physical damage over time, up to 8 stacks kept (the weakest drops off)
+    if (phys > 0 && s.bleed > 0 && Math.random() < s.bleed) {
+      if (e.bleeds.length >= 8) { let lo = 0; for (let i = 1; i < 8; i++) if (e.bleeds[i].dps < e.bleeds[lo].dps) lo = i; e.bleeds.splice(lo, 1); }
+      e.bleeds.push({ dps: phys * 0.7 * s.dotMul * (s.ailMore || 1) * s.bleedMore * agony, t: 4 * s.ailmentDur, src: inst, burst: !!s.bloodBurst });
     }
   }
 
@@ -188,6 +193,7 @@ function killEnemy(e, inst) {
     else if (r < 0.0040) spawnPickup(e.x, e.y, 'magnet');
   }
   if (e.rarity === 3) bossDefeated(e);
+  if (e.bleeds && e.bleeds.length) bloodBurst(e);
   rollItemDrop(e);
   rollLeagueDrops(e);
   rollScarabDrops(e);
@@ -313,6 +319,20 @@ function spawnPickup(x, y, kind, extra) { G.pickups.push(Object.assign({ x, y, k
 const pickupDef = (it) => (it.kind === 'essence' ? { name: ESSENCES[it.ess].name, color: ESSENCES[it.ess].color, icon: '◆' }
   : it.kind === 'scarab' ? { name: SCARABS[it.scarab].name, color: SCARABS[it.scarab].color, icon: '✲' }
   : it.kind === 'map' ? { name: `แผนที่ T${it.map.tier}`, color: RARITY_COLOR[it.map.rarity], icon: '▦' } : PICKUPS[it.kind]);
+
+// Crimson Bleed: a bleeding corpse bursts for half of the bleed it had left
+let _burstBudget = 40, _burstT = 0;
+function bloodBurst(e) {
+  let left = 0, src = null;
+  for (const b of e.bleeds) if (b.burst) { left += b.dps * b.t; src = b.src; }
+  if (!src || left <= 0) return;
+  if (G.time - _burstT > 1 || G.time < _burstT) { _burstT = G.time; _burstBudget = 40; }
+  if (_burstBudget-- <= 0) return;
+  const x = e.x, y = e.y, amt = left * 0.5;
+  addEffect({ kind: 'boom', x, y, r: 70, t: 0, dur: 0.3, color: '#c02020' });
+  emit('blood', x, y, 12, { color: '#c02020' });
+  G.delayed.push({ t: 0.05, fn: () => { for (const o of enemiesInRadius(x, y, 70, [])) dealDamage(o, amt * (1 - o.res.physical), src, false, 'physical'); } });
+}
 
 // ---- Ascendancy on-kill effects + Vaal souls ----
 function burstAt(x, y, r, s, inst, color) {

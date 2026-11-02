@@ -24,6 +24,8 @@ function defaultMods() {
     // unique item hooks
     brandAdd: 0, brandSpeed: 0, heraldMore: 1, beamRange: 0, beamMore: 1, summonAdd: 0, poisonMore: 1, aftershockAdd: 0,
     skillHooks: [], keystoneAdd: 0,
+    // bleed (physical ailment)
+    bleedAdd: 0, bleedMore: 1, bleedInc: 0,
     // gear defences
     lifeFlat: 0, armour: 0, evasion: 0, es: 0, esInc: 0, block: 0, esRechargeInc: 0,
     // resistances (fractions) and their caps

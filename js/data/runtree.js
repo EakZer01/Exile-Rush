@@ -17,10 +17,10 @@ const RUN_PATHS = {
       { id: 'assassin', name: "Assassin's Edge", desc: '+60% ตัวคูณคริ · Hit ที่ไม่คริทำดาเมจ 15% less', apply(m) { m.critMulti += 0.6; m.ks.nonCritLess = true; } },
       { id: 'lucky', name: 'Lucky Strikes', desc: 'ทอยโอกาสคริ 2 ครั้ง เลือกผลที่ดีกว่า (Lucky)', apply(m) { m.ks.luckyCrit = true; } },
     ] },
-  ailment: { name: 'Ailment', th: 'สายอาการผิดปกติ', icon: '☣', color: '#8fdc4a', need: 6, passives: ['affliction', 'chaos', 'inferno', 'winter', 'thunder', 'malediction'],
+  ailment: { name: 'Ailment', th: 'สายอาการผิดปกติ', icon: '☣', color: '#8fdc4a', need: 6, passives: ['affliction', 'bloodletting', 'chaos', 'inferno', 'winter', 'thunder', 'malediction'],
     mastery: [
-      { id: 'prolonged', name: 'Prolonged Suffering', desc: 'Ailment (Ignite / Poison / Shock / Chill) นานขึ้น 50% · ดาเมจ Ailment 10% more', apply(m) { m.ailDurInc += 0.5; m.ailMore *= 1.1; } },
-      { id: 'swift', name: 'Swift Affliction', desc: 'ดาเมจ Ignite / Poison 50% more · Ailment สั้นลง 35%', apply(m) { m.ailMore *= 1.5; m.ailDurMore *= 0.65; } },
+      { id: 'prolonged', name: 'Prolonged Suffering', desc: 'Ailment (Ignite / Poison / Bleed / Shock / Chill) นานขึ้น 50% · ดาเมจ Ailment 10% more', apply(m) { m.ailDurInc += 0.5; m.ailMore *= 1.1; } },
+      { id: 'swift', name: 'Swift Affliction', desc: 'ดาเมจ Ignite / Poison / Bleed 50% more · Ailment สั้นลง 35%', apply(m) { m.ailMore *= 1.5; m.ailDurMore *= 0.65; } },
     ] },
   defence: { name: 'Defence', th: 'สายป้องกัน', icon: '⛨', color: '#c8b8a0', need: 8,
     passives: ['life', 'regen', 'armour', 'vampirism', 'flask', 'prismatic', 'purity_flesh', 'fortress', 'ironwood', 'phase', 'barrier', 'shieldwall'],

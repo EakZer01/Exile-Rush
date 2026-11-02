@@ -93,3 +93,38 @@ test('runs start with 4 skill slots; late Milestones can open up to 2 more', () 
   assert.equal(run(`(() => { for (let i = 0; i < 200; i++) if (milestoneChoices(4).some(c => c.type === 'slot')) return true; return false; })()`), false);
   assert.equal(run(`(() => { for (let i = 0; i < 100; i++) if (regularChoices(4).some(c => c.type === 'skill')) return true; return false; })()`), true);
 });
+
+test('Bleed stacks hurt only at their strongest, unless Crimson Dance', () => {
+  const { run } = game();
+  run(`startGame(CLASSES[5]); P4 = G.player; P4.skills = [newSkillInstance('lacerate')]; P4.skills[0].st = null; recomputePlayer();
+    E4 = makeEnemy('zombie', 2000, 2000, 0); E4.hp = E4.maxHp = 1e9; E4.speed = 0; E4.dmg = 0; E4.res.physical = 0; G.enemies = [E4];
+    E4.bleeds = [{ dps: 100, t: 10, src: null }, { dps: 60, t: 10, src: null }];
+    function tickE(n) { for (let k = 0; k < n; k++) updateEnemies(0.1); }`);
+  const hp0 = run('E4.hp'); run('tickE(10)');
+  assert.ok(Math.abs(hp0 - run('E4.hp') - 100) < 1);
+  run(`P4.keystones.crimson_dance = 1; recomputePlayer();`);
+  const hp1 = run('E4.hp'); run('tickE(10)');
+  assert.ok(Math.abs(hp1 - run('E4.hp') - 80) < 1);
+});
+
+test('Lacerate and Ground Slam hit along their shapes and apply Bleed', () => {
+  const { run } = game();
+  run(`startGame(CLASSES[5]); P5 = G.player; P5.x = P5.y = 0; P5.skills = [newSkillInstance('lacerate')]; recomputePlayer();
+    const s5 = P5.skills[0].st; s5.bleed = 1;
+    E5 = []; for (const [x, y] of [[100, 0], [170, 0], [0, 150], [-120, 0]]) { const e = makeEnemy('zombie', x, y, 0); e.hp = e.maxHp = 1e9; e.speed = 0; G.enemies.push(e); E5.push(e); }
+    G.hash.clear(); for (const e of G.enemies) G.hash.insert(e);
+    castSkill(P5.skills[0], s5);`);
+  assert.deepEqual(Array.from(run('E5.map(e => e.bleeds.length > 0)')), [true, true, false, false]);
+  run(`P5.equip.weapon = makeNormal('driftwood_club'); P5.skills = [newSkillInstance('ground_slam')]; recomputePlayer(); for (const e of E5) { e.bleeds = []; e.hp = 1e9; }
+    castSkill(P5.skills[0], P5.skills[0].st);`);
+  assert.deepEqual(Array.from(run('E5.map(e => e.hp < 1e9)')), [true, true, false, false]);
+});
+
+test('Crimson Bleed corpses burst onto nearby enemies', () => {
+  const { run } = game();
+  run(`startGame(CLASSES[5]); const a = makeEnemy('zombie', 500, 500, 0), b = makeEnemy('zombie', 540, 500, 0);
+    b.hp = b.maxHp = 1e9; b.res.physical = 0; G.enemies = [a, b]; A6 = a; B6 = b; G.hash.clear(); G.hash.insert(a); G.hash.insert(b);
+    a.bleeds = [{ dps: 200, t: 2, src: G.player.skills[0], burst: true }]; killEnemy(a, null);
+    for (const d of G.delayed.splice(0)) d.fn();`);
+  assert.ok(run('B6.maxHp - B6.hp') >= 199);
+});
