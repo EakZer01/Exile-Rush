@@ -96,7 +96,7 @@ function renderCodexBody() {
       if (codexFilter && !d.req.includes(codexFilter)) continue;
       if (!codexMatch(d.name, d.th, d.desc)) continue;
       const fits = supportTargets(id);
-      h += `<div class="codex-card">${supportGemHtml(d.gem)}<div class="codex-info">
+      h += `<div class="codex-card">${supportGemHtml(id)}<div class="codex-info">
         <div class="card-name">${d.name} <small class="muted">${d.th}</small></div>
         ${d.req.length ? tagsHtml(d.req) : '<div class="tags"><span class="tag">ใช้ได้ทุกสกิล</span></div>'}
         <div class="card-desc">${d.desc}</div>
@@ -143,7 +143,7 @@ function renderCodexBody() {
     for (const c of COMBOS) {
       if (!codexMatch(c.name, c.desc)) continue;
       h += `<div class="codex-combo"><div class="card-name">${c.name}</div><div class="combo-parts">${c.parts.map((p) => SKILLS[p]
-        ? `<span class="combo-part">${skillGemHtml(p, true)} ${SKILLS[p].name}</span>` : `<span class="combo-part">${supportGemHtml(SUPPORTS[p].gem, true)} ${SUPPORTS[p].name}</span>`).join('<span class="muted">+</span>')}</div>
+        ? `<span class="combo-part">${skillGemHtml(p, true)} ${SKILLS[p].name}</span>` : `<span class="combo-part">${supportGemHtml(p, true)} ${SUPPORTS[p].name}</span>`).join('<span class="muted">+</span>')}</div>
         <div class="card-desc">${c.desc}</div></div>`;
     }
   }

@@ -394,7 +394,7 @@ function onKillSkills(e) {
     G.delayed.push({ t: 0.07, fn: () => {
       for (const n of enemiesInRadius(x, y, s.radius, [])) hitEnemy(n, s, ice, 1, x, y);
       addEffect({ kind: 'boom', x, y, r: s.radius, t: 0, dur: 0.3, color: '#9fe0ff' });
-      emit('shard', x, y, 8);
+      emit('shard', x, y, 8); Sfx.play('shatter');
     } });
   }
   // the burst always ignites, so the flames keep jumping from corpse to corpse
@@ -404,7 +404,7 @@ function onKillSkills(e) {
     G.delayed.push({ t: 0.1, fn: () => {
       for (const n of enemiesInRadius(x, y, s.radius, [])) hitEnemy(n, s, ash, 1, x, y);
       addEffect({ kind: 'boom', x, y, r: s.radius, t: 0, dur: 0.35, color: '#ff7a2a' });
-      emit('ember', x, y, 12, { speed: 1.4 });
+      emit('ember', x, y, 12, { speed: 1.4 }); Sfx.play('boom', 1.3);
       addDecal('scorch', x, y, s.radius / 45);
     } });
   }

@@ -204,7 +204,7 @@ function collectPickup(kind, x, y, it) {
   emit('gold', x, y, 14, { color: def.color });
   if (def.craft) { P.currency[kind] = (P.currency[kind] || 0) + 1; showTip(JEWELLERS[kind] ? 'jeweller' : 'craft'); }
   else if (kind === 'chaos') P.currency.chaos++;
-  else if (kind === 'life') P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3);
+  else if (kind === 'life') { P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3); Sfx.play('heal'); }
   else if (kind === 'magnet') for (const o of G.orbs) o.pull = true;
   else if (kind === 'chest') { if (it && it.boss) G.pendingChests++; else openChestInstant(x, y); }
   else if (kind === 'map') collectMap(it.map);
@@ -221,6 +221,7 @@ function gainXp(v) {
     P.xpNext = xpReq(P.level);
     G.pendingLevels++;
     emit('gold', P.x, P.y, 30, { speed: 1.5, jitter: 10 });
+    addEffect({ kind: 'ring', x: P.x, y: P.y, r: 90, t: 0, dur: 0.6, color: '#ffd84a' });
   }
   if (G.pendingLevels) recomputePlayer();
 }

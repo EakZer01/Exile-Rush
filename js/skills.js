@@ -56,6 +56,7 @@ function updateSkills(dt) {
       if (s.ruthless && (inst.rt.rc || 0) % 3 === 2) inst.rt.ruthT = G.time + 0.12;
       if (castSkill(inst, s)) {
         inst.rt.rc = (inst.rt.rc || 0) + 1;
+        if (s.behavior !== 'orbit' && s.behavior !== 'minion') Sfx.play('cast_' + s.mainType);
         if (s.mirage && !inst.rt.mirage) summonMirage(inst);
         inst.timer = Math.max(inst.timer + s.cdFinal, s.cdFinal * 0.5);
         const echoes = s.echo + (G.buffs.echoing > 0 && s.behavior !== 'orbit' && s.behavior !== 'minion' ? 1 : 0);
@@ -448,6 +449,7 @@ function vaalReady() { return G.player.skills.filter((s) => s.evo && s.souls >= 
 function unleashVaal() {
   const P = G.player, ready = vaalReady();
   if (!ready.length) return false;
+  Sfx.play('vaal');
   for (const inst of ready) {
     const s = inst.st;
     inst.souls = 0; inst.vaalT = VAAL_SURGE;
@@ -582,6 +584,7 @@ function castStrike(inst, s) {
       addEffect({ kind: 'bolt', pts: [[e.x + rand(-20, 20), e.y - 240], [e.x + rand(-12, 12), e.y - 110], [e.x, e.y]], t: 0, dur: 0.18, color: s.color });
       emit('spark', e.x, e.y, 5);
     }
+    Sfx.play('zap');
   }
   // Frost Blades: icy blades fly on from the target
   if (s.blades) {
@@ -608,6 +611,7 @@ function heraldThunder(inst, s) {
     addEffect({ kind: 'bolt', pts: [[e.x + rand(-20, 20), e.y - 260], [e.x + rand(-12, 12), e.y - 120], [e.x, e.y]], t: 0, dur: 0.2, color: s.color });
     emit('spark', e.x, e.y, 5);
   }
+  Sfx.play('zap');
   return true;
 }
 

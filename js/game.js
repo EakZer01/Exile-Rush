@@ -228,6 +228,7 @@ const KEYMAP = {
   KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
 };
 function onKey(e, down) {
+  if (down) Sfx.init();       // browsers only start audio after a user gesture
   // Leave browser/window shortcuts (Ctrl+Tab, Alt+Tab, Ctrl+T, etc.) to the browser.
   if (down && (e.ctrlKey || e.metaKey || e.altKey) && e.code !== 'AltLeft' && e.code !== 'AltRight') return;
   const k = KEYMAP[e.code];
@@ -363,6 +364,7 @@ function openVictory() {
   // the Vault is rolled once per cleared map (the Daily has none)
   if (!G.vault && !G.daily) G.vault = { cards: rollVault(), pick: null };
   if (G.vault) renderVault(); else $('vic-vault').innerHTML = '';
+  Sfx.play('victory');
   setVictoryButtons();
   show('victory');
 }

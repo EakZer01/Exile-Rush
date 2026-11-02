@@ -37,7 +37,8 @@ function dropItem(x, y, rarity, slot, src) {
   const item = makeItem(rarity, slot, G.time, G.map.tier, src);
   if (!lootVisible(item)) { G.stats.salvage += SALVAGE_SHARDS[item.rarity] || 0; G.stats.filtered = (G.stats.filtered || 0) + 1; return; }
   G.items.push({ x: x + rand(-14, 14), y: y + rand(-14, 14), item, t: 0 });
-  if (rarity === 'unique') Sfx.play('boss');
+  if (rarity === 'unique') Sfx.play('unique');
+  else if (rarity === 'rare') Sfx.play('rare');
 }
 function rollItemDrop(e) {
   if (e.rarity === 3) {

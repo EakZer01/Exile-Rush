@@ -471,3 +471,5 @@ details.bench summary { cursor: pointer; color: #d8c8a0; }
 .chal.done { border-color: #6a8a3a; }
 .atlas-tiers { display: flex; flex-wrap: wrap; gap: 10px; }
 .coll-src { margin: 8px 0; }
+
+.cur-ico { width: 18px; height: 18px; vertical-align: -4px; }

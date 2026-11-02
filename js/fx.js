@@ -126,6 +126,7 @@ function fxHit(e, type, crit, fromX, fromY) {
   const dir = fromX !== undefined ? Math.atan2(e.y - fromY, e.x - fromX) : undefined;
   const busy = _parts.length > 600 || G.enemies.length > 300;
   emit(kind, e.x, e.y, busy ? 1 : crit ? 7 : 3, { dir, spread: 1.0, size: crit ? 1.4 : 1 });
+  if (crit) Sfx.play('crit');
   if (type === 'physical' && !busy) {
     const g = GORE[e.type];
     if (g) emit('blood', e.x, e.y, 2, { dir, spread: 0.7, color: g.blood });

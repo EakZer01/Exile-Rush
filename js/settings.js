@@ -30,7 +30,7 @@ const Music = {
   start() {
     const c = Sfx.ctx;
     if (!c || this.gain) return;
-    this.gain = c.createGain(); this.gain.gain.value = this.vol * 0.5; this.gain.connect(c.destination);
+    this.gain = c.createGain(); this.gain.gain.value = this.vol * 0.5; this.gain.connect(Sfx.bus || c.destination);
     const filter = c.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 380; filter.Q.value = 3;
     filter.connect(this.gain);
     for (const [f, type, v] of [[55, 'sawtooth', 0.05], [55.4, 'sawtooth', 0.05], [82.4, 'triangle', 0.04]]) {

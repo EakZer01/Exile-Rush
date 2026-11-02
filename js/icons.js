@@ -274,6 +274,116 @@ const SYMBOLS = {
     g.lineWidth = 2.5;
     for (const [x, y] of [[-10, -12], [0, -6], [10, -14], [-4, 4], [8, 6]]) { g.beginPath(); g.moveTo(x, y - 8); g.lineTo(x, y + 5); g.stroke(); g.beginPath(); g.moveTo(x - 3, y + 3); g.lineTo(x, y + 8); g.lineTo(x + 3, y + 3); g.closePath(); g.fill(); }
   },
+  // ---- support symbols (one per kind of support) ----
+  sup_proj(g) {
+    g.lineWidth = 2.5; g.lineCap = 'round';
+    for (const a of [-0.45, 0, 0.45]) {
+      const c = Math.cos(a - Math.PI / 2), s = Math.sin(a - Math.PI / 2);
+      g.beginPath(); g.moveTo(c * -6, s * -6 + 6); g.lineTo(c * 14, s * 14 + 6); g.stroke();
+      g.beginPath(); g.arc(c * 15, s * 15 + 6, 3, 0, TAU); g.fill();
+    }
+  },
+  sup_pierce(g) {
+    g.lineWidth = 3; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-16, 0); g.lineTo(12, 0); g.stroke();
+    g.beginPath(); g.moveTo(17, 0); g.lineTo(9, -6); g.lineTo(9, 6); g.closePath(); g.fill();
+    g.fillRect(-3, -15, 5, 30);
+  },
+  sup_chain(g) {
+    g.lineWidth = 2.5;
+    const pts = [[-15, 10], [-6, -10], [4, 8], [14, -12]];
+    g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+    for (const [x, y] of pts) { g.beginPath(); g.arc(x, y, 3.2, 0, TAU); g.fill(); }
+  },
+  sup_fork(g) {
+    g.lineWidth = 3; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0, 16); g.lineTo(0, 0); g.lineTo(-11, -13); g.moveTo(0, 0); g.lineTo(11, -13); g.stroke();
+  },
+  sup_speed(g) {
+    g.lineWidth = 3.5; g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const x of [-10, 2]) { g.beginPath(); g.moveTo(x, -12); g.lineTo(x + 10, 0); g.lineTo(x, 12); g.stroke(); }
+  },
+  sup_area(g) {
+    g.lineWidth = 2.5;
+    g.beginPath(); g.arc(0, 0, 5, 0, TAU); g.fill();
+    g.beginPath(); g.arc(0, 0, 10, 0, TAU); g.stroke();
+    g.setLineDash([4, 3]); g.beginPath(); g.arc(0, 0, 16, 0, TAU); g.stroke(); g.setLineDash([]);
+  },
+  sup_focus(g) {
+    g.beginPath(); g.arc(0, 0, 5, 0, TAU); g.fill();
+    for (let i = 0; i < 4; i++) { const a = (i / 4) * TAU + Math.PI / 4, c = Math.cos(a), s = Math.sin(a);
+      g.beginPath(); g.moveTo(c * 9, s * 9); g.lineTo(c * 17 - s * 5, s * 17 + c * 5); g.lineTo(c * 17 + s * 5, s * 17 - c * 5); g.closePath(); g.fill(); }
+  },
+  sup_plus(g) {
+    g.beginPath(); g.moveTo(-3, -16); g.quadraticCurveTo(8, -2, 6, 6); g.arc(-3, 6, 9, 0, Math.PI); g.quadraticCurveTo(-14, -2, -3, -16); g.fill();
+    g.fillRect(9, -12, 9, 3); g.fillRect(12, -15, 3, 9);
+  },
+  sup_drop(g) {
+    g.beginPath(); g.moveTo(0, -16); g.quadraticCurveTo(12, 0, 10, 6); g.arc(0, 6, 10, 0, Math.PI); g.quadraticCurveTo(-12, 0, 0, -16); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.arc(3, 7, 3.5, 0, TAU); g.fill();
+  },
+  sup_flame(g) {
+    g.beginPath(); g.moveTo(0, -17); g.quadraticCurveTo(13, -3, 9, 8); g.quadraticCurveTo(5, 16, 0, 16); g.quadraticCurveTo(-5, 16, -9, 8); g.quadraticCurveTo(-13, -3, 0, -17); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.moveTo(0, -2); g.quadraticCurveTo(6, 6, 0, 12); g.quadraticCurveTo(-6, 6, 0, -2); g.fill();
+  },
+  sup_tri(g) {
+    g.lineWidth = 2.5; g.beginPath(); g.moveTo(0, -15); g.lineTo(14, 11); g.lineTo(-14, 11); g.closePath(); g.stroke();
+    const cols = ['#ffb27a', '#aee9ff', '#fff09a'];
+    [[0, -15], [14, 11], [-14, 11]].forEach(([x, y], i) => { g.fillStyle = cols[i]; g.beginPath(); g.arc(x, y, 4.5, 0, TAU); g.fill(); });
+  },
+  sup_pen(g) {
+    g.lineWidth = 2.5; g.beginPath(); g.moveTo(-4, -14); g.lineTo(8, -10); g.lineTo(8, 4); g.quadraticCurveTo(6, 12, 2, 15); g.quadraticCurveTo(-4, 10, -4, 4); g.closePath(); g.stroke();
+    g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(-17, 6); g.lineTo(13, -4); g.stroke();
+    g.beginPath(); g.moveTo(18, -6); g.lineTo(9, -9); g.lineTo(12, 0); g.closePath(); g.fill();
+  },
+  sup_blade(g) {
+    g.beginPath(); g.moveTo(0, -18); g.lineTo(5, -10); g.lineTo(3, 6); g.lineTo(-3, 6); g.lineTo(-5, -10); g.closePath(); g.fill();
+    g.fillRect(-9, 6, 18, 3); g.fillRect(-2, 9, 4, 8);
+  },
+  sup_echo(g) {
+    g.lineWidth = 2.5;
+    g.globalAlpha = 0.5; g.beginPath(); g.arc(-6, 0, 9, 0, TAU); g.fill(); g.globalAlpha = 1;
+    g.beginPath(); g.arc(6, 0, 9, 0, TAU); g.fill();
+    g.beginPath(); g.arc(-6, 0, 9, 0, TAU); g.stroke();
+  },
+  sup_star(g) {
+    g.beginPath();
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU - Math.PI / 2, r = i % 2 ? 7 : 17; i ? g.lineTo(Math.cos(a) * r, Math.sin(a) * r) : g.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+    g.closePath(); g.fill();
+  },
+  sup_hourglass(g) {
+    g.beginPath(); g.moveTo(-10, -16); g.lineTo(10, -16); g.lineTo(2, 0); g.lineTo(10, 16); g.lineTo(-10, 16); g.lineTo(-2, 0); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.moveTo(-6, -12); g.lineTo(6, -12); g.lineTo(0, -4); g.closePath(); g.fill();
+  },
+  sup_eye(g) {
+    g.beginPath(); g.moveTo(-17, 0); g.quadraticCurveTo(0, -15, 17, 0); g.quadraticCurveTo(0, 15, -17, 0); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.75)'; g.beginPath(); g.arc(0, 0, 5.5, 0, TAU); g.fill();
+  },
+  sup_heart(g) {
+    g.beginPath(); g.moveTo(0, 15); g.bezierCurveTo(-20, 0, -12, -16, 0, -6); g.bezierCurveTo(12, -16, 20, 0, 0, 15); g.fill();
+  },
+  sup_shield(g) {
+    g.beginPath(); g.moveTo(0, -17); g.lineTo(14, -11); g.lineTo(12, 4); g.quadraticCurveTo(8, 13, 0, 17); g.quadraticCurveTo(-8, 13, -12, 4); g.lineTo(-14, -11); g.closePath(); g.fill();
+  },
+  sup_push(g) {
+    g.beginPath(); g.arc(-10, 0, 5, 0, TAU); g.fill();
+    g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(-2, 0); g.lineTo(11, 0); g.stroke();
+    g.beginPath(); g.moveTo(18, 0); g.lineTo(9, -7); g.lineTo(9, 7); g.closePath(); g.fill();
+  },
+  sup_skull(g) {
+    g.beginPath(); g.arc(0, -3, 12, 0, TAU); g.fill(); g.fillRect(-7, 6, 14, 9);
+    g.fillStyle = 'rgba(0,0,0,0.75)'; g.beginPath(); g.arc(-5, -3, 3.5, 0, TAU); g.arc(5, -3, 3.5, 0, TAU); g.fill();
+  },
+  sup_return(g) {
+    g.lineWidth = 3; g.lineCap = 'round';
+    g.beginPath(); g.arc(0, 0, 12, -Math.PI * 0.9, Math.PI * 0.55); g.stroke();
+    g.beginPath(); g.moveTo(-14, -9); g.lineTo(-16, 3); g.lineTo(-6, -3); g.closePath(); g.fill();
+  },
+  sup_tower(g) {
+    g.fillRect(-7, -4, 14, 18); g.fillRect(-11, 12, 22, 4);
+    g.lineWidth = 3; g.beginPath(); g.arc(0, -6, 11, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+    g.beginPath(); g.moveTo(-12, -9); g.lineTo(12, -9); g.stroke();
+  },
   support(g) {
     // two linked sockets — "support"
     g.lineWidth = 3;
@@ -283,7 +393,10 @@ const SYMBOLS = {
   },
 };
 
-function makeIcon(key, gem, symbol) {
+// symbol colour = damage type, so a gem's element reads at a glance;
+// a dark halo keeps it readable on every gem colour
+const ICON_TINT = { physical: '#f2ece0', fire: '#ffb27a', cold: '#aee9ff', lightning: '#fff09a', chaos: '#dca8ff', blood: '#ff7a7a', life: '#ff9a9a', curse: '#e0b0ff' };
+function makeIcon(key, gem, symbol, tint) {
   let c = _iconCache.get(key);
   if (c) return c;
   c = document.createElement('canvas'); c.width = c.height = 64;
@@ -292,14 +405,58 @@ function makeIcon(key, gem, symbol) {
   if (!g || !g.beginPath) return c;
   g.translate(32, 32);
   gemBase(g, gem);
-  g.fillStyle = '#ffffff'; g.strokeStyle = '#ffffff';
-  g.shadowColor = 'rgba(255,255,255,0.8)'; g.shadowBlur = 6;
+  g.fillStyle = g.strokeStyle = ICON_TINT[tint] || '#ffffff';
+  g.shadowColor = 'rgba(0,0,0,0.95)'; g.shadowBlur = 5;
   (SYMBOLS[symbol] || SYMBOLS.support)(g);
   g.shadowBlur = 0;
   return c;
 }
-const skillIcon = (id) => makeIcon('s:' + id, SKILLS[id].gem, id);
-const supportIcon = (gem) => makeIcon('sup:' + gem, gem, 'support');
+// the damage type with the biggest share of a gem's base damage
+function mainDamageType(types) { let best = 'physical', v = 0; for (const t in types) if (types[t] > v) { v = types[t]; best = t; } return best; }
+const skillIcon = (id) => makeIcon('s:' + id, SKILLS[id].gem, id, mainDamageType(SKILLS[id].base.types));
+// [symbol, tint] for each support; anything missing falls back to linked sockets
+const SUPPORT_ICON = {
+  multiple_projectiles: ['proj'], gmp: ['proj'], barrage: ['proj'], pierce: ['pierce'], chain: ['chain', 'lightning'], fork: ['fork'], returning: ['return'],
+  faster_projectiles: ['speed'], faster_casting: ['speed', 'cold'], faster_attacks: ['speed'], onslaught: ['speed', 'fire'], arcane_surge: ['speed', 'curse'],
+  inc_aoe: ['area'], spell_cascade: ['area', 'cold'], pulverise: ['area'], melee_splash: ['area'], concentrated: ['focus'],
+  added_fire: ['plus', 'fire'], added_cold: ['plus', 'cold'], added_lightning: ['plus', 'lightning'], added_chaos: ['plus', 'chaos'],
+  elemental_focus: ['tri'], trinity: ['tri'], elemental_prolif: ['tri'], elemental_army: ['tri'],
+  fire_pen: ['pen', 'fire'], cold_pen: ['pen', 'cold'], light_pen: ['pen', 'lightning'],
+  controlled_destruction: ['blade', 'cold'], melee_physical: ['blade'], brutality: ['blade'], close_combat: ['blade'], ruthless: ['blade', 'blood'], vicious_projectiles: ['blade'], impale_sup: ['blade', 'blood'],
+  spell_echo: ['echo', 'cold'], multistrike: ['echo'], unleash: ['echo', 'curse'], mirage_archer: ['echo'],
+  inc_crit: ['star', 'lightning'], inc_crit_dmg: ['star', 'fire'], culling_strike: ['star', 'blood'],
+  inc_duration: ['hourglass'], infused_channelling: ['hourglass', 'fire'],
+  burning_damage: ['flame', 'fire'], swift_affliction: ['drop', 'chaos'], deadly_ailments: ['drop', 'chaos'], void_manipulation: ['drop', 'chaos'], hypothermia: ['drop', 'cold'],
+  chance_to_bleed: ['drop', 'blood'], crimson_bleed: ['drop', 'blood'],
+  curse_ele: ['eye', 'curse'], curse_vuln: ['eye', 'blood'], curse_despair: ['eye', 'chaos'],
+  life_leech: ['heart', 'life'], fortify: ['shield'], knockback: ['push'],
+  minion_damage: ['skull'], minion_speed: ['skull', 'cold'], feeding_frenzy: ['skull', 'blood'], ballista_totem: ['tower'],
+};
+function supportIcon(id) {
+  const [sym, tint] = SUPPORT_ICON[id] || ['support'];
+  return makeIcon('sup:' + id, SUPPORTS[id].gem, sym === 'support' ? 'support' : 'sup_' + sym, tint);
+}
+// loot orbs: a shaded sphere in the item's colour with its glyph on top
+function orbIcon(color, glyph) {
+  const key = 'orb:' + color + glyph;
+  let c = _iconCache.get(key);
+  if (c) return c;
+  c = document.createElement('canvas'); c.width = c.height = 48;
+  _iconCache.set(key, c);
+  const g = c.getContext('2d');
+  if (!g || !g.beginPath) return c;
+  g.translate(24, 24);
+  const grd = g.createRadialGradient(-6, -7, 2, 0, 0, 20);
+  grd.addColorStop(0, '#ffffff'); grd.addColorStop(0.25, color); grd.addColorStop(1, 'rgba(10,6,4,0.95)');
+  g.fillStyle = grd; g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.85)'; g.lineWidth = 2; g.stroke();
+  g.strokeStyle = color; g.globalAlpha = 0.7; g.lineWidth = 1.5; g.beginPath(); g.arc(0, 0, 21, 0, TAU); g.stroke(); g.globalAlpha = 1;
+  g.font = '700 22px Sarabun, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.shadowColor = 'rgba(0,0,0,0.95)'; g.shadowBlur = 4; g.fillStyle = '#ffffff';
+  g.fillText(glyph, 0, 1);
+  return c;
+}
+const orbIconURL = (color, glyph) => iconURL(orbIcon(color, glyph), 'orb:' + color + glyph);
 
 const _urlCache = new Map();
 function iconURL(canvas, key) {
@@ -308,4 +465,4 @@ function iconURL(canvas, key) {
   return u;
 }
 const skillIconURL = (id) => iconURL(skillIcon(id), 's:' + id);
-const supportIconURL = (gem) => iconURL(supportIcon(gem), 'sup:' + gem);
+const supportIconURL = (id) => iconURL(supportIcon(id), 'sup:' + id);

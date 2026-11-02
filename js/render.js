@@ -106,7 +106,9 @@ function render() {
 
   const z = G.zoom;
   const shk = G.settings.shake === false ? 0 : G.shake;
-  const sx = shk > 0 ? rand(-shk, shk) : 0, sy = shk > 0 ? rand(-shk, shk) : 0;
+  const st = performance.now() / 16;
+  const sx = shk > 0 ? shk * (Math.sin(st * 1.7) * 0.6 + Math.sin(st * 3.1 + 1.3) * 0.4) : 0;
+  const sy = shk > 0 ? shk * (Math.sin(st * 2.3 + 0.7) * 0.6 + Math.sin(st * 2.9 + 2.1) * 0.4) : 0;
   const camX = G.cam.x, camY = G.cam.y;
   const worldTransform = () => { ctx.save(); ctx.translate(W / 2 + sx, H / 2 + sy); ctx.scale(z, z); ctx.translate(-camX, -camY); };
 
@@ -249,12 +251,7 @@ function render() {
       ctx.imageSmoothingEnabled = false;
       drawSprite(ctx, 'chest', 0, false, 'dark', '', it.x, it.y + 10 + bob, 2.2);
       ctx.imageSmoothingEnabled = true;
-    } else {
-      ctx.fillStyle = def.color;
-      ctx.font = '700 18px Sarabun, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(def.icon, it.x, it.y + bob);
-      ctx.textBaseline = 'alphabetic';
-    }
+    } else ctx.drawImage(orbIcon(def.color, def.icon), it.x - 12, it.y - 12 + bob, 24, 24);
   }
 
   drawGroundItems(ctx, inView);
@@ -291,12 +288,23 @@ function render() {
   for (const p of G.projectiles) {
     if (!inView(p.x, p.y, 30)) continue;
     const s = p.s;
+    const sp = Math.hypot(p.vx, p.vy) || 1, ux = p.vx / sp, uy = p.vy / sp;
     if (s.arrow) {
-      const ang = Math.atan2(p.vy, p.vx), L = p.r * 3.4;
+      const L = p.r * 3.4, T = Math.min(p.r * 9, sp * 0.05);
+      ctx.strokeStyle = hexA(s.color, 0.25); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(p.x - ux * (L + T), p.y - uy * (L + T)); ctx.lineTo(p.x - ux * L, p.y - uy * L); ctx.stroke();
       ctx.strokeStyle = s.color; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(p.x - Math.cos(ang) * L, p.y - Math.sin(ang) * L); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x - ux * L, p.y - uy * L); ctx.lineTo(p.x, p.y); ctx.stroke();
       ctx.drawImage(glowSprite(s.color, p.r * 2.2), p.x - p.r * 2.2, p.y - p.r * 2.2);
     } else {
+      // tapered tail along the flight path, then the glowing head
+      const T = Math.min(p.r * 5, sp * 0.045);
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = hexA(s.color, 0.3); ctx.lineWidth = p.r * 1.6;
+      ctx.beginPath(); ctx.moveTo(p.x - ux * T, p.y - uy * T); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.strokeStyle = hexA(s.core || '#ffffff', 0.35); ctx.lineWidth = p.r * 0.6;
+      ctx.beginPath(); ctx.moveTo(p.x - ux * T * 0.6, p.y - uy * T * 0.6); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.lineCap = 'butt';
       const gr = p.r * 3;
       ctx.drawImage(glowSprite(s.color, gr), p.x - gr, p.y - gr);
       ctx.fillStyle = s.core;
@@ -306,16 +314,23 @@ function render() {
   drawSkillExtras(ctx, P);
   // novas
   for (const n of G.novas) {
-    ctx.strokeStyle = hexA(n.s.color, 0.7); ctx.lineWidth = 14;
+    const k = clamp(n.r / (n.maxR || 1), 0, 1), na = 1 - k * 0.75;
+    ctx.fillStyle = hexA(n.s.color, 0.1 * (1 - k));
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = hexA(n.s.color, 0.7 * na); ctx.lineWidth = 16 * (1 - k * 0.55);
     ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, TAU); ctx.stroke();
-    ctx.strokeStyle = hexA('#ffffff', 0.7); ctx.lineWidth = 3;
+    ctx.strokeStyle = hexA('#ffffff', 0.75 * na); ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, TAU); ctx.stroke();
   }
   // meteors falling
   for (const m of G.meteors) {
+    if (m.d0 === undefined) m.d0 = m.delay;
     if (m.delay > m.fall) {
-      ctx.strokeStyle = hexA(m.s.color, 0.35); ctx.lineWidth = 1.5;
+      const k = clamp(1 - (m.delay - m.fall) / Math.max(0.01, m.d0 - m.fall), 0, 1);
+      ctx.strokeStyle = hexA(m.s.color, 0.3 + 0.3 * k); ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, TAU); ctx.stroke();
+      ctx.fillStyle = hexA(m.s.color, 0.06 + 0.12 * k);
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r * k, 0, TAU); ctx.fill();
       continue;
     }
     const f = m.delay / m.fall;
@@ -354,9 +369,9 @@ function render() {
   // floating texts
   ctx.textAlign = 'center';
   for (const t of G.texts) {
-    const a = 1 - t.t / t.dur;
+    const a = 1 - t.t / t.dur, pop = t.t < 0.12 ? 1 + (1 - t.t / 0.12) * 0.45 : 1;
     ctx.globalAlpha = Math.min(1, a * 2);
-    ctx.font = `700 ${Math.round(14 * t.scale)}px Sarabun, sans-serif`;
+    ctx.font = `700 ${Math.round(14 * t.scale * pop)}px Sarabun, sans-serif`;
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
     ctx.strokeText(t.str, t.x, t.y);
     ctx.fillStyle = t.color; ctx.fillText(t.str, t.x, t.y);
@@ -364,19 +379,32 @@ function render() {
   ctx.globalAlpha = 1;
   ctx.restore();
 
-  // vignette
-  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
-  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-  if (P.hurtFlash > 0) { ctx.fillStyle = `rgba(160,0,0,${P.hurtFlash * 1.2})`; ctx.fillRect(0, 0, W, H); }
-  if (P.life < P.maxLife * 0.3) {
-    const lv = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
-    lv.addColorStop(0, 'rgba(120,0,0,0)'); lv.addColorStop(1, `rgba(120,0,0,${0.35 + Math.sin(G.time * 6) * 0.1})`);
-    ctx.fillStyle = lv; ctx.fillRect(0, 0, W, H);
-  }
+  // vignettes (cached per screen size)
+  ctx.drawImage(vignette(W, H, '0,0,0', 0.55, 0.35), 0, 0, W, H);
+  const lowLife = P.life < P.maxLife * 0.3 ? 0.75 + Math.sin(G.time * 6) * 0.2 : 0;
+  const red = Math.max(lowLife, Math.min(1, P.hurtFlash * 3.5));
+  if (red > 0) { ctx.globalAlpha = red; ctx.drawImage(vignette(W, H, '150,0,0', 0.5, 0.25), 0, 0, W, H); ctx.globalAlpha = 1; }
+  if (P.hurtFlash > 0) { ctx.fillStyle = `rgba(160,0,0,${P.hurtFlash * 0.35})`; ctx.fillRect(0, 0, W, H); }
 
   drawDeliriumFog(ctx, W, H);
   drawHUD(ctx, W, H, P);
+}
+
+const _vigCache = new Map();
+function vignette(W, H, rgb, alpha, inner) {
+  const key = W + 'x' + H + rgb + alpha + inner;
+  let c = _vigCache.get(key);
+  if (c) return c;
+  if (_vigCache.size > 8) _vigCache.clear();
+  c = document.createElement('canvas'); c.width = Math.max(1, Math.round(W / 2)); c.height = Math.max(1, Math.round(H / 2));
+  const g = c.getContext('2d');
+  if (g && g.createRadialGradient) {
+    const w = c.width, h = c.height, vg = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * inner, w / 2, h / 2, Math.max(w, h) * 0.75);
+    vg.addColorStop(0, `rgba(${rgb},0)`); vg.addColorStop(1, `rgba(${rgb},${alpha})`);
+    g.fillStyle = vg; g.fillRect(0, 0, w, h);
+  }
+  _vigCache.set(key, c);
+  return c;
 }
 
 let _shadowSpr = null;
@@ -641,11 +669,13 @@ function drawEffect(ctx, fx) {
       ctx.beginPath(); ctx.arc(fx.x, fx.y, r, 0, TAU); ctx.fill();
       ctx.strokeStyle = hexA(fx.color, 0.8 * a); ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(fx.x, fx.y, r, 0, TAU); ctx.stroke();
+      if (p < 0.25) { ctx.fillStyle = hexA('#ffffff', 0.45 * (1 - p / 0.25)); ctx.beginPath(); ctx.arc(fx.x, fx.y, r * 0.5, 0, TAU); ctx.fill(); }
       break;
     }
     case 'ring': {
-      ctx.strokeStyle = hexA(fx.color, 0.6 * a); ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (1 + p * 0.1), 0, TAU); ctx.stroke();
+      const e = 1 - (1 - p) ** 3;
+      ctx.strokeStyle = hexA(fx.color, 0.7 * a); ctx.lineWidth = 5 * (1 - p * 0.6);
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (0.8 + 0.25 * e), 0, TAU); ctx.stroke();
       break;
     }
     case 'spark': case 'trail': {
@@ -684,21 +714,16 @@ function drawEffect(ctx, fx) {
       break;
     }
     case 'bolt': {
-      ctx.strokeStyle = hexA(fx.color, a); ctx.lineWidth = 3;
-      for (let pass = 0; pass < 2; pass++) {
-        ctx.beginPath();
-        for (let i = 0; i < fx.pts.length - 1; i++) {
-          const [x0, y0] = fx.pts[i], [x1, y1] = fx.pts[i + 1];
-          ctx.moveTo(x0, y0);
-          const segs = 5;
-          for (let k = 1; k <= segs; k++) {
-            const t = k / segs;
-            const j = k === segs ? 0 : 12;
-            ctx.lineTo(lerp(x0, x1, t) + rand(-j, j), lerp(y0, y1, t) + rand(-j, j));
-          }
-        }
-        ctx.stroke();
-        ctx.strokeStyle = hexA('#ffffff', a); ctx.lineWidth = 1.2;
+      // one jagged path per frame, stroked as glow → colour → white core so the layers line up
+      const path = [];
+      for (let i = 0; i < fx.pts.length - 1; i++) {
+        const [x0, y0] = fx.pts[i], [x1, y1] = fx.pts[i + 1];
+        if (!i) path.push([x0, y0]);
+        for (let k = 1; k <= 5; k++) { const t = k / 5, j = k === 5 ? 0 : 12; path.push([lerp(x0, x1, t) + rand(-j, j), lerp(y0, y1, t) + rand(-j, j)]); }
+      }
+      for (const [w, col, al] of [[9, fx.color, 0.25], [3, fx.color, 1], [1.2, '#ffffff', 1]]) {
+        ctx.strokeStyle = hexA(col, al * a); ctx.lineWidth = w;
+        ctx.beginPath(); path.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
       }
       break;
     }

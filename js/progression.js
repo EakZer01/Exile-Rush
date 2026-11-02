@@ -158,7 +158,7 @@ function renderVault() {
   box.querySelectorAll('[data-vault]').forEach((el) => {
     el.onclick = () => {
       if (V.pick !== null) return;
-      V.pick = +el.dataset.vault; claimVault(V.cards[V.pick]); Sfx.play(V.cards[V.pick].rarity === 'legendary' ? 'boss' : 'currency');
+      V.pick = +el.dataset.vault; claimVault(V.cards[V.pick]); Sfx.play(V.cards[V.pick].rarity === 'legendary' ? 'unique' : V.cards[V.pick].rarity === 'rare' ? 'rare' : 'currency');
       renderVault(); setVictoryButtons();
     };
   });

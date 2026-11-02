@@ -15,8 +15,8 @@ function evolveHintHtml(id) {
   if (!ev) return '';
   return `<div class="card-note evo-hint">✦ วิวัฒน์เป็น <b>${ev.name}</b>: Lv ${evolveLevel()}+ และใส่ ${ev.req.map((r) => SUPPORTS[r].name).join(' / ')}</div>`;
 }
-function supportGemHtml(gem, small) {
-  return `<img class="gem-img${small ? ' gem-sm' : ''}" src="${supportIconURL(gem)}" alt="Support">`;
+function supportGemHtml(id, small) {
+  return `<img class="gem-img${small ? ' gem-sm' : ''}" src="${supportIconURL(id)}" alt="${SUPPORTS[id].name}">`;
 }
 function tagsHtml(tags) {
   return '<div class="tags">' + [...tags].filter((t) => t !== 'Damage').map((t) => `<span class="tag tag-${t.toLowerCase()}">${t}</span>`).join('') + '</div>';
@@ -216,7 +216,7 @@ function cardHtml(c, idx) {
   if (c.type === 'awaken') {
     const d = SUPPORTS[c.id], b = AWAKEN_BONUS[c.id];
     return `<div class="card card-awaken card-ms">${key}
-      <div class="card-head">${supportGemHtml(d.gem)}<div><div class="card-name">Awakened ${d.name}</div><div class="card-th">ปลุกพลัง Support บน ${skillDisplayName(c.inst)}</div></div><div class="badge badge-awk">AWAKEN</div></div>
+      <div class="card-head">${supportGemHtml(c.id)}<div><div class="card-name">Awakened ${d.name}</div><div class="card-th">ปลุกพลัง Support บน ${skillDisplayName(c.inst)}</div></div><div class="badge badge-awk">AWAKEN</div></div>
       <div class="card-desc">ดาเมจ 20% more${b ? ' · ' + b.desc : ''}<br><span class="muted">${d.desc}</span></div></div>`;
   }
   if (c.type === 'ascclass') {
@@ -254,7 +254,7 @@ function cardHtml(c, idx) {
     const d = SUPPORTS[c.id];
     const fits = P.skills.filter((inst) => canSocketSupport(c.id, inst));
     return `<div class="card card-support" title="${d.desc}">${key}
-      <div class="card-head">${supportGemHtml(d.gem)}<div><div class="card-name">${d.name}</div><div class="card-th">Support · ใส่กับ ${fits.map((i) => skillDisplayName(i)).join(', ') || '—'}</div></div></div>
+      <div class="card-head">${supportGemHtml(c.id)}<div><div class="card-name">${d.name}</div><div class="card-th">Support · ใส่กับ ${fits.map((i) => skillDisplayName(i)).join(', ') || '—'}</div></div></div>
       ${star}<div class="card-desc clamp">${d.desc}</div>${evoUseHtml(c.id)}</div>`;
   }
   if (c.type === 'passive') {
@@ -398,6 +398,7 @@ function skipLevel() {
 function chooseCard(i) {
   const c = G.choices[i], P = G.player;
   if (!c) return;
+  Sfx.play('select');
   if (c.type === 'skill') { const inst = newSkillInstance(c.id); inst.level = newSkillLevel() + gemStartBonus(c.id); P.skills.push(inst); recomputePlayer(); finishChoice(); }
   else if (c.type === 'level') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + GEM_LEVELS); recomputePlayer(); finishChoice(); }
   else if (c.type === 'empower') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + 3); recomputePlayer(); finishChoice(); }
@@ -462,7 +463,7 @@ function openSocketPicker(mode, supId) {
   const list = $('socket-list');
   list.innerHTML = '';
   const support = SUPPORTS[supId];
-  $('socket-title').innerHTML = `${supportGemHtml(support.gem, true)} ${support.name}`;
+  $('socket-title').innerHTML = `${supportGemHtml(supId, true)} ${support.name}`;
   $('socket-sub').textContent = 'ทุกสกิลเริ่ม 2 ช่อง · ไม่จำกัดสี · เพิ่มได้ถึง 6 ช่องด้วย Jeweller ที่ I → ช่อง Support · เต็มแล้วคลิกเจมเดิมเพื่อแทนที่';
   for (const inst of P.skills) {
     const d = SKILLS[inst.id];
@@ -644,6 +645,7 @@ function resume() {
 
 function showGameOver(win) {
   G.state = 'over';
+  if (!win) Sfx.play('death');
   const P = G.player;
   const endT = G.endless ? G.time - G.endStart : 0;
   $('over-title').textContent = G.endless ? `Endgame จบแล้ว — รอดเพิ่ม ${fmtTime(endT)} · Echo ${G.stats.echoes || 0}` : win ? 'ชัยชนะ! คุณรอดจากดินแดนต้องสาป' : 'คุณตายแล้ว';
@@ -892,7 +894,7 @@ function openInventory() {
   ba.onclick = () => { if (invConfirm !== 'all') { invConfirm = 'all'; openInventory(); } else { invConfirm = ''; salvageMany(all); } };
   $('inv-currency').innerHTML = CURRENCY_ORDER.map((k) => {
     const d = CRAFT_ORBS[k] || PICKUPS[k];
-    return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}">${d.icon} ${JEWELLERS[k] ? 'J' + d.sockets + ' ×' : ''}${P.currency[k] || 0}</span>`;
+    return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}"><img class="cur-ico" src="${orbIconURL(d.color, d.icon)}" alt=""> ${JEWELLERS[k] ? 'J' + d.sockets + ' ×' : ''}${P.currency[k] || 0}</span>`;
   }).join('') + Object.keys(P.essences).filter((k) => P.essences[k] > 0).map((k) => `<span class="cur" style="color:${ESSENCES[k].color}" title="${ESSENCES[k].name}: การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')}">◆ ${P.essences[k]}</span>`).join('');
   $('inv-links').innerHTML = skillSocketsPanelHtml();
   $('inv-links-n').textContent = `(${P.skills.length} สกิล${P.skills.some((s) => activeSupports(s).inactive.length) ? ' · ⚠ มี Support ไม่ทำงาน' : ''})`;
