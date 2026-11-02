@@ -32,7 +32,7 @@ function enemiesInRadius(x, y, r, out) {
 
 function updateSkills(dt) {
   const P = G.player;
-  const speedMul = (G.buffs.acceleration > 0 ? 1.4 : 1) * (P.mods.ks.rage ? 1 + P.rage * 0.005 : 1);
+  const speedMul = (G.buffs.acceleration > 0 ? 1.4 : 1) * (P.mods.ks.rage ? 1 + P.rage * 0.005 : 1) * (1 + P.flaskFx.speed);
   if (G.input.vaal) { G.input.vaal = false; unleashVaal(); }
   else if (P.skills.some((s) => s.evo && s.souls >= vaalSouls())) showTip('vaal');
   for (const inst of P.skills) {

@@ -142,3 +142,5 @@ recolorSprite('herald_rime', 'herald', { hue: 195, satMin: 0.4, light: 1.1 });
 recolorSprite('colossus_bog', 'colossus', { hue: 95, satMin: 0.35 });
 recolorSprite('herald_void', 'herald', { hue: 275, satMin: 0.45 });
 recolorSprite('sovereign_crown', 'sovereign', { hue: 45, satMin: 0.55, light: 1.2 });
+// flasks: one sprite per kind, only the liquid colour changes
+for (const kind in FLASK_COLOR) SPRITE_ART['item_flask_' + kind] = Object.assign({}, SPRITE_ART.item_flask, { pal: Object.assign({}, SPRITE_ART.item_flask.pal, { L: FLASK_COLOR[kind] }), _frames: undefined });

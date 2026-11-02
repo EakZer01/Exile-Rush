@@ -16,7 +16,7 @@ function newSkillInstance(id) {
 
 function skillTags(inst) {
   const set = new Set(SKILLS[inst.id].tags);
-  for (const sid of inst.supports) for (const t of SUPPORTS[sid].addTags) set.add(t);
+  for (const sid of activeSupports(inst).active) for (const t of SUPPORTS[sid].addTags) set.add(t);
   return set;
 }
 
@@ -28,7 +28,12 @@ function supportBlockReason(supId, inst, ignoreSockets) {
   const tags = skillTags(inst);
   if (sup.req.length && !sup.req.some((t) => tags.has(t))) return 'ต้องมีแท็ก ' + sup.req.join(' / ');
   if (sup.excl.some((t) => tags.has(t))) return 'ใช้กับสกิล ' + sup.excl.filter((t) => tags.has(t)).join('/') + ' ไม่ได้';
-  if (!ignoreSockets && inst.supports.length >= inst.sockets) return 'ซ็อกเก็ตเต็ม (ใช้ Orb of Fusing)';
+  if (!ignoreSockets) {
+    const act = activeSupports(inst);
+    if (inst.supports.length >= act.so.cap) return 'ซ็อกเก็ตเต็ม (ใช้ Orb of Fusing หรือไอเทมที่ลิงก์มากกว่า)';
+    const c = GEM_SOCKET[sup.gem];
+    if (!act.free.includes(c) && !act.free.includes('W')) return `ไม่มี Socket สี${{ R: 'แดง', G: 'เขียว', B: 'น้ำเงิน' }[c]}ว่าง (ใช้ Chromatic Orb)`;
+  }
   return '';
 }
 
@@ -58,7 +63,17 @@ function buildSkillStats(inst, p) {
   if (def.scale) def.scale(s, lvl);
   s.dmg *= 1 + 0.16 * (lvl - 1);
   if (inst.evo) EVOLUTIONS[inst.id].apply(s);
-  for (const sid of inst.supports) {
+  // Attack skills hit with the equipped weapon (≈1× for a starter weapon)
+  if (tags.has('Attack') && p && p.equip) {
+    const w = p.weapon;
+    let wm = w ? weaponPower(w) : 0.6;
+    if (tags.has('Bow') && (!w || w.wtype !== 'bow')) wm *= 0.6;
+    if (tags.has('Melee') && w && w.wtype === 'bow') wm *= 0.7;
+    s.more *= wm;
+    if (w) s.crit = w.crit / 100;
+    s.weaponMul = wm;
+  }
+  for (const sid of activeSupports(inst).active) {
     SUPPORTS[sid].apply(s);
     if (inst.awakened && inst.awakened.includes(sid)) {
       s.more *= 1.2;

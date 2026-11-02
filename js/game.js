@@ -13,7 +13,8 @@ const G = {
   settings: { dmgNumbers: true, fx: true, lighting: true },
   decals: [], hitStop: 0, worldSeed: 1,
   pendingAscend: 0, choiceKind: 'level',
-  input: { up: false, down: false, left: false, right: false, dash: false, flask0: false, flask1: false, vaal: false, joy: null, joyOrigin: null },
+  input: { up: false, down: false, left: false, right: false, dash: false, flask0: false, flask1: false, flask2: false, flask3: false, flask4: false, vaal: false, joy: null, joyOrigin: null },
+  showTiers: false,
 };
 
 function resize() {
@@ -49,6 +50,7 @@ function startGame(cls, map) {
   const startId = cls.start || pick(Object.keys(SKILLS).filter((id) => !isLocked('gem', id) && SKILLS[id].behavior !== 'herald'));
   P.skills.push(newSkillInstance(startId));
   if (cls.id === 'scion') P.currency.fusing++;
+  giveStartingGear(P);
   applyMetaStart(P);
   recomputePlayer();
   if (P.mods.ks.bornAscendant) G.pendingAscend = 1;
@@ -141,8 +143,10 @@ function onKey(e, down) {
   if (k) { G.input[k] = down; e.preventDefault(); return; }
   if (!down) return;
   if (e.code === 'Space') { G.input.dash = true; e.preventDefault(); }
-  else if (e.code === 'KeyQ' || e.code === 'Digit1' && G.state === 'play') G.input.flask0 = true;
-  else if (e.code === 'KeyE' || e.code === 'Digit2' && G.state === 'play') G.input.flask1 = true;
+  else if (e.code === 'KeyQ') G.input.flask0 = true;
+  else if (e.code === 'KeyE') G.input.flask1 = true;
+  else if (G.state === 'play' && /^Digit[1-5]$/.test(e.code)) G.input['flask' + (+e.code.slice(5) - 1)] = true;
+  else if (e.code === 'AltLeft' || e.code === 'AltRight') { if (G.state === 'inventory') { G.showTiers = !G.showTiers; renderInvDetail(); e.preventDefault(); } }
   else if (e.code === 'KeyV') G.input.vaal = true;
   else if (e.code === 'KeyI') { if (G.state === 'play' || G.state === 'paused') openInventory(); else if (G.state === 'inventory') closeInventory(); }
   else if (e.code === 'KeyM') { Sfx.muted = !Sfx.muted; Music.setVolume(Sfx.muted ? 0 : G.settings.music); }
@@ -189,9 +193,7 @@ function setupTouch() {
   // tap the flask area on the HUD
   c.addEventListener('touchstart', (e) => {
     const t = e.changedTouches[0];
-    if (t.clientY > G.H - 90 && t.clientX < 230) {
-      if (t.clientX < 120) inp.flask0 = true; else inp.flask1 = true;
-    }
+    for (const r of G.flaskRects || []) if (t.clientX >= r.x - 4 && t.clientX <= r.x + r.w + 4 && t.clientY >= r.y - 14 && t.clientY <= r.y + r.h) inp['flask' + r.i] = true;
     // tap the skill bar to unleash Vaal skills
     const bg = G.bagRect;
     if (bg && G.state === 'play' && t.clientX >= bg.x && t.clientY >= bg.y && t.clientY <= bg.y + bg.h) { openInventory(); return; }

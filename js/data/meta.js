@@ -51,7 +51,7 @@ const TREE_BRANCHES = [
     hub: tNotable('Vitality', 'พลังชีวิต', '+12% ชีวิตสูงสุด · ฟื้นชีวิต +0.3%/วิ', (m) => { m.lifeInc += 0.12; m.regen += 0.003; }),
     armA: [tSmall('รับดาเมจ 2% less', (m) => { m.dmgTaken *= 0.98; }), tSmall('รับดาเมจ 2% less', (m) => { m.dmgTaken *= 0.98; })],
     notA: tNotable('Bulwark', 'กำแพงเหล็ก', 'รับดาเมจ 6% less · +5% ชีวิตสูงสุด', (m) => { m.dmgTaken *= 0.94; m.lifeInc += 0.05; }),
-    armB: [tSmall('ฟลาสก์ได้ชาร์จ +12%', (m) => { m.flaskCharge += 0.12; }), tSmall('ฟลาสก์ฟื้นฟูมากขึ้น 12% · เริ่มรอบด้วยฟลาสก์เต็ม', (m) => { m.flaskEff += 0.12; }, (P) => { for (const f of P.flasks) f.charges = f.max; })],
+    armB: [tSmall('ฟลาสก์ได้ชาร์จ +12%', (m) => { m.flaskCharge += 0.12; }), tSmall('ฟลาสก์ฟื้นฟูมากขึ้น 12% · เริ่มรอบด้วยฟลาสก์เต็ม', (m) => { m.flaskEff += 0.12; }, (P) => { for (const f of P.flasks) if (f) f.charges = flaskStats(f).max; })],
     notB: tNotable('Second Wind', 'ลมหายใจที่สอง', 'เมื่อตาย ฟื้นคืนชีพ 1 ครั้งต่อรอบ (ชีวิต 50%)', null, (P) => { P.revives = 1; }),
     key: tKey('Born Ascendant', 'กำเนิดผู้ยิ่งใหญ่', 'เลือก Ascendancy ได้ตั้งแต่เริ่มรอบ (บอสทุกตัวให้โหนดเพิ่ม) · ชีวิตสูงสุด 15% less', (m) => { m.ks.bornAscendant = true; m.lifeMore *= 0.85; }) },
   { id: 'warrior', name: 'Warfare', th: 'สายนักรบ', color: '#e0a050', icon: '⚔', angle: 150,

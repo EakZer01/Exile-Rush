@@ -227,31 +227,75 @@ canvas#game { display: block; position: fixed; inset: 0; touch-action: none; }
 .over-shards { color: #9fe3ff; font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; }
 .over-unlock { color: #f0d890; margin-top: 4px; }
 
-/* ---- Items / inventory ---- */
-.inv-panel { max-width: 1000px; width: 96vw; }
-.inv-main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-.inv-equip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.inv-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; min-height: 92px;
-  background: #120e0a; border: 1px solid var(--border); cursor: pointer; text-align: center; font-size: 12px; }
-.inv-slot.empty { opacity: .45; cursor: default; }
-.inv-slot.sel, .inv-cell.sel { outline: 2px solid #fff; }
-.inv-slot img, .inv-cell img { width: 40px; height: 40px; image-rendering: pixelated; }
-.inv-bag { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-.inv-cell { aspect-ratio: 1; display: grid; place-items: center; background: #120e0a; border: 1px solid #3a2e1c; cursor: pointer; position: relative; }
-.inv-cell.empty { cursor: default; }
-.inv-cell .new { position: absolute; top: 1px; right: 3px; color: #ffe866; font-size: 10px; font-weight: 700; }
-.r-magic { border-color: #5a5cc0 !important; } .r-rare { border-color: #b8a030 !important; } .r-unique { border-color: #c06a2a !important; box-shadow: inset 0 0 10px rgba(232,136,58,.3); }
-.inv-detail { display: flex; flex-direction: column; gap: 10px; }
-.item-card { background: #0c0906; border: 1px solid var(--border); padding: 10px 12px; text-align: center; }
-.item-card .ic-head { font-family: 'Cinzel', 'Sarabun', serif; font-weight: 700; font-size: 16px; }
-.item-card .ic-base { color: #a89878; font-size: 13px; }
-.item-card .ic-sep { height: 1px; background: linear-gradient(90deg, transparent, #6a5532, transparent); margin: 6px 0; }
-.item-card .ic-imp { color: #c8c0b0; font-size: 13px; }
-.item-card .ic-mod { color: #8a9cff; font-size: 14px; }
-.item-card .ic-flavor { color: #b0703a; font-style: italic; font-size: 13px; margin-top: 4px; }
-.item-card .ic-label { color: var(--muted); font-size: 11px; letter-spacing: 1px; margin-bottom: 4px; }
-.inv-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.bv-items div { font-size: 13px; }
+/* ---- Items / inventory (paper doll + grid + PoE tooltips) ---- */
+.inv-panel { max-width: 1060px; width: 97vw; }
+.inv-main { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
+.doll { display: grid; grid-template-columns: 72px 46px 88px 46px 72px; grid-template-rows: 58px 58px 58px 58px; gap: 6px;
+  grid-template-areas: "weapon . helm amulet offhand" "weapon ring body ring2 offhand" "weapon . body . offhand" "gloves gloves belt boots boots";
+  padding: 10px; background: radial-gradient(ellipse at 50% 40%, #2a2016, #0e0b08); border: 1px solid var(--border); }
+.doll-slot { position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.45); border: 1px solid #3a2e1c;
+  cursor: grab; touch-action: none; font-size: 11px; text-align: center; }
+.doll-slot img, .flask-slot img, .bag-item img { image-rendering: pixelated; pointer-events: none; max-width: 90%; max-height: 90%; }
+.doll-slot.locked { opacity: .35; }
+.ds-weapon { grid-area: weapon; } .ds-offhand { grid-area: offhand; } .ds-helm { grid-area: helm; } .ds-body { grid-area: body; }
+.ds-amulet { grid-area: amulet; } .ds-ring { grid-area: ring; } .ds-ring2 { grid-area: ring2; } .ds-gloves { grid-area: gloves; }
+.ds-belt { grid-area: belt; } .ds-boots { grid-area: boots; }
+.doll-slot .pt-sockets.small { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); margin: 0; }
+.flask-row { display: grid; grid-template-columns: repeat(5, 42px); gap: 6px; justify-content: center; margin-top: 8px; }
+.flask-slot { position: relative; height: 70px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.45); border: 1px solid #3a2e1c; cursor: grab; touch-action: none; }
+.flask-slot .fk { position: absolute; bottom: 1px; right: 4px; font-size: 11px; color: var(--muted); }
+.sel { outline: 2px solid #fff !important; }
+.r-normal { border-color: #6a6a6a !important; } .r-magic { border-color: #5a5cc0 !important; } .r-rare { border-color: #b8a030 !important; }
+.r-unique { border-color: #c06a2a !important; box-shadow: inset 0 0 12px rgba(232,136,58,.3); }
+.links-panel { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+.link-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px; background: #120e0a; border: 1px solid #2a2014; font-size: 13px; }
+.link-info { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.link-info select { background: #0c0906; color: #e8e0d0; border: 1px solid var(--border); font: 12px Sarabun, sans-serif; padding: 2px; }
+.link-socks { display: flex; align-items: center; gap: 4px; }
+.inv-right { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.inv-detail { display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow-y: auto; }
+.inv-help { padding: 12px; line-height: 1.6; }
+.tiers-row { font-size: 13px; }
+.inv-bagbar { margin: 12px 0 6px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.bag-wrap { overflow-x: auto; }
+.bag-grid { position: relative; border: 1px solid var(--border); background-color: #0c0906;
+  background-image: linear-gradient(#2a2014 1px, transparent 1px), linear-gradient(90deg, #2a2014 1px, transparent 1px);
+  background-size: var(--cell) var(--cell); }
+.bag-item { position: absolute; display: flex; align-items: center; justify-content: center; background: rgba(40,30,20,.65);
+  border: 1px solid #3a2e1c; box-sizing: border-box; cursor: grab; touch-action: none; }
+.bag-item:hover, .doll-slot:hover, .flask-slot:hover { background: rgba(80,60,30,.55); }
+.drag-ghost { position: fixed; z-index: 100; pointer-events: none; opacity: .85; image-rendering: pixelated; object-fit: contain; }
+.inv-currency { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 14px; font-weight: 700; }
+/* sockets */
+.pt-sockets { display: flex; gap: 6px; justify-content: center; margin: 6px 0 2px; }
+.sock-grp { display: inline-flex; align-items: center; }
+.psock { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 2px solid #222; box-sizing: border-box; }
+.pt-sockets.small .psock { width: 8px; height: 8px; border-width: 1px; }
+.plink { width: 6px; height: 3px; background: #d8c8a0; display: inline-block; }
+.pt-sockets.small .plink { width: 3px; height: 2px; }
+.psock-R { background: #c03028; } .psock-G { background: #3aa040; } .psock-B { background: #3a5cd0; } .psock-W { background: #e8e8e8; }
+.psock.filled { box-shadow: 0 0 0 2px #fff inset; }
+.sock.sring-R { box-shadow: 0 0 0 2px #c03028; } .sock.sring-G { box-shadow: 0 0 0 2px #3aa040; } .sock.sring-B { box-shadow: 0 0 0 2px #3a5cd0; }
+.chip-off { opacity: .4; text-decoration: line-through; }
+/* PoE-style tooltip */
+.poe-tip { background: rgba(4,3,2,.96); border: 1px solid #4a3c24; text-align: center; font-size: 14px; }
+.poe-tip .pt-label { color: var(--muted); font-size: 11px; letter-spacing: 1px; padding-top: 4px; }
+.poe-tip .pt-head { font-family: 'Cinzel', 'Sarabun', serif; font-weight: 700; font-size: 16px; padding: 6px 8px; line-height: 1.3;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(0,0,0,.25)); border-bottom: 1px solid #3a2e1c; }
+.poe-tip.r-unique .pt-head { background: linear-gradient(180deg, rgba(232,136,58,.22), rgba(0,0,0,.2)); }
+.poe-tip.r-rare .pt-head { background: linear-gradient(180deg, rgba(255,232,102,.16), rgba(0,0,0,.2)); }
+.poe-tip.r-magic .pt-head { background: linear-gradient(180deg, rgba(138,140,255,.16), rgba(0,0,0,.2)); }
+.pt-body { padding: 6px 10px 10px; }
+.pt-prop { color: #8a8a8a; } .pt-val { color: #f0f0f0; }
+.pt-sep { height: 1px; margin: 6px 20%; background: linear-gradient(90deg, transparent, #8a6a3a, transparent); }
+.pt-imp, .pt-mod { color: #8888ff; } .poe-tip.r-unique .pt-mod { color: #a8a0ff; }
+.pt-tier { color: #8a8a6a; font-size: 11px; }
+.pt-flavor { color: #af6025; font-style: italic; margin-top: 6px; }
+.pt-corrupted, .pt-corrupt-imp { color: #d02020; }
+@media (max-width: 760px) {
+  .inv-main { grid-template-columns: 1fr; }
+  .doll { grid-template-columns: 56px 36px 64px 36px 56px; grid-template-rows: 46px 46px 46px 46px; margin: 0 auto; }
+}
 .altar-uniques { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; font-size: 13px; }
 .altar-uniques .uq { padding: 5px 8px; border: 1px solid #3a2e1c; background: #120e0a; }
 .altar-uniques .uq.found { border-color: #8a5a2a; color: #e8883a; }

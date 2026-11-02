@@ -398,6 +398,46 @@ const SPRITE_ART = {
     pal: { y: '#c89a3a', Y: '#ffe08a', g: '#2ab070', G: '#8affc0' },
     body: ['y.....', '.y....', '..y...', '...y..', '....y.', '....yy', '...yYY', '...ygg', '...ygG', '...yyg', '....yy'],
   },
+  item_sword: {
+    px: 2,
+    pal: { a: '#5a5a68', b: '#c8c8d8', c: '#ffffff', y: '#c89a3a', Y: '#ffe08a', l: '#5a3a20' },
+    body: ['...a...', '..aca..', '..aba..', '..aba..', '..aba..', '..aba..', '..aba..', '..aba..', 'yyyYyyy', '...l...', '...l...', '..yYy..'],
+  },
+  item_bow: {
+    px: 2,
+    pal: { l: '#8a5a32', s: '#e8e0c8', y: '#c89a3a' },
+    body: ['.....l.', '....ls.', '...l.s.', '..l..s.', '.l...s.', '.l...s.', '.y...s.', '.l...s.', '.l...s.', '..l..s.', '...l.s.', '....ls.', '.....l.'],
+  },
+  item_staff: {
+    px: 2, emit: 'B',
+    pal: { b: '#2a6ab0', B: '#7ad0ff', l: '#6a4a2a', y: '#c89a3a' },
+    body: ['.bBb.', 'bBBBb', '.bBb.', '..l..', '..l..', '..l..', '..l..', '..y..', '..l..', '..l..', '..l..', '..l..', '..l..', '..y..'],
+  },
+  item_wand: {
+    px: 2, emit: 'G',
+    pal: { G: '#c070ff', g: '#7a3ab0', l: '#a07a4a', y: '#c89a3a' },
+    body: ['.G.', 'GgG', '.l.', '.l.', '.l.', '.l.', '.y.', '.l.'],
+  },
+  item_shield: {
+    px: 2, sym: true,
+    pal: { a: '#2a2a30', b: '#7a7a88', y: '#c89a3a', Y: '#ffe08a' },
+    body: ['aaaaa', 'abbbb', 'abbyy', 'abbyY', 'abbyy', 'abbbb', '.abbb', '.abbb', '..abb', '...ab', '....a'],
+  },
+  item_quiver: {
+    px: 2,
+    pal: { f: '#e8e0c8', a: '#8a8a90', l: '#5a3a20', L: '#8a5a32', y: '#c89a3a' },
+    body: ['.f.f.', '.a.a.', 'lllll', 'lLLLl', 'lLLLl', 'lLyLl', 'lLLLl', 'lLLLl', 'lLLLl', 'lllll'],
+  },
+  item_belt: {
+    px: 2,
+    pal: { l: '#4a2e18', L: '#7a5030', y: '#c89a3a', Y: '#ffe08a' },
+    body: ['llllllllllll', 'lLLLLyYyLLLl', 'llllllllllll'],
+  },
+  item_flask: {
+    px: 2, sym: true, emit: 'L',
+    pal: { c: '#8a5a32', a: '#c8d8e8', b: '#e8f4ff', L: '#d0302a' },
+    body: ['.cc', '.aa', '.ab', 'abb', 'aLL', 'aLL', 'aLL', 'aLL', '.aa'],
+  },
   item_ring: {
     px: 2, sym: true, emit: 'gG',
     pal: { y: '#c89a3a', g: '#c02838', G: '#ff8090' },

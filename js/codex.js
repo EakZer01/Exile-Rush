@@ -95,7 +95,7 @@ function renderCodexBody() {
     h += `<div class="muted" style="margin-bottom:8px">ค้นพบแล้ว ${Object.keys(UNIQUES).filter((u) => found[u]).length}/${Object.keys(UNIQUES).length} — Unique ที่ยังไม่เจอจะแสดงเป็น ???</div><div class="codex-uniques">`;
     for (const id in UNIQUES) {
       const u = UNIQUES[id];
-      if (!found[id]) { h += `<div class="item-card"><div class="ic-head" style="color:#6a5a40">???</div><div class="ic-base">Unique ${SLOT_NAME[u.slot]}</div></div>`; continue; }
+      if (!found[id]) { h += `<div class="poe-tip"><div class="pt-head" style="color:#6a5a40">???</div><div class="pt-body"><div class="pt-prop">Unique ${SLOT_NAME[u.slot]}</div></div></div>`; continue; }
       if (codexMatch(u.name, u.th, u.lines.join(' '))) h += itemCardHtml({ rarity: 'unique', slot: u.slot, unique: id, name: u.name, affixes: [] });
     }
     h += '</div>';

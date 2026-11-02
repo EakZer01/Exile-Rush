@@ -58,7 +58,7 @@ function makeBackground(ctx) {
 // ---- lights for everything that glows this frame ----
 function collectLights(P, inView) {
   addLight(P.x, P.y, 330 + Math.sin(G.time * 7) * 6, 1);
-  if (P.flasks[1].active > 0 || P.dashT > 0) addLight(P.x, P.y, 140, 0.6);
+  if (P.flaskFx.move > 0 || P.dashT > 0) addLight(P.x, P.y, 140, 0.6);
   for (const inst of P.skills) {
     if (inst.st.behavior === 'aura') addLight(P.x, P.y, inst.st.radius * 1.6 + Math.sin(G.time * 13) * 8, 0.8);
   }
@@ -485,14 +485,11 @@ function drawEnemyOverlay(ctx, e, P) {
 function drawPlayer(ctx, P) {
   const x = P.x, y = P.y;
   ctx.drawImage(shadowSprite(), x - 14, y + 8, 28, 10);
-  if (P.flasks[1].active > 0) {
+  for (const f of P.flasks) {
+    if (!f || f.active <= 0) continue;
+    const c = FLASK_COLOR[BASES[f.base].flask.kind];
     ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(glowSprite('#9ad2ff', 30), x - 30, y - 30);
-    ctx.globalCompositeOperation = 'source-over';
-  }
-  if (P.flasks[0].active > 0) {
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(glowSprite('#ff3a3a', 26), x - 26, y - 26);
+    ctx.drawImage(glowSprite(c, 28), x - 28, y - 28);
     ctx.globalCompositeOperation = 'source-over';
   }
   // facing & walk cycle
@@ -666,12 +663,9 @@ function drawHUD(ctx, W, H, P) {
   ctx.fillStyle = PICKUPS.chaos.color; ctx.fillText('✪ Chaos ×' + P.currency.chaos, W - 12, 32);
   ctx.fillStyle = PICKUPS.fusing.color; ctx.fillText('◈ Fusing ×' + P.currency.fusing, W - 12, 50);
   ctx.fillStyle = P.newItems > 0 ? hexA('#ffe866', 0.7 + Math.sin(G.time * 6) * 0.3) : '#b8a888';
-  ctx.fillText(`🎒 ${mobile ? 'แตะ' : 'I'} กระเป๋า ${P.backpack.length}/${BACKPACK_SIZE}`, W - 12, 68);
-  const cur = P.currency;
-  if (cur.regal + cur.exalt + cur.divine + cur.annul > 0) {
-    ctx.fillStyle = '#c8b8e8';
-    ctx.fillText(`♛${cur.regal} ✷${cur.exalt} ✧${cur.divine} ⊘${cur.annul}`, W - 12, 86);
-  }
+  ctx.fillText(`🎒 ${mobile ? 'แตะ' : 'I'} กระเป๋า (${P.backpack.length})`, W - 12, 68);
+  const orbs = ['regal', 'exalt', 'divine', 'annul', 'jeweller', 'chroma', 'whetstone', 'scrap', 'vaal'].reduce((a, k) => a + (P.currency[k] || 0), 0);
+  if (orbs > 0) { ctx.fillStyle = '#c8b8e8'; ctx.fillText(`Orb คราฟต์ ×${orbs}`, W - 12, 86); }
   const B = G.breach;
   if (B && B.state === 'open') {
     ctx.textAlign = 'center'; ctx.font = '700 16px Cinzel, serif'; ctx.fillStyle = '#d8a0ff';
@@ -748,26 +742,41 @@ function drawHUD(ctx, W, H, P) {
   ctx.lineWidth = 3; ctx.strokeStyle = '#000';
   const lt = Math.ceil(P.life) + '/' + Math.round(P.maxLife);
   ctx.strokeText(lt, gx, gy + 5); ctx.fillStyle = '#fff'; ctx.fillText(lt, gx, gy + 5);
+  // Energy Shield: blue ring around the life globe
+  if (P.maxES > 0) {
+    ctx.strokeStyle = 'rgba(40,60,120,0.6)'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(gx, gy, gr + 5, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = '#7ab8ff'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(gx, gy, gr + 5, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(P.es / P.maxES, 0, 1)); ctx.stroke();
+    ctx.font = '700 11px Sarabun, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
+    const es = 'ES ' + Math.ceil(P.es);
+    ctx.strokeText(es, gx, gy + 21); ctx.fillStyle = '#9fd0ff'; ctx.fillText(es, gx, gy + 21);
+  }
 
   // flasks
-  let fx0 = gx + gr + 14;
-  for (const f of P.flasks) {
-    const fw = 22, fh = mobile ? 46 : 58, fy = H - fh - 18;
+  let fx0 = gx + gr + (P.maxES > 0 ? 20 : 14);
+  G.flaskRects = [];
+  for (let i = 0; i < FLASK_SLOTS; i++) {
+    const f = P.flasks[i], fw = mobile ? 18 : 20, fh = mobile ? 44 : 56, fy = H - fh - 18;
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(fx0, fy, fw, fh);
-    const ratio = f.charges / f.max;
-    ctx.fillStyle = f.kind === 'life' ? '#d0302a' : '#9ad2ff';
-    ctx.globalAlpha = f.charges >= f.use ? 1 : 0.45;
-    ctx.fillRect(fx0 + 2, fy + fh - 2 - (fh - 4) * ratio, fw - 4, (fh - 4) * ratio);
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = f.active > 0 ? '#fff6c0' : '#8a7040'; ctx.lineWidth = f.active > 0 ? 3 : 2;
+    G.flaskRects.push({ x: fx0, y: fy, w: fw, h: fh, i });
+    if (f) {
+      const st = flaskStats(f), ratio = clamp(f.charges / st.max, 0, 1);
+      ctx.fillStyle = FLASK_COLOR[st.kind];
+      ctx.globalAlpha = f.charges >= st.use ? 1 : 0.4;
+      ctx.fillRect(fx0 + 2, fy + fh - 2 - (fh - 4) * ratio, fw - 4, (fh - 4) * ratio);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
+      for (let c = st.use; c < st.max; c += st.use) { const yy = fy + fh - 2 - (fh - 4) * (c / st.max); ctx.beginPath(); ctx.moveTo(fx0 + 2, yy); ctx.lineTo(fx0 + fw - 2, yy); ctx.stroke(); }
+      if (f.active > 0) { ctx.fillStyle = 'rgba(255,246,192,0.25)'; ctx.fillRect(fx0, fy, fw, fh * clamp(f.active / st.dur, 0, 1)); }
+    }
+    ctx.strokeStyle = f && f.active > 0 ? '#fff6c0' : f && f.rarity === 'magic' ? '#6a6cc0' : '#8a7040'; ctx.lineWidth = f && f.active > 0 ? 3 : 2;
     ctx.strokeRect(fx0, fy, fw, fh);
-    // use markers
-    ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
-    for (let c = f.use; c < f.max; c += f.use) { const yy = fy + fh - 2 - (fh - 4) * (c / f.max); ctx.beginPath(); ctx.moveTo(fx0 + 2, yy); ctx.lineTo(fx0 + fw - 2, yy); ctx.stroke(); }
-    ctx.font = '700 12px Sarabun, sans-serif'; ctx.fillStyle = '#e8d8a8'; ctx.textAlign = 'center';
-    ctx.fillText(f.key, fx0 + fw / 2, fy - 4);
-    fx0 += fw + 8;
+    ctx.font = '700 11px Sarabun, sans-serif'; ctx.fillStyle = f ? '#e8d8a8' : '#5a4a30'; ctx.textAlign = 'center';
+    ctx.fillText(i + 1, fx0 + fw / 2, fy - 4);
+    fx0 += fw + 5;
   }
+  fx0 += 4;
   // dash
   {
     const dr = 18, dx = fx0 + dr + 2, dy = H - 36;
@@ -814,14 +823,14 @@ function drawHUD(ctx, W, H, P) {
     ctx.lineWidth = 3; ctx.strokeStyle = '#000';
     ctx.strokeText(inst.level, sx + sz, sy + sz); ctx.fillStyle = '#fff'; ctx.fillText(inst.level, sx + sz, sy + sz);
     // sockets
-    const ss = mobile ? 4 : 5, total = inst.sockets;
+    const ss = mobile ? 4 : 5, total = skillSockets(inst).cap;
     const rowW = total * ss * 2 + (total - 1) * 3;
     let ox = sx + sz / 2 - rowW / 2 + ss;
     const oy = sy + sz + ss + 4;
     ctx.strokeStyle = '#c8a860'; ctx.lineWidth = 2;
     if (total > 1) { ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + (total - 1) * (ss * 2 + 3), oy); ctx.stroke(); }
     for (let i = 0; i < total; i++) {
-      const sup = inst.supports[i];
+      const sup = activeSupports(inst).active[i];
       ctx.fillStyle = sup ? GEM_COLOR[SUPPORTS[sup].gem] : '#1a1612';
       const awk = sup && inst.awakened.includes(sup);
       ctx.strokeStyle = awk ? '#fff0a0' : '#6a5a3a'; ctx.lineWidth = awk ? 2 : 1;

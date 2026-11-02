@@ -14,7 +14,8 @@ function situationalMore(e, inst) {
   if (e.ign.t > 0) k *= m.vsIgnited;
   if (e.rarity >= 2) k *= m.moreVsRare;
   if (ks.lowLifeDmg && P.life < P.maxLife * 0.5) k *= 1.4;
-  if (ks.flaskDmg && (P.flasks[0].active > 0 || P.flasks[1].active > 0)) k *= 1.35;
+  if (ks.flaskDmg && anyFlaskActive(P)) k *= 1.35;
+  k *= P.flaskFx.dmgMore;
   if (ks.rage) k *= 1 + P.rage * 0.01;
   if (P.frenzyT > 0) k *= 1.4;
   if (ks.hexField && dist2(e.x, e.y, P.x, P.y) < 220 * 220) k *= 1.2;
@@ -28,7 +29,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (e.immuneT > G.time) { if (Math.random() < 0.05) addText(e.x, e.y - e.r - 10, 'IMMUNE', '#c8c8c8', 0.8); return 0; }
   const P = G.player, ks = P.mods.ks;
   let crit = false;
-  if (!ks.resolute) crit = G.buffs.diamond > 0 || P.critT > 0 || Math.random() < s.critChance;
+  if (!ks.resolute) crit = G.buffs.diamond > 0 || P.critT > 0 || Math.random() < s.critChance * P.flaskFx.critMul;
   let m = (mult || 1) * situationalMore(e, inst);
   if (crit) m *= s.critMulti;
   if (e.shock.t > 0) m *= 1 + e.shock.eff;
@@ -150,7 +151,7 @@ function killEnemy(e, inst) {
 
   // flask charges
   const fc = (e.rarity === 3 ? 30 : e.rarity === 2 ? 6 : e.rarity === 1 ? 2 : 0.5) * (1 + P.mods.flaskCharge) * P.mods.flaskGainMore;
-  for (const f of P.flasks) f.charges = Math.min(f.max, f.charges + fc);
+  flaskGain(P, fc);
 
   // experience
   const minute = G.time / 60;
@@ -187,7 +188,7 @@ function killEnemy(e, inst) {
     const rare = e.rarity === 2, R = fused || !rare ? 60 : 85;
     addEffect({ kind: 'boom', x: e.x, y: e.y, r: R, t: 0, dur: 0.35, color: '#ff7a2a' });
     fxExplosion(e.x, e.y, R, 'fire'); addDecal('scorch', e.x, e.y, R / 30);
-    if (dist2(e.x, e.y, P.x, P.y) < (R + P.r) * (R + P.r)) hurtPlayer(e.dmg * (fused ? 1 : rare ? 0.6 : 0.45), fused ? 'Volatile Spawn (ระเบิด)' : rare ? 'Volatile (Rare)' : 'ศพระเบิด (Map mod)');
+    if (dist2(e.x, e.y, P.x, P.y) < (R + P.r) * (R + P.r)) hurtPlayer(e.dmg * (fused ? 1 : rare ? 0.6 : 0.45), fused ? 'Volatile Spawn (ระเบิด)' : rare ? 'Volatile (Rare)' : 'ศพระเบิด (Map mod)', 'area');
     Sfx.play('boom');
   }
   if (e.deathSplit && G.enemies.length < MAX_ENEMIES) {
@@ -197,12 +198,18 @@ function killEnemy(e, inst) {
 }
 
 // ---- Player damage ----
-function hurtPlayer(amount, src) {
+// kind: 'phys' (melee / contact), 'proj' (projectiles), 'area' (explosions, ground)
+// Block and Evasion stop attacks (not area damage), Armour reduces physical
+// hits (better against small hits), Energy Shield soaks damage before life.
+function hurtPlayer(amount, src, kind) {
   const P = G.player;
+  kind = kind || 'phys';
   if (P.dead || P.iframes > 0) return;
-  if (P.mods.evade > 0 && Math.random() < P.mods.evade) {
-    addText(P.x, P.y - 24, 'Evade', '#9ad2ff', 0.8);
-    return;
+  if (kind !== 'area') {
+    if (P.block > 0 && Math.random() < P.block) {
+      addText(P.x, P.y - 24, 'Block', '#e8d8a8', 0.8); P.iframes = Math.max(P.iframes, 0.1); return;
+    }
+    if (Math.random() < evadeChance(P)) { addText(P.x, P.y - 24, 'Evade', '#9ad2ff', 0.8); return; }
   }
   const ks = P.mods.ks;
   if (P.aegis) {
@@ -213,10 +220,13 @@ function hurtPlayer(amount, src) {
     return;
   }
   let d = amount * P.mods.dmgTaken;
+  if (kind === 'phys') d *= 1 - armourReduction(effArmour(P), d);
   if (G.buffs.resistance > 0) d *= 0.4;
   if (ks.minionGuard && G.minions.length >= 3) d *= 0.85;
-  if (ks.flaskGuard && (P.flasks[0].active > 0 || P.flasks[1].active > 0)) d *= 0.7;
+  if (ks.flaskGuard && anyFlaskActive(P)) d *= 0.7;
   if (P.mods.dmgCap) d = Math.min(d, P.maxLife * P.mods.dmgCap);
+  P.esDelay = 2;
+  if (P.es > 0) { const a = Math.min(P.es, d); P.es -= a; d -= a; }
   if (P.skills.some((sk) => sk.st.channelGuard && sk.rt.beamT > G.time)) d *= 0.9;
   if (ks.retaliate && P.retaliateCd <= 0) {
     P.retaliateCd = 1;
@@ -256,6 +266,11 @@ const PICKUPS = {
   exalt:  { name: 'Exalted Orb', color: '#ffe8a0', icon: '✷', craft: true },
   divine: { name: 'Divine Orb', color: '#ffc8ff', icon: '✧', craft: true },
   annul:  { name: 'Orb of Annulment', color: '#c0c0d8', icon: '⊘', craft: true },
+  jeweller: { name: "Jeweller's Orb", color: '#b8d8ff', icon: '⬡', craft: true },
+  chroma: { name: 'Chromatic Orb', color: '#ff9a9a', icon: '◐', craft: true },
+  whetstone: { name: "Blacksmith's Whetstone", color: '#d8c8a8', icon: '⚒', craft: true },
+  scrap:  { name: "Armourer's Scrap", color: '#c8c0b0', icon: '⛨', craft: true },
+  vaal:   { name: 'Vaal Orb', color: '#e04040', icon: '◉', craft: true },
 };
 function spawnPickup(x, y, kind) { G.pickups.push({ x, y, kind, t: 0 }); }
 

@@ -21,12 +21,15 @@ function supportGemHtml(gem, small) {
 function tagsHtml(tags) {
   return '<div class="tags">' + [...tags].filter((t) => t !== 'Damage').map((t) => `<span class="tag tag-${t.toLowerCase()}">${t}</span>`).join('') + '</div>';
 }
+// a skill's support sockets: colour from its host item (white = any), filled when powered
 function socketsHtml(inst) {
+  const act = activeSupports(inst);
   let h = '<span class="sockets">';
-  for (let i = 0; i < inst.sockets; i++) {
-    const sup = inst.supports[i];
-    h += sup ? `<span class="sock sock-${SUPPORTS[sup].gem}${inst.awakened.includes(sup) ? ' sock-awk' : ''}" title="${supportDisplayName(inst, sup)}"></span>` : '<span class="sock sock-empty"></span>';
-  }
+  act.so.colors.forEach((c, i) => {
+    const sup = act.active[i];
+    h += sup ? `<span class="sock sock-${SUPPORTS[sup].gem} sring-${c}${inst.awakened.includes(sup) ? ' sock-awk' : ''}" title="${supportDisplayName(inst, sup)}"></span>`
+      : `<span class="sock sock-empty sring-${c}" title="ว่าง (${c === 'W' ? 'สีใดก็ได้' : 'สี ' + c})"></span>`;
+  });
   return h + '</span>';
 }
 
@@ -401,9 +404,9 @@ function buildViewHtml(final) {
     const d = SKILLS[inst.id], s = inst.st;
     h += `<div class="bv-skill">
       <div class="bv-head">${skillGemHtml(d.id, false, inst.evo)}<div><div class="card-name">${skillDisplayName(inst)} <small>Lv ${inst.level}/${MAX_GEM_LEVEL}${m.gemLevel ? ` (+${m.gemLevel})` : ''}</small></div>${tagsHtml(s.tags)}</div></div>
-      <div>${socketsHtml(inst)} <span class="muted">${inst.sockets + 1}-Link</span>
+      <div>${socketsHtml(inst)} <span class="muted">${activeSupports(inst).so.link}-Link${activeSupports(inst).so.item ? ' · ' + SLOT_NAME[activeSupports(inst).so.host] : ''}</span>
       ${!final && P.currency.fusing > 0 && inst.sockets < MAX_SOCKETS ? `<button class="btn btn-small" data-fuse="${inst.uid}">◈ ใช้ Fusing</button>` : ''}</div>
-      <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
+      <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
       <div class="bv-stats">${describeStats(s).join(' · ')}</div>
       ${inst.evo ? `<div class="bv-vaal">Vaal: วิญญาณ ${inst.souls}/${vaalSouls()}${inst.souls >= vaalSouls() ? ' — <b>พร้อม! กด V</b>' : ''}</div>` : evolveHintHtml(inst.id)}
       <div class="bv-dmg"><div class="bar"><div style="width:${(inst.dmgDealt / total) * 100}%"></div></div>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills}</div>
@@ -414,7 +417,9 @@ function buildViewHtml(final) {
     ❤ ชีวิต ${Math.ceil(P.life)}/${Math.round(P.maxLife)}<br>
     ➹ ความเร็ว ${Math.round(P.moveSpeed)}<br>
     ✚ ฟื้นฟู ${(m.regen * 100).toFixed(1)}%/วิ${m.ks.vaalPact ? ' (ปิดโดย Vaal Pact)' : ''}<br>
-    ⛨ รับดาเมจ ×${m.dmgTaken.toFixed(2)}${m.evade ? ' · หลบ ' + pct(m.evade) : ''}<br>
+    ⛨ Armour ${Math.round(P.armour)} · Evasion ${Math.round(P.evasion)} (หลบ ${pct(evadeChance(P))})<br>
+    ◇ Energy Shield ${Math.round(P.maxES)}${P.block ? ' · Block ' + pct(P.block) : ''} · รับดาเมจ ×${m.dmgTaken.toFixed(2)}<br>
+    ⚔ อาวุธ: ${P.weapon ? WEAPON_TYPE[P.weapon.wtype] + ' ×' + weaponPower(P.weapon).toFixed(2) + ' (สกิล Attack)' : 'มือเปล่า ×0.60'}<br>
     ✪ Chaos ${P.currency.chaos} · ◈ Fusing ${P.currency.fusing}${m.ks.rage ? '<br>✊ Rage ' + Math.floor(P.rage) + '/30' : ''}</div>`;
   const ps = Object.keys(P.passives);
   h += '<div class="bv-box"><div class="bv-title">Passive</div>' + (ps.length ? ps.map((id) => `${PASSIVES[id].icon} ${PASSIVES[id].name} <b>${P.passives[id]}</b>/${PASSIVES[id].max}`).join('<br>') : '<span class="muted">ยังไม่มี</span>') + '</div>';
@@ -596,74 +601,217 @@ function renderTreeSummary() {
 }
 function closeAltar() { hide('altar'); buildMenu(); show('menu'); }
 
-// ---------------- Inventory / equipment ----------------
-let invSel = null;   // selected item object
-function itemIconURL(it) { return spriteURL('item_' + it.slot, 3); }
-function itemCardHtml(it, label) {
-  const col = RARITY_COLOR[it.rarity];
-  let h = `<div class="item-card r-${it.rarity}">${label ? `<div class="ic-label">${label}</div>` : ''}
-    <div class="ic-head" style="color:${col}">${it.name}</div>
-    <div class="ic-base">${it.unique ? UNIQUES[it.unique].th + ' · ' : it.base + ' · '}${RARITY_NAME[it.rarity]} ${SLOT_NAME[it.slot]}</div><div class="ic-sep"></div>`;
-  if (it.implicit) h += `<div class="ic-imp">${affixText(it.implicit)}</div><div class="ic-sep"></div>`;
-  h += itemLines(it).map((l) => `<div class="ic-mod"${it.unique ? ' style="color:#c8b0ff"' : ''}>${l}</div>`).join('');
-  if (it.unique) h += `<div class="ic-flavor">"${UNIQUES[it.unique].flavor}"</div>`;
+// ---------------- Inventory: paper doll, grid backpack, PoE-style tooltips ----------------
+let invSel = null, invDrag = null, invMsg = '';
+const invCell = () => (window.innerWidth < 700 ? 26 : 34);
+const DOLL_LAYOUT = ['weapon', 'helm', 'amulet', 'offhand', 'ring', 'body', 'ring2', 'gloves', 'belt', 'boots'];
+const CURRENCY_ORDER = ['chaos', 'fusing', 'regal', 'exalt', 'divine', 'annul', 'jeweller', 'chroma', 'whetstone', 'scrap', 'vaal'];
+function itemIconURL(it) { return spriteURL(itemSpriteId(it), 3); }
+
+function socketsVisualHtml(it, small) {
+  if (!it.sockets || !it.sockets.length) return '';
+  let h = `<div class="pt-sockets${small ? ' small' : ''}">`, i = 0;
+  for (const n of it.links) {
+    h += '<span class="sock-grp">' + it.sockets.slice(i, i + n).map((c) => `<span class="psock psock-${c}"></span>`).join('<span class="plink"></span>') + '</span>';
+    i += n;
+  }
   return h + '</div>';
 }
+const tierTag = (a) => (G.showTiers && !a.flask && AFFIXES[a.id].type ? ` <span class="pt-tier">${AFFIXES[a.id].type === 'P' ? 'Prefix' : 'Suffix'} T${a.tier}</span>` : '');
+
+// PoE-style item box: header, properties, item level, sockets, implicit, mods
+function itemCardHtml(it, label) {
+  const u = it.unique && UNIQUES[it.unique], baseId = it.base || (u && u.base), base = BASES[baseId];
+  const view = Object.assign({ ilvl: 60, affixes: [], quality: 0 }, it, { base: baseId });
+  const col = RARITY_COLOR[it.rarity], two = it.rarity === 'rare' || it.rarity === 'unique';
+  let h = `<div class="poe-tip r-${it.rarity}">${label ? `<div class="pt-label">${label}</div>` : ''}
+    <div class="pt-head" style="color:${col}">${it.name}${two ? `<br>${base.name}` : ''}</div><div class="pt-body">`;
+  const props = [];
+  if (base.flask) {
+    const st = flaskStats(view);
+    props.push('ฟลาสก์', `ใช้ ${st.use} จาก ${st.max} ชาร์จ · นาน ${st.dur.toFixed(1)} วิ`, `<span class="pt-val">${FLASK_DESC[st.kind]}</span>`);
+  } else {
+    const pr = itemProps(view);
+    if (base.w) {
+      props.push(`${WEAPON_TYPE[base.w.type]} (${base.w.hands === 2 ? 'สองมือ' : 'มือเดียว'})`,
+        `ดาเมจกายภาพ: <span class="pt-val">${Math.round(pr.pd * 0.8)}–${Math.round(pr.pd * 1.2)}</span>`,
+        `โอกาสคริ: <span class="pt-val">${pr.crit.toFixed(1)}%</span> · โจมตี/วิ: <span class="pt-val">${pr.aps.toFixed(2)}</span>`,
+        `พลังอาวุธ (สกิล Attack): <span class="pt-val">×${weaponPower(pr).toFixed(2)}</span>`);
+    } else props.push(base.quiver ? 'Quiver (ใช้กับธนู)' : SLOT_NAME[it.slot]);
+    if (pr.ar) props.push(`Armour: <span class="pt-val">${pr.ar}</span>`);
+    if (pr.ev) props.push(`Evasion: <span class="pt-val">${pr.ev}</span>`);
+    if (pr.es) props.push(`Energy Shield: <span class="pt-val">${pr.es}</span>`);
+    if (pr.block) props.push(`โอกาส Block: <span class="pt-val">${pr.block}%</span>`);
+  }
+  if (it.quality) props.push(`Quality: <span class="pt-val">+${it.quality}%</span>`);
+  h += props.map((p) => `<div class="pt-prop">${p}</div>`).join('');
+  if (it.ilvl) h += `<div class="pt-sep"></div><div class="pt-prop">Item Level: <span class="pt-val">${it.ilvl}</span></div>`;
+  if (it.sockets && it.sockets.length) h += socketsVisualHtml(it);
+  if (it.implicit) h += `<div class="pt-sep"></div><div class="pt-imp">${affixText(it.implicit)}</div>`;
+  if (it.corruptMod !== undefined) h += `<div class="pt-corrupt-imp">${CORRUPT_MODS[it.corruptMod].t}</div>`;
+  const lines = u ? u.lines.map((l) => ({ t: l })) : it.affixes.map((a) => ({ t: affixText(a), a }));
+  if (lines.length) h += '<div class="pt-sep"></div>' + lines.map((l) => `<div class="pt-mod">${l.t}${l.a ? tierTag(l.a) : ''}</div>`).join('');
+  if (u) h += `<div class="pt-flavor">"${u.flavor}"</div>`;
+  if (it.corrupted) h += '<div class="pt-corrupted">Corrupted</div>';
+  return h + '</div></div>';
+}
+
 function openInventory() {
   if (G.state !== 'play' && G.state !== 'paused' && G.state !== 'inventory') return;
   hide('pause');
   G.state = 'inventory';
-  const P = G.player;
+  const P = G.player, cell = invCell();
   P.newItems = 0;
-  $('inv-equip').innerHTML = ITEM_SLOTS.map((sl) => {
-    const it = P.equip[sl];
-    return it ? `<div class="inv-slot r-${it.rarity}${invSel === it ? ' sel' : ''}" data-eq="${sl}"><img src="${itemIconURL(it)}" alt=""><span style="color:${RARITY_COLOR[it.rarity]}">${it.name}</span></div>`
-      : `<div class="inv-slot empty"><span class="muted">${SLOT_NAME[sl]}</span><span class="muted">ว่าง</span></div>`;
+  // paper doll
+  $('inv-doll').innerHTML = DOLL_LAYOUT.map((k) => {
+    const it = P.equip[k];
+    const lock = k === 'offhand' && !it && P.equip.weapon && BASES[P.equip.weapon.base].w.hands === 2 && BASES[P.equip.weapon.base].w.type !== 'bow';
+    return `<div class="doll-slot ds-${k}${it ? ' r-' + it.rarity : ''}${invSel && invSel === it ? ' sel' : ''}${lock ? ' locked' : ''}" data-eq="${k}">
+      ${it ? `<img src="${itemIconURL(it)}" alt="" draggable="false">${socketsVisualHtml(it, true)}` : `<span class="muted">${lock ? 'สองมือ' : SLOT_NAME[k]}</span>`}</div>`;
   }).join('');
-  let bag = '';
-  for (let i = 0; i < BACKPACK_SIZE; i++) {
-    const it = P.backpack[i];
-    bag += it ? `<div class="inv-cell r-${it.rarity}${invSel === it ? ' sel' : ''}" data-bag="${i}" title="${it.name}"><img src="${itemIconURL(it)}" alt=""></div>` : '<div class="inv-cell empty"></div>';
-  }
-  $('inv-bag').innerHTML = bag;
-  $('inv-count').textContent = `${P.backpack.length}/${BACKPACK_SIZE}`;
-  $('inventory').querySelectorAll('[data-eq]').forEach((el) => { el.onclick = () => { invSel = P.equip[el.dataset.eq]; openInventory(); }; });
-  $('inventory').querySelectorAll('[data-bag]').forEach((el) => { el.onclick = () => { invSel = P.backpack[+el.dataset.bag]; openInventory(); }; });
+  $('inv-flasks').innerHTML = P.flasks.map((f, i) => `<div class="flask-slot${f ? ' r-' + f.rarity : ''}${invSel && invSel === f ? ' sel' : ''}" data-fl="${i}">
+    ${f ? `<img src="${itemIconURL(f)}" alt="" draggable="false">` : ''}<span class="fk">${i + 1}</span></div>`).join('');
+  // grid backpack
+  const grid = $('inv-grid');
+  grid.style.setProperty('--cell', cell + 'px');
+  grid.style.width = GRID_W * cell + 'px'; grid.style.height = GRID_H * cell + 'px';
+  grid.innerHTML = P.backpack.map((it, i) => {
+    const [w, h] = itemSize(it);
+    return `<div class="bag-item r-${it.rarity}${invSel === it ? ' sel' : ''}" data-bi="${i}" title="${it.name}"
+      style="left:${it.gx * cell}px;top:${it.gy * cell}px;width:${w * cell}px;height:${h * cell}px"><img src="${itemIconURL(it)}" alt="" draggable="false"></div>`;
+  }).join('');
+  $('inv-count').textContent = `(${P.backpack.length} ชิ้น)`;
+  $('inv-currency').innerHTML = CURRENCY_ORDER.map((k) => {
+    const d = CRAFT_ORBS[k] || PICKUPS[k];
+    return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}">${d.icon} ${P.currency[k] || 0}</span>`;
+  }).join('');
+  $('inv-links').innerHTML = linksPanelHtml();
+  $('inv-msg').textContent = invMsg; invMsg = '';
+  // drag sources
+  const root = $('inventory');
+  root.querySelectorAll('[data-bi]').forEach((el) => { el.onpointerdown = (ev) => invPointerDown(ev, { item: P.backpack[+el.dataset.bi], from: 'bag' }, el); });
+  root.querySelectorAll('[data-eq]').forEach((el) => { const it = P.equip[el.dataset.eq]; if (it) el.onpointerdown = (ev) => invPointerDown(ev, { item: it, from: 'eq', key: el.dataset.eq }, el); });
+  root.querySelectorAll('[data-fl]').forEach((el) => { const f = P.flasks[+el.dataset.fl]; if (f) el.onpointerdown = (ev) => invPointerDown(ev, { item: f, from: 'fl', i: +el.dataset.fl }, el); });
+  root.querySelectorAll('[data-host]').forEach((sel) => {
+    sel.onchange = () => { const inst = P.skills.find((s) => s.uid === +sel.dataset.host); if (inst) { setHost(inst, sel.value || null); openInventory(); } };
+  });
+  $('inv-tiers').checked = G.showTiers;
+  $('inv-tiers').onchange = () => { G.showTiers = $('inv-tiers').checked; renderInvDetail(); };
+  $('btn-inv-sort').onclick = () => { sortBag(); openInventory(); };
   renderInvDetail();
   show('inventory');
 }
+
+// which gear piece each skill gem sits in, and which supports are powered
+function linksPanelHtml() {
+  const P = G.player;
+  return P.skills.map((inst) => {
+    const act = activeSupports(inst), so = act.so, host = so.host;
+    const opts = ['<option value="">ลิงก์พื้นฐาน (' + (inst.sockets + 1) + 'L)</option>'].concat(SOCKET_SLOTS.filter((k) => P.equip[k] && bestGroup(P.equip[k]).length >= 2)
+      .map((k) => `<option value="${k}"${host === k ? ' selected' : ''}>${SLOT_NAME[k]} (${bestGroup(P.equip[k]).length}L)${P.hosts[k] && P.hosts[k] !== inst.uid ? ' · สลับ' : ''}</option>`)).join('');
+    const socks = so.colors.map((c, i) => { const sid = act.active[i]; return `<span class="psock psock-${c}${sid ? ' filled f-' + SUPPORTS[sid].gem : ''}" title="${sid ? SUPPORTS[sid].name : 'ว่าง'}"></span>`; }).join('');
+    return `<div class="link-row">${skillGemHtml(inst.id, true, inst.evo)}<div class="link-info"><b>${skillDisplayName(inst)}</b>
+      <select data-host="${inst.uid}">${opts}</select><div class="link-socks">${socks} <span class="muted">${so.link}-Link${so.item ? '' : ' (พื้นฐาน)'}</span></div>
+      ${act.inactive.length ? `<div class="bad">ไม่ทำงาน (สี/ลิงก์ไม่พอ): ${act.inactive.map((s) => SUPPORTS[s].name).join(', ')}</div>` : ''}</div></div>`;
+  }).join('') || '<span class="muted">ยังไม่มีสกิล</span>';
+}
+
 function renderInvDetail() {
   const P = G.player, it = invSel, box = $('inv-detail');
-  const owned = it && (P.backpack.includes(it) || P.equip[it.slot] === it);
-  if (!owned) { invSel = null; box.innerHTML = '<span class="muted">เลือกไอเทมเพื่อดูรายละเอียด · ไอเทมดรอปจาก Rare และบอส (Unique มีลำแสงสีส้ม)</span>'; return; }
-  const worn = P.equip[it.slot] === it, cur = P.equip[it.slot];
-  let h = itemCardHtml(it, worn ? 'สวมใส่อยู่' : 'ในกระเป๋า');
+  const w = it && whereIs(it);
+  if (!w) { invSel = null; box.innerHTML = '<div class="muted inv-help">คลิกไอเทมเพื่อดูรายละเอียด · <b>ลาก</b>ไอเทมไปวางที่ตัวละคร / ช่องฟลาสก์ / กระเป๋า<br>Socket บนไอเทมกำหนดว่าสกิลใส่ Support ได้กี่อันและสีอะไร (ดูแผง "ลิงก์สกิล")</div>'; return; }
+  let h = itemCardHtml(it, w.equip ? 'สวมใส่อยู่' : w.flask !== undefined ? `ฟลาสก์ช่อง ${w.flask + 1}` : 'ในกระเป๋า');
   h += '<div class="inv-actions">';
-  if (worn) h += `<button class="btn btn-small" id="inv-btn-unequip" ${P.backpack.length >= BACKPACK_SIZE ? 'disabled' : ''}>ถอดเก็บ</button>`;
-  else h += `<button class="btn btn-small" id="inv-btn-equip">สวมใส่${cur ? ' (สลับ)' : ''}</button>`;
-  h += `<button class="btn btn-small btn-dim" id="inv-btn-salvage">ย่อย (+${SALVAGE_SHARDS[it.rarity]} ✦)</button></div>`;
-  if (!it.unique) {
-    h += '<div class="inv-actions craft-row">' + Object.entries(CRAFT).map(([k, c]) => {
-      const n = P.currency[k] || 0, ok = n > 0 && c.can(it);
-      return `<button class="btn btn-small craft-btn" data-craft="${k}" ${ok ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '')} ×${n}</button>`;
-    }).join('') + '</div>';
+  if (w.bag) h += it.slot === 'flask' ? '<button class="btn btn-small" data-act="flask">ใส่ช่องฟลาสก์</button>' : '<button class="btn btn-small" data-act="equip">สวมใส่</button>';
+  else h += '<button class="btn btn-small" data-act="unequip">ถอดเก็บ</button>';
+  h += `<button class="btn btn-small btn-dim" data-act="salvage">ย่อย (+${SALVAGE_SHARDS[it.rarity]} ✦)</button></div>`;
+  h += '<div class="inv-actions craft-row">' + Object.entries(CRAFT).filter(([, c]) => c.can(it)).map(([k]) => {
+    const n = P.currency[k] || 0;
+    return `<button class="btn btn-small craft-btn" data-craft="${k}" ${n > 0 ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '').replace("'s", '')} ×${n}</button>`;
+  }).join('') + '</div>';
+  // compare with what is worn in that slot
+  if (w.bag && it.slot !== 'flask') {
+    const keys = it.slot === 'ring' ? ['ring', 'ring2'] : [it.slot];
+    for (const k of keys) if (P.equip[k]) h += itemCardHtml(P.equip[k], 'เทียบกับที่สวมอยู่ (' + SLOT_NAME[k] + ')');
   }
-  if (!worn && cur) h += itemCardHtml(cur, 'เทียบกับที่สวมอยู่');
   box.innerHTML = h;
-  const eq = $('inv-btn-equip'), un = $('inv-btn-unequip'), sv = $('inv-btn-salvage');
-  if (eq) eq.onclick = () => { equipItem(it); Sfx.play('flask'); openInventory(); };
-  if (un) un.onclick = () => { unequipItem(it.slot); openInventory(); };
-  if (sv) sv.onclick = () => { salvageItem(it); invSel = null; Sfx.play('pickup'); openInventory(); };
+  box.querySelectorAll('[data-act]').forEach((b) => {
+    b.onclick = () => {
+      const a = b.dataset.act;
+      if (a === 'equip') invMsg = equipItem(it) || '';
+      else if (a === 'flask') invMsg = equipFlask(it) || '';
+      else if (a === 'unequip') { const ok = w.equip ? unequipItem(w.equip) : unequipFlask(w.flask); if (!ok) invMsg = 'กระเป๋าเต็ม'; }
+      else if (a === 'salvage') { salvageItem(it); invSel = null; Sfx.play('pickup'); }
+      Sfx.play('flask'); openInventory();
+    };
+  });
   box.querySelectorAll('[data-craft]').forEach((b) => {
     b.onclick = () => {
       const k = b.dataset.craft;
       if (!(P.currency[k] > 0) || !CRAFT[k].can(it)) return;
-      P.currency[k]--; CRAFT[k].use(it);
-      if (P.equip[it.slot] === it) recomputePlayer();
-      Sfx.play('currency'); emit('gold', P.x, P.y, 10, { color: CRAFT_ORBS[k].color });
+      P.currency[k]--;
+      const res = CRAFT[k].use(it);
+      if (k === 'vaal') invMsg = 'Vaal Orb: ' + res;
+      if (w.equip) recomputePlayer();
+      Sfx.play(k === 'vaal' ? 'boss' : 'currency'); emit('gold', P.x, P.y, 10, { color: CRAFT_ORBS[k].color });
       openInventory();
     };
   });
+}
+
+// ---- drag & drop (mouse and touch via pointer events) ----
+function invPointerDown(ev, src, el) {
+  if (ev.button > 0) return;
+  const r = el.getBoundingClientRect(), cell = invCell();
+  invDrag = Object.assign({}, src, { x0: ev.clientX, y0: ev.clientY, moved: false, ghost: null,
+    offX: src.from === 'bag' ? Math.floor((ev.clientX - r.left) / cell) : 0, offY: src.from === 'bag' ? Math.floor((ev.clientY - r.top) / cell) : 0 });
+  window.addEventListener('pointermove', invPointerMove);
+  window.addEventListener('pointerup', invPointerUp, { once: true });
+  ev.preventDefault();
+}
+function invPointerMove(ev) {
+  const d = invDrag;
+  if (!d) return;
+  if (!d.moved && Math.hypot(ev.clientX - d.x0, ev.clientY - d.y0) < 6) return;
+  if (!d.ghost) {
+    d.moved = true;
+    const [w, h] = itemSize(d.item), cell = invCell();
+    d.ghost = document.createElement('img');
+    d.ghost.src = itemIconURL(d.item); d.ghost.className = 'drag-ghost';
+    d.ghost.style.width = w * cell + 'px'; d.ghost.style.height = h * cell + 'px';
+    document.body.appendChild(d.ghost);
+  }
+  const cell = invCell();
+  d.ghost.style.left = ev.clientX - d.offX * cell - cell / 2 + 'px';
+  d.ghost.style.top = ev.clientY - d.offY * cell - cell / 2 + 'px';
+}
+function invPointerUp(ev) {
+  window.removeEventListener('pointermove', invPointerMove);
+  const d = invDrag; invDrag = null;
+  if (!d) return;
+  if (d.ghost) d.ghost.remove();
+  if (!d.moved) { invSel = d.item; openInventory(); return; }
+  const el = document.elementFromPoint(ev.clientX, ev.clientY);
+  const eqEl = el && el.closest('[data-eq]'), flEl = el && el.closest('[data-fl]'), grid = el && el.closest('.bag-grid');
+  const P = G.player;
+  if (eqEl) {
+    const key = eqEl.dataset.eq;
+    if (d.from === 'bag') invMsg = equipItem(d.item, key) || '';
+    else if (d.from === 'eq' && d.key !== key && equipSlotOf(d.key) === equipSlotOf(key)) { const t = P.equip[key]; P.equip[key] = P.equip[d.key]; P.equip[d.key] = t; recomputePlayer(); }
+    else if (d.from !== 'eq' || d.key !== key) invMsg = 'ใส่ช่องนี้ไม่ได้';
+  } else if (flEl) {
+    const i = +flEl.dataset.fl;
+    if (d.item.slot !== 'flask') invMsg = 'ช่องนี้ใส่ได้เฉพาะฟลาสก์';
+    else if (d.from === 'fl') { const t = P.flasks[i]; P.flasks[i] = P.flasks[d.i]; P.flasks[d.i] = t; }
+    else if (d.from === 'bag') invMsg = equipFlask(d.item, i) || '';
+  } else if (grid) {
+    const r = grid.getBoundingClientRect(), cell = invCell();
+    const gx = Math.floor((ev.clientX - r.left) / cell) - d.offX, gy = Math.floor((ev.clientY - r.top) / cell) - d.offY;
+    const ok = d.from === 'bag' ? bagMove(d.item, gx, gy) : d.from === 'eq' ? unequipItem(d.key, gx, gy) : unequipFlask(d.i, gx, gy);
+    if (!ok) invMsg = 'วางตรงนี้ไม่ได้ (ชนไอเทมอื่นหรือเกินขอบ)';
+  }
+  invSel = d.item;
+  openInventory();
 }
 function closeInventory() {
   if (G.state !== 'inventory') return;

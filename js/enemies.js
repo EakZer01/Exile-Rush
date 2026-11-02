@@ -291,7 +291,7 @@ function updatePools(dt) {
     p.t += dt; p.tick -= dt;
     if (p.t >= p.dur) { G.epools.splice(i, 1); continue; }
     if (Math.random() < 0.15) emit('bubble', p.x + rand(-p.r, p.r) * 0.7, p.y + rand(-p.r, p.r) * 0.4, 1);
-    if (p.tick <= 0 && dist2(p.x, p.y, P.x, P.y) < p.r * p.r) { p.tick = 0.35; hurtPlayer(p.dps * 0.35, 'แอ่งพิษ (Bile Spitter)'); }
+    if (p.tick <= 0 && dist2(p.x, p.y, P.x, P.y) < p.r * p.r) { p.tick = 0.35; hurtPlayer(p.dps * 0.35, 'แอ่งพิษ (Bile Spitter)', 'area'); }
   }
 }
 function updateEnemyProjectiles(dt) {
@@ -300,7 +300,7 @@ function updateEnemyProjectiles(dt) {
     const p = G.eproj[i];
     p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
     const rr = p.r + P.r - 3;
-    if (dist2(p.x, p.y, P.x, P.y) < rr * rr) { hurtPlayer(p.dmg, 'กระสุนศัตรู'); p.t = 99; }
+    if (dist2(p.x, p.y, P.x, P.y) < rr * rr) { hurtPlayer(p.dmg, 'กระสุนศัตรู', 'proj'); p.t = 99; }
     if (p.t > p.life) {
       if (p.pool && G.epools.length < 30) G.epools.push({ x: p.x, y: p.y, r: 55, t: 0, dur: 4, dps: p.dmg * 1.2, tick: 0 });
       G.eproj[i] = G.eproj[G.eproj.length - 1]; G.eproj.pop();
@@ -389,7 +389,7 @@ function updateHazards(dt) {
     h.t += dt;
     if (h.t >= h.warn) {
       const rr = h.r + P.r * 0.5;
-      if (dist2(h.x, h.y, P.x, P.y) < rr * rr) hurtPlayer(h.dmg, h.src || 'การโจมตีของบอส');
+      if (dist2(h.x, h.y, P.x, P.y) < rr * rr) hurtPlayer(h.dmg, h.src || 'การโจมตีของบอส', 'area');
       addEffect({ kind: 'boom', x: h.x, y: h.y, r: h.r, t: 0, dur: 0.35, color: h.color });
       G.hazards.splice(i, 1);
     }

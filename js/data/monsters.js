@@ -42,7 +42,7 @@ const WAVES = [
 // Health multiplier over time (minutes)
 // steeper late game: builds come online around 8–12 min, monsters keep pace
 const hpScale = (min) => 1 + min * 0.45 + min * min * 0.08;
-const dmgScale = (min) => 1 + min * 0.15 + min * min * 0.006;
+const dmgScale = (min) => 1 + min * 0.18 + min * min * 0.008;
 const speedScale = (min) => 1 + min * 0.01;
 
 // Magic (blue) and Rare (yellow) monster modifiers

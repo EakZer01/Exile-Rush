@@ -21,6 +21,8 @@ function defaultMods() {
     incFire: 0, incCold: 0, incLight: 0, curseEff: 0,
     // unique item hooks
     brandAdd: 0, brandSpeed: 0, heraldMore: 1, beamRange: 0, beamMore: 1, summonAdd: 0, poisonMore: 1, aftershockAdd: 0,
+    // gear defences
+    lifeFlat: 0, armour: 0, evasion: 0, es: 0, esInc: 0, block: 0, esRechargeInc: 0,
   };
 }
 
@@ -32,21 +34,21 @@ function createPlayer(cls) {
     x: 0, y: 0, vx: 0, vy: 0, r: 14, cls, baseLife: cls.life, life: cls.life, maxLife: cls.life,
     facing: 0, skills: [], passives: {}, keystones: {}, level: 1, xp: 0, xpNext: xpReq(1),
     mods: defaultMods(), iframes: 0, dashCd: 0, dashT: 0, dashVx: 0, dashVy: 0, hurtFlash: 0, leechPool: 0,
-    flasks: [
-      { kind: 'life', name: 'Life Flask', key: 'Q', charges: 45, max: 60, use: 20, active: 0, dur: 2.5 },
-      { kind: 'quick', name: 'Quicksilver Flask', key: 'E', charges: 30, max: 50, use: 25, active: 0, dur: 4 },
-    ],
-    currency: { chaos: 3, fusing: 0, regal: 0, exalt: 0, divine: 0, annul: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
+    flasks: [null, null, null, null, null],
+    flaskFx: { move: 0, speed: 0, armour: 0, armourMul: 1, evasion: 0, evMul: 1, dmgMore: 1, critMul: 1 },
+    armour: 0, evasion: 0, es: 0, maxES: 0, esDelay: 0, block: 0, weapon: null, hosts: {},
+    currency: { chaos: 3, fusing: 0, regal: 0, exalt: 0, divine: 0, annul: 0, jeweller: 0, chroma: 0, whetstone: 0, scrap: 0, vaal: 0 }, dead: false, moveSpeed: 200, pickupR: 75, killedBy: '',
     // ascendancy state
     asc: null, ascNodes: [], rage: 0, rageDecay: 0, aegis: 0, aegisCd: 0, retaliateCd: 0, thunderT: 2.5,
     critT: 0, frenzyT: 0, revives: 0,
-    equip: { helm: null, body: null, gloves: null, boots: null, amulet: null, ring: null }, backpack: [], newItems: 0,
+    equip: { weapon: null, offhand: null, helm: null, body: null, gloves: null, boots: null, belt: null, amulet: null, ring: null, ring2: null }, backpack: [], newItems: 0,
   };
 }
 
 function recomputePlayer() {
   const P = G.player;
   const ratio = P.maxLife > 0 ? P.life / P.maxLife : 1;
+  reassignHosts();
   const m = defaultMods();
   P.cls.apply(m);
   applyMetaMods(m);
@@ -57,7 +59,10 @@ function recomputePlayer() {
   const fx = G.mapFx;
   m.lifeMore *= fx.pLife; m.regen *= fx.pRegen; m.leechCap *= fx.pRegen; m.flaskGainMore *= fx.pFlask;
   P.mods = m;
-  P.maxLife = (P.baseLife + LIFE_PER_LEVEL * (P.level - 1)) * (1 + m.lifeInc) * m.lifeMore;
+  P.weapon = P.equip.weapon ? itemProps(P.equip.weapon) : null;
+  P.armour = m.armour; P.evasion = m.evasion; P.block = Math.min(0.5, m.block);
+  P.maxES = m.es * (1 + m.esInc); P.es = Math.min(P.es, P.maxES);
+  P.maxLife = (P.baseLife + LIFE_PER_LEVEL * (P.level - 1) + m.lifeFlat) * (1 + m.lifeInc) * m.lifeMore;
   P.life = Math.min(P.maxLife, ratio * P.maxLife);
   P.moveSpeed = 200 * (1 + m.moveInc) * m.moveMore;
   P.pickupR = 90 * (1 + m.pickupInc);
@@ -75,7 +80,7 @@ function updatePlayer(dt) {
   if (il > 0.1) P.facing = Math.atan2(iy, ix);
 
   let spd = P.moveSpeed;
-  if (P.flasks[1].active > 0) spd *= 1.4;
+  spd *= 1 + P.flaskFx.move;
   if (G.buffs.acceleration > 0) spd *= 1.4;
 
   if (P.dashT > 0) {
@@ -104,21 +109,10 @@ function updatePlayer(dt) {
   }
   inp.dash = false;
 
-  // flasks
-  for (let i = 0; i < 2; i++) {
-    const f = P.flasks[i];
-    if (inp['flask' + i]) {
-      inp['flask' + i] = false;
-      if (f.charges >= f.use && f.active <= 0) {
-        f.charges -= f.use; f.active = f.dur;
-        Sfx.play('flask');
-      }
-    }
-    if (f.active > 0) {
-      f.active -= dt;
-      if (f.kind === 'life') { P.life += (P.maxLife * 0.55 * (1 + P.mods.flaskEff) / f.dur) * dt; if (Math.random() < 0.4) emit('heal', P.x, P.y, 1, { jitter: 12 }); }
-    }
-  }
+  updateFlasks(dt);
+  // Energy Shield recharges after 2 s without taking damage
+  if (P.esDelay > 0) P.esDelay -= dt;
+  else if (P.es < P.maxES) P.es = Math.min(P.maxES, P.es + P.maxES * 0.25 * (1 + P.mods.esRechargeInc) * dt);
 
   // regen + leech
   const lowRegen = P.mods.ks.lowRegen && P.life < P.maxLife * 0.35 ? 3 : 1;
@@ -204,7 +198,7 @@ function updateAscendancy(dt) {
   if (P.critT > 0) P.critT -= dt;
   if (P.frenzyT > 0) P.frenzyT -= dt;
   if (P.retaliateCd > 0) P.retaliateCd -= dt;
-  if (P.mods.flaskRegen) for (const f of P.flasks) f.charges = Math.min(f.max, f.charges + P.mods.flaskRegen * dt);
+  if (P.mods.flaskRegen) flaskGain(P, P.mods.flaskRegen * dt);
   if (ks.rage && P.rage > 0) {
     P.rageDecay -= dt;
     if (P.rageDecay <= 0) { P.rage = Math.max(0, P.rage - 6 * dt); }
