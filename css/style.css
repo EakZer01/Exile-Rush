@@ -735,7 +735,8 @@ span.gm-c-anomalous, span.gm-c-divergent, span.gm-c-phantasmal { color: var(--mc
 .inv-legend { font-size: 12px; margin-left: 4px; }
 .v-up-t { color: #5aff6a; } .v-down-t { color: #ff5a4a; }
 .bag-wrap { overflow-x: auto; }
-.bag-grid { position: relative; border: 1px solid var(--border); background-color: #0c0906;
+/* content-box: JS sizes the grid to exactly cols × cell, so the 1px border must sit outside that */
+.bag-grid { position: relative; box-sizing: content-box; border: 1px solid var(--border); background-color: #0c0906;
   background-image: linear-gradient(#2a2014 1px, transparent 1px), linear-gradient(90deg, #2a2014 1px, transparent 1px);
   background-size: var(--cell) var(--cell); }
 .bag-item { position: absolute; display: flex; align-items: center; justify-content: center; background: rgba(40,30,20,.65);
