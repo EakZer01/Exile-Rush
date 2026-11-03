@@ -36,12 +36,12 @@ function defBase(id, d) { d.id = id; d.size = d.size || [2, 2]; BASES[id] = d; }
 defBase('short_bow',      { slot: 'weapon', name: 'Short Bow', size: [2, 3], w: { type: 'bow', hands: 2, pd: 10, aps: 1.4, crit: 5 } });
 defBase('long_bow',       { slot: 'weapon', name: 'Long Bow', size: [2, 4], w: { type: 'bow', hands: 2, pd: 14, aps: 1.2, crit: 6 }, imp: ['proj', 8] });
 defBase('gnarled_staff',  { slot: 'weapon', name: 'Gnarled Staff', size: [2, 4], w: { type: 'staff', hands: 2, pd: 12, aps: 1.2, crit: 6 }, imp: ['spell', 16] });
-defBase('driftwood_wand', { slot: 'weapon', name: 'Driftwood Wand', size: [1, 3], w: { type: 'wand', hands: 1, pd: 5, aps: 1.4, crit: 7 }, imp: ['spell', 10] });
-defBase('driftwood_sceptre', { slot: 'weapon', name: 'Driftwood Sceptre', size: [1, 3], w: { type: 'sceptre', hands: 1, pd: 8, aps: 1.25, crit: 6 }, imp: ['ele', 10] });
+defBase('driftwood_wand', { slot: 'weapon', name: 'Driftwood Wand', size: [1, 3], w: { type: 'wand', hands: 1, pd: 7, aps: 1.4, crit: 7 }, imp: ['spell', 10] });
+defBase('driftwood_sceptre', { slot: 'weapon', name: 'Driftwood Sceptre', size: [1, 3], w: { type: 'sceptre', hands: 1, pd: 9, aps: 1.25, crit: 6 }, imp: ['ele', 10] });
 defBase('rusted_sword',   { slot: 'weapon', name: 'Rusted Sword', size: [1, 3], w: { type: 'sword', hands: 1, pd: 9, aps: 1.5, crit: 5 }, imp: ['attack', 8] });
-defBase('woodsplitter',   { slot: 'weapon', name: 'Woodsplitter', size: [2, 4], w: { type: 'axe', hands: 2, pd: 16, aps: 1.15, crit: 5 } });
-defBase('glass_shank',    { slot: 'weapon', name: 'Glass Shank', size: [1, 2], w: { type: 'dagger', hands: 1, pd: 6, aps: 1.5, crit: 7.5 }, imp: ['critmulti', 20] });
-defBase('driftwood_club', { slot: 'weapon', name: 'Driftwood Club', size: [2, 3], w: { type: 'mace', hands: 1, pd: 9, aps: 1.3, crit: 5 }, imp: ['area', 8] });
+defBase('woodsplitter',   { slot: 'weapon', name: 'Woodsplitter', size: [2, 4], w: { type: 'axe', hands: 2, pd: 14.5, aps: 1.15, crit: 5 } });
+defBase('glass_shank',    { slot: 'weapon', name: 'Glass Shank', size: [1, 2], w: { type: 'dagger', hands: 1, pd: 8, aps: 1.5, crit: 7.5 }, imp: ['critmulti', 20] });
+defBase('driftwood_club', { slot: 'weapon', name: 'Driftwood Club', size: [2, 3], w: { type: 'mace', hands: 1, pd: 10, aps: 1.3, crit: 5 }, imp: ['area', 8] });
 // off-hands
 defBase('tower_shield',   { slot: 'offhand', name: 'Splintered Tower Shield', size: [2, 3], def: { ar: 40 }, block: 22 });
 defBase('buckler',        { slot: 'offhand', name: 'Goathide Buckler', size: [2, 2], def: { ev: 35 }, block: 20 });

@@ -224,7 +224,7 @@ function killEnemy(e, inst) {
   rollLeagueDrops(e);
   rollScarabDrops(e);
   onKillAscendancy(e, inst);
-  onKillSkills(e);
+  onKillSkills(e, inst);
 
   // death effects
   const fused = e.def.explode && e.fuse !== undefined && e.fuse <= 0;
@@ -405,7 +405,8 @@ function heraldBudgetOk() {
   if (G.time - _heraldT > 1 || G.time < _heraldT) { _heraldT = G.time; _heraldBudget = 30; }
   return _heraldBudget-- > 0;
 }
-function onKillSkills(e) {
+// inst: the skill that landed the kill (a Herald never re-triggers from its own kills)
+function onKillSkills(e, inst) {
   if (e.contagion && e.contagion.t > G.time && G.player.skills.includes(e.contagion.inst)) {
     const c = e.contagion, x = e.x, y = e.y;
     G.delayed.push({ t: 0.08, fn: () => {
@@ -413,15 +414,16 @@ function onKillSkills(e) {
       addEffect({ kind: 'ring', x, y, r: 130, t: 0, dur: 0.3, color: '#a8e05a' });
     } });
   }
-  const ice = G.player.skills.find(i => i.st.herald === 'ice' && !i.st.disabled && (e.chill.t > 0 || e.freeze > 0 || (i.st.heraldAnyKill && dist2(e.x, e.y, G.player.x, G.player.y) <= 420 * 420)));
+  const ice = G.player.skills.find(i => i.st.herald === 'ice' && i !== inst && !i.st.disabled && (e.chill.t > 0 || e.freeze > 0 || (i.st.heraldAnyKill && dist2(e.x, e.y, G.player.x, G.player.y) <= 420 * 420)));
   if (ice && heraldBudgetOk()) {
     const x = e.x, y = e.y, s = ice.st;
     G.delayed.push({ t: 0.07, fn: () => {
       emitHeraldBurst(ice, s, x, y);
     } });
   }
-  // the burst always ignites, so the flames keep jumping from corpse to corpse
-  const ash = G.player.skills.find(i => i.st.herald === 'ash' && !i.st.disabled && (e.ign.t > 0 || (i.st.heraldAnyKill && dist2(e.x, e.y, G.player.x, G.player.y) <= 420 * 420)));
+  // the burst ignites, so your other skills' kills nearby keep the fire going;
+  // its own kills (burst or burn) don't, or one kill would chain through the whole screen
+  const ash = G.player.skills.find(i => i.st.herald === 'ash' && i !== inst && !i.st.disabled && (e.ign.t > 0 || (i.st.heraldAnyKill && dist2(e.x, e.y, G.player.x, G.player.y) <= 420 * 420)));
   if (ash && heraldBudgetOk()) {
     const x = e.x, y = e.y, s = ash.st;
     G.delayed.push({ t: 0.1, fn: () => {

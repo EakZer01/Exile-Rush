@@ -313,7 +313,13 @@ function updateGrounds(dt) {
       g.tick = 0.25;
       for (let k = 0; k < 2; k++) { const a = rand(0, TAU), d = g.r * Math.sqrt(Math.random()); emit('bubble', g.x + Math.cos(a) * d, g.y + Math.sin(a) * d, 1); }
       enemiesInRadius(g.x, g.y, g.r, _cloudList);
-      for (const e of _cloudList) dotDamage(e, g.dps * 0.25, g.inst, '#a8f060');
+      // overlapping clouds of one skill don't stack: each enemy takes one tick per skill
+      for (const e of _cloudList) {
+        const hit = e.cloudHit || (e.cloudHit = new Map());
+        if (G.time - (hit.get(g.inst) ?? -1) < 0.24) continue;
+        hit.set(g.inst, G.time);
+        dotDamage(e, g.dps * 0.25, g.inst, '#a8f060');
+      }
     }
   }
 }

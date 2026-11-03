@@ -1,5 +1,52 @@
 # Changelog
 
+## Browser build 46 — 2026-11-03
+
+ปรับสมดุลจากการจำลองการเล่น (ทดสอบทุกสกิล × ทุกอาวุธ 261 แบบ และบอทเล่นเต็มรอบ 155 รอบ) · ช่องว่างระหว่างสกิลแรงสุดกับอ่อนสุดลดจากประมาณ 32 เท่าเหลือประมาณ 4 เท่า
+
+- **Herald of Ash / Ice**: ศัตรูที่ Herald ฆ่าเองจะไม่ระเบิดซ้ำ ต้องให้สกิลอื่นฆ่าจึงลุกลามต่อ (เดิมระเบิดต่อกันเป็นลูกโซ่จนทำดาเมจถึง 84% ของทั้งรอบ) · ดาเมจระเบิด Ash 9 → 7, Ice 12 → 9
+- **หมอกพิษไม่บวกดาเมจกัน**: หมอกจากสกิลเดียวกันที่ทับกัน ศัตรูโดนแค่ครั้งเดียวต่อจังหวะ (Toxic Rain, Caustic Arrow, Soulrend)
+- **อาวุธ** (ดาเมจกายภาพฐาน ส่งผลกับสกิล Attack): มีดสั้น 6 → 8, ไม้กายสิทธิ์ 5 → 7, คทา 8 → 9, กระบอง 9 → 10, ขวาน 16 → 14.5
+- **สกิลเริ่มต้นของคลาส**:
+  - Ethereal Knives 10 → 33 และระยะไกลขึ้น
+  - Split Arrow 12 → 24
+  - Arc 13 → 26
+  - Blade Vortex 7 → 10.5
+- **สกิลที่อ่อนเกินไปแรงขึ้น**:
+  - Spark 8 → 23 (+1 ลูก)
+  - Ice Spear 18 → 56
+  - Kinetic Bolt 16 → 60
+  - Power Siphon 19 → 38
+  - Kinetic Blast 10 → 16
+  - Cobra Lash 13 → 29.9
+  - Venom Gyre 10 → 20
+  - Tornado Shot 13 → 32.5
+  - Ice Shot 12 → 20.4
+  - Lightning Arrow 13 → 18.2
+  - Frostbolt 15 → 22.5
+  - Ice Nova 15 → 19.5
+  - Shock Nova 14 → 18.2
+  - Blazing Salvo 7 → 9.1
+  - Soulrend 11 → 22
+  - Caustic Arrow 9 → 11.7
+- **สกิลตีเป้าเดียวตีบอสแรงที่สุดจริง**:
+  - Heavy Strike 35 → 91
+  - Glacial Hammer 25 → 70
+  - Viper Strike 10 → 20
+  - Burning Arrow 29 → 66.7
+  - Puncture 30 → 48
+  - Essence Drain 10 → 18
+  - Scourge Arrow 14 → 18.2
+  - Skeletal Mages 13 → 26
+  - Raise Zombie 24 → 31.2
+- **สกิลที่แรงเกินไปลดลง**:
+  - Armageddon Brand 18 → 12.6
+  - Lacerate 15 → 11.2
+  - Explosive Arrow 23 → 17.2
+  - Rain of Arrows 10 → 8
+  - Firestorm 19 → 15.2
+- ชุดทดสอบ 102 กรณี
+
 ## Browser build 45 — 2026-11-03
 
 - แก้โบนัสช่องสกิล Collector + Wanderlust + Expanded Arsenal บวกกันเกิน 6: ตอนนี้ใช้เพดานร่วมสูงสุด 6 ทุกเส้นทาง

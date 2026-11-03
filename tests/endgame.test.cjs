@@ -175,6 +175,27 @@ test('Herald of Ash spreads Ignite from burning corpses; Herald of Thunder strik
   assert.deepEqual(Array.from(g2.run('T8.map(e => e.hp < 1e9)')), [true, false, false]);
 });
 
+test('Herald of Ash does not re-trigger from its own kills, but does from other skills', () => {
+  const { run } = supportGame(0, 'herald_of_ash', 'onslaught');
+  run(`I7.supports = []; recomputePlayer(); const a = foe(300, 300), b = foe(340, 300); a.ign.t = 2; b.ign.t = 2;
+    G.hash.clear(); for (const e of G.enemies) G.hash.insert(e);
+    killEnemy(a, I7); N1 = G.delayed.length; G.delayed.length = 0;
+    killEnemy(b, null); N2 = G.delayed.length;`);
+  assert.equal(run('N1'), 0);
+  assert.equal(run('N2'), 1);
+});
+
+test('overlapping clouds of one skill damage an enemy once per tick', () => {
+  const { run } = supportGame(1, 'toxic_rain', 'onslaught', 'short_bow');
+  run(`I7.supports = []; recomputePlayer(); const e = foe(0, 0); G.grounds.length = 0;
+    for (let k = 0; k < 6; k++) spawnCloud(I7, I7.st, 0, 0);
+    G.hash.clear(); G.hash.insert(e); updateGrounds(1/60); L6 = 1e9 - e.hp;
+    G.grounds.length = 0; e.hp = 1e9; e.cloudHit = null; G.time += 1;
+    spawnCloud(I7, I7.st, 0, 0); G.hash.clear(); G.hash.insert(e); updateGrounds(1/60); L1 = 1e9 - e.hp;`);
+  assert.ok(run('L1') > 0);
+  assert.equal(run('L6'), run('L1'));
+});
+
 test('beginner quests complete in order and pay out', () => {
   const { run } = game();
   run(`const M = loadMeta(); M.shards = 0; startGame(CLASSES[0]); G.time = 300; G.stats.bosses = 1; G.player.asc = 'x';`);
