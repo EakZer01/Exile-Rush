@@ -158,6 +158,7 @@ function render() {
   ctx.imageSmoothingEnabled = false;
   for (const e of G.enemies) if (inView(e.x, e.y, e.r + 30)) drawEnemy(ctx, e, P);
   drawPlayer(ctx, P);
+  drawBuildcraft(ctx);
   ctx.imageSmoothingEnabled = true;
 
   // Ballista totems and Mirage Archers

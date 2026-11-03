@@ -86,6 +86,12 @@ function buildSkillStats(inst, p) {
 
   // build-changing uniques reshape their gem
   for (const f of m.skillHooks) f(s, inst.id);
+  if (s.unstable) s.durMore *= 0.5;
+  if (s.delivery === 'brand' && s.triggerMode) s.triggerMode = null;
+  if (s.mode === 'shield' || inst.id === 'shield_throw') {
+    const shield = p.equip && p.equip.offhand;
+    if (!shield || !BASES[shield.base] || !BASES[shield.base].def || BASES[shield.base].slot !== 'offhand' || BASES[shield.base].w) { s.disabled = true; s.disableReason = 'ต้องถือโล่ในมือรอง'; }
+  }
   if (s.totem) { s.totemMax = 2 + (s.totemBonus || 0); s.totemDur = 8 * (1 + (s.totemDurationInc || 0)); }
   // cross-run Gem Mastery: more damage per level and the chosen alternate quality
   const gm = gemMastery(inst.id);
@@ -108,6 +114,7 @@ function buildSkillStats(inst, p) {
   if (tags.has('Minion')) { s.maxCount += m.minionCount; s.more *= m.moreMinion; s.leech += m.minionLeech; }
   s.ignite += m.igniteAdd; s.shock += m.shockAdd; s.poison += m.poisonAdd;
   if (tags.has('Attack')) s.bleed += m.bleedAdd;
+  if (s.bloodlust) s.bleed = 0;
   s.bleedMore *= m.bleedMore * (1 + m.bleedInc);
   s.burnMore *= m.burnMore; s.moreEle *= m.moreEle; s.dotMore *= m.dotMore; s.more *= m.moreAll;
   s.cull = Math.max(s.cull, m.cullAdd);
@@ -212,6 +219,12 @@ function describeStats(s) {
   if (s.duration) out.push('ระยะเวลา: ' + s.durFinal.toFixed(1) + 's');
   if (s.behavior !== 'aura') out.push('คริ: ' + pct(s.critChance) + ' ×' + s.critMulti.toFixed(2));
   if (s.echo) out.push((s.behavior === 'flicker' ? 'ฟันซ้ำ ณ จุดวาร์ป: +' : 'ร่ายซ้ำ: +') + s.echo);
+  if (s.mode) out.push(SKILLS[s.id].desc);
+  if (s.triggerMode && G.player) {
+    const inst = G.player.skills.find(i => i.uid === s.uid), target = inst && craftTriggerTarget(inst);
+    out.push('เชื่อม → ' + (target ? SKILLS[target.id].name + ' (หยุดร่ายเอง)' : 'ต้องมี Spell ที่รองรับในแถบสกิล'));
+  }
+  if (s.delivery) out.push('ร่ายผ่าน: ' + s.delivery);
   return out;
 }
 

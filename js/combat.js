@@ -49,6 +49,9 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
     crit = G.buffs.diamond > 0 || P.critT > 0 || Math.random() < cc || (ks.luckyCrit && Math.random() < cc);
   }
   let m = (mult || 1) * situationalMore(e, inst);
+  if (s.bloodlust && e.bleeds.length) m *= 1.6;
+  if (inst && s.traumaSupport) m *= 1 + (inst.rt.trauma || 0) * 0.1;
+  if (inst && s.rageSupport && G.time - (inst.rt.rageAt || 0) < 2) m *= 1 + (inst.rt.rage || 0) * 0.06;
   if (crit) m *= s.critMulti;
   else if (ks.nonCritLess) m *= 0.85;
   if (e.shock.t > 0) m *= 1 + e.shock.eff;
@@ -143,6 +146,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
     addText(e.x, e.y - e.r - 10, 'CULL', '#ff4040', 1.1);
     dealDamage(e, e.hp + 1, inst, false, mainType, true);
   }
+  if (total > 0) buildcraftHit(e, s, inst, crit);
   return total;
 }
 
@@ -181,6 +185,7 @@ function dotDamage(e, amount, inst, color, ail) {
 function killEnemy(e, inst) {
   if (e.dead) return;
   e.dead = true;
+  craftMark(craftState().corpses, e.x, e.y, 10);
   G.stats.kills++;
   if (inst) inst.kills++;
   const P = G.player;

@@ -15,6 +15,17 @@
 
 ## ระบบหลัก
 
+Build 48 — เพิ่ม 31 สกิล / 24 Support / Unique เปลี่ยนกลไก 12 ชิ้น รวม 94 Skill, 110 Support และ 52 Unique:
+
+- ข้อมูลใหม่อยู่ที่ `js/data/buildcraft.js` และกลไกสนาม/การเชื่อมเวทอยู่ที่ `js/buildcraft.js`
+- **คอมโบ**: Bladefall → Blade Blast, Desecrate → Detonate Dead / Volatile Dead / Cremation, สกิล Shock → Lightning Conduit, สกิล Hex → Hexblast, Attack → Holy Relic, Skeletons → Dark Pact
+- **วิธีเดินต่างกัน**: Spectral Throw จัดแนวขากลับ, Spectral Helix/Bladestorm ล่อฝูงเข้าพื้นที่, Blade Flurry หยุดเดินสะสมแล้วเดินปล่อย, Earthshatter วางหนามแล้ว Dash ระเบิด, Storm Rain วางตาข่ายสายฟ้า
+- **Trigger**: ใส่ CoC/CwC/CoMK/Spellslinger ในสกิลต้นทาง แล้วเพิ่ม Spell ที่รองรับ ระบบเลือก Spell ถัดไปในแถบให้อัตโนมัติ; กดปุ่ม “เชื่อมเวท” ที่หน้าสถิติหรือ I → ช่อง Support เพื่อเปลี่ยนเป้า Spell ที่เชื่อมจะหยุดร่ายเอง การกระตุ้นมีคูลดาวน์และไม่กระตุ้นต่อเป็นวงจร
+- **Unique**: ค้นชื่อ Anchor of the Spiral, Storm Garden, Blade Hourglass, Frost Relay, Grave Furnace, Reaper Covenant, Faultline, Hex Reservoir, Cinder Walker, Shatter Clock, Steel Magnet และ Relic Procession ใน Codex → Unique ทุกชิ้นดรอปทั่วไปและเข้าคลังเดิมได้
+- Shield Crush / Spectral Shield Throw ต้องมีโล่มือรอง; สกิลศพต้องมีศพจากศัตรูตายหรือ Desecrate; Holy Relic ต้องมี Attack มาช่วยกระตุ้น
+- ตัวเลขและกลไกเป็นฉบับ survivor: ทุ่นระเบิดเอง, มินเนียนใช้ “อายุ” เป็นทรัพยากร, ค่าเสียชีวิตของ Trauma/Dark Pact ไม่ลดชีวิตต่ำกว่า 1 โดยตรง และยังไม่ได้จำลอง Mana ของ PoE
+
+
 ช่อง Skill Gem เริ่มที่ 4 และ **รวมทุกโบนัสแล้วไม่เกิน 6 ช่อง** (Collector, Wanderlust, Expanded Arsenal ใช้เพดานร่วมกัน) · เมื่อถึง 6 จะไม่มีการ์ดเพิ่มช่องให้เลือกอีก · สกิลฟรีจาก Grave Command ต้องมีช่องว่าง หากเต็มจะได้ +3 เลเวลให้เจมมินเนียนที่ยังไม่เต็มหรือเจมที่ทำดาเมจสูงสุดแทน ไม่เกิน Lv 20
 
 

@@ -147,7 +147,7 @@ function regularChoices(n) {
   const P = G.player, owned = new Set(P.skills.map((s) => s.id));
   const cats = { skill: [], level: [], support: [], passive: [], keystone: [] };
   // new gems must work with the weapon in hand (universal gems always do)
-  if (P.skills.length < skillCapacity(P)) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id) && skillWeaponOk(id, P.weapon)) cats.skill.push({ type: 'skill', id });
+  if (P.skills.length < skillCapacity(P)) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id) && skillWeaponOk(id, P.weapon) && craftSkillUsable(id, P)) cats.skill.push({ type: 'skill', id });
   for (const inst of P.skills) if (inst.level < MAX_GEM_LEVEL) cats.level.push({ type: 'level', inst });
   for (const id in SUPPORTS) {
     if (P.skills.some((inst) => canSocketSupport(id, inst))) cats.support.push({ type: 'support', id });
@@ -543,7 +543,7 @@ function buildViewHtml(final) {
       ${!final ? `<small class="muted">Jeweller · เพิ่มช่อง Support</small><div class="inv-actions jeweller-actions">${jewellerButtonsHtml(inst)}</div>` : ''}
       <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
       ${s.disabled ? `<div class="bad">⚠ หยุดทำงาน — ${s.disableReason || 'ต้องถือ ' + weaponReqText(inst.id)}</div>` : ''}
-      <div class="bv-stats">${describeStats(s).join(' · ')}</div>
+      <div class="bv-stats">${describeStats(s).join(' · ')}</div>${!final ? craftLinkButton(inst) : ''}
       ${inst.evo ? `<div class="bv-vaal">Vaal: วิญญาณ ${inst.souls}/${vaalSouls()}${inst.souls >= vaalSouls() ? ' — <b>พร้อม! กด V</b>' : ''}</div>` : evolveHintHtml(inst.id)}
       <div class="bv-dmg"><div class="bar"><div style="width:${(inst.dmgDealt / total) * 100}%"></div></div>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills} · <b>DPS ${fmtNum(skillDps(inst))}</b> <span class="muted">(10 วิล่าสุด) · Hit เฉลี่ยรวมคริ ${fmtNum(avgHit(s))}</span></div>
     </div>`;
@@ -986,6 +986,11 @@ function jewellerButtonsHtml(inst) {
   }).join('');
 }
 function bindJewellerButtons(root, refresh) {
+  root.querySelectorAll('[data-craft-link]').forEach(b => { b.onclick = () => {
+    const i = G.player.skills.find(s => s.uid === +b.dataset.craftLink);
+    if (!i || !['inventory', 'paused'].includes(G.state)) return;
+    craftCycleLink(i); refresh(i, skillSockets(i).cap);
+  }; });
   root.querySelectorAll('[data-jeweller]').forEach((b) => {
     b.onclick = () => {
       const inst = G.player.skills.find((s) => s.uid === +b.dataset.skill), before = inst && skillSockets(inst).cap;
@@ -1001,7 +1006,7 @@ function skillSocketsPanelHtml() {
     const act = activeSupports(inst);
     return '<div class="link-row">' + skillGemHtml(inst.id, true, inst.evo) + '<div class="link-info"><b>' + skillDisplayName(inst) +
       '</b><div class="link-socks">' + socketsHtml(inst) + '</div><small>' + skillSocketLabel(inst) + '</small>' +
-      '<div class="inv-actions jeweller-actions">' + jewellerButtonsHtml(inst) + '</div>' +
+      '<div class="inv-actions jeweller-actions">' + jewellerButtonsHtml(inst) + craftLinkButton(inst) + '</div>' +
       '<div class="sup-chips">' + inst.supports.map(sid => '<span class="chip chip-' + SUPPORTS[sid].gem + (act.inactive.includes(sid) ? ' chip-off' : '') +
         '" title="' + (act.reasons[sid] || 'ทำงาน') + '">' + (act.inactive.includes(sid) ? 'พัก: ' : '✓ ') + supportDisplayName(inst, sid) + '</span>').join('') + '</div>' +
       (act.inactive.length ? '<div class="bad">เก็บเจมไว้แล้ว แต่ยังไม่ทำงาน: ' + [...new Set(act.inactive.map(s => act.reasons[s]))].join(' · ') + '</div>' : '') +

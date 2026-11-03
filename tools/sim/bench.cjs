@@ -18,6 +18,7 @@ g.run(`
     const P = G.player;
     P.cls = NEUTRAL;
     P.equip.weapon = makeNormal(WEAPON_BASE[wtype]);
+    if (id.split('+').some((x) => SKILLS[x].base.mode === 'shield' || x === 'shield_throw')) P.equip.offhand = makeNormal('tower_shield');
     P.skills = id.split('+').map((x) => { const i = newSkillInstance(x); i.level = lvl; return i; });
     const inst = P.skills[0];
     recomputePlayer(); P.life = P.maxLife;

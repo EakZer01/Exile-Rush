@@ -39,7 +39,10 @@ function benchReport() {
   console.log('\n== SKILL BENCH (x median; st = single target dps, pk = 15-dummy pack dps, cl = kills/min; number = gem level) ==');
   console.log('skill'.padEnd(20) + KEYS.map((k) => k.padStart(7)).join('') + '  weapon   score');
   for (const r of list) console.log(r.id.padEnd(20) + KEYS.map((k) => (r[k] / med[k]).toFixed(2).padStart(7)).join('') + '  ' + r.w.padEnd(8) + r.s.toFixed(2));
-  console.log(`spread strongest / weakest: ${(list[0].s / list[list.length - 1].s).toFixed(1)}x  (Heralds left out: they only act on kills)`);
+  // skills that need corpses, Shock, Attacks or blades from another skill score ~0 on their own
+  const alone = list.filter((r) => r.s >= 0.15), combo = list.filter((r) => r.s < 0.15).map((r) => r.id);
+  console.log(`spread strongest / weakest: ${(alone[0].s / alone[alone.length - 1].s).toFixed(1)}x  (Heralds left out: they only act on kills)`);
+  if (combo.length) console.log(`need another skill to work, not ranked: ${combo.join(', ')}`);
 }
 
 function botReport() {

@@ -42,7 +42,7 @@ function updateRangedMage(m, s, dt) {
   m.x = clampArena(m.x + m.vx * dt, 12); m.y = clampArena(m.y + m.vy * dt, 12);
   if (!target || distance > 400 || m.atkCd > 0 || s.disabled) return;
   // Actor movement speed and missile speed are deliberately separate.
-  const ps = Object.assign({}, s, { speedFinal: s.rangedSpeed * (1 + s.projSpeedInc) });
+  const ps = Object.assign({}, scaledStats(s, craftMinionMult(m, s)), { speedFinal: s.rangedSpeed * (1 + s.projSpeedInc) });
   const a = angleTo(m.x, m.y, target.x, target.y), n = Math.min(12, Math.max(1, s.proj));
   for (let k = 0; k < n; k++) spawnProjectile(m.inst, ps, m.x, m.y, a + (k - (n - 1) / 2) * 0.2, null);
   m.atkCd = s.hitCd / s.minionSpeedMul;

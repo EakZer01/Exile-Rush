@@ -231,6 +231,7 @@ test('all skill behaviors run with six independent slots and finite damage', () 
     for (const id of Object.keys(SKILLS)) {
       startGame(CLASSES[2]);
       const player = G.player, skill = newSkillInstance(id); player.skills = [skill]; skill.level = 20; skill.evo = true;
+      if (['shield_crush', 'shield_throw'].includes(id)) player.equip.offhand = makeNormal('tower_shield');
       const ws = SKILLS[id].weapons; if (ws) player.equip.weapon = makeNormal(Object.keys(BASES).find(b => BASES[b].w && ws.includes(BASES[b].w.type)));
       player.currency.jeweller6 = 1; G.state = 'inventory'; useSkillJeweller(skill, 'jeweller6'); G.state = 'play';
       for (const sid of Object.keys(SUPPORTS)) if (!supportBlockReason(sid, skill)) skill.supports.push(sid);

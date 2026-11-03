@@ -39,6 +39,7 @@ function updateSkills(dt) {
     const s = inst.st;
     if (inst.vaalT > 0) inst.vaalT -= dt;
     if (s.disabled) { if (inst.rt.blades) inst.rt.blades.length = 0; inst.rt.beamT = 0; inst.rt.totems = null; inst.rt.mirage = null; continue; }
+    if (craftOwnsTrigger(inst)) continue;
     if (inst.rt.mirage) updateMirage(inst, s, dt, speedMul);
     if (s.totem) { updateTotems(inst, s, dt, speedMul * (inst.vaalT > 0 ? 2.5 : 1)); continue; }
     if (s.behavior === 'flicker') { updateFlicker(inst, s, dt, speedMul); continue; }
@@ -67,6 +68,10 @@ function updateSkills(dt) {
 }
 
 function castSkill(inst, s) {
+  if (s.fistWar && !s.proc && G.time >= (inst.rt.fistAt || 0)) { inst.rt.fistAt = G.time + 2.5; s = { ...scaledStats(s, 1.8), radius: s.radius * 1.35, fistWar: false }; }
+  if (s.anchoredOrbit) inst.rt.orbitAnchor = { x: G.player.x, y: G.player.y };
+  const crafted = castBuildcraft(inst, s);
+  if (crafted !== null) return crafted;
   const P = G.player;
   switch (s.behavior) {
     case 'projectile': return castProjectiles(inst, s);
@@ -117,7 +122,7 @@ function castSkill(inst, s) {
       if (mine.length >= s.maxCount) return false;
       for (let k = 0; k < Math.min(s.summonN || 1, s.maxCount - mine.length); k++) {
         const a = rand(0, TAU);
-        G.minions.push({ x: P.x + Math.cos(a) * 20, y: P.y + Math.sin(a) * 20, vx: 0, vy: 0, t: s.durFinal, inst, atkCd: 0, target: null, retarget: 0 });
+        G.minions.push({ x: P.x + Math.cos(a) * 20, y: P.y + Math.sin(a) * 20, vx: 0, vy: 0, t: s.durFinal, inst, atkCd: 0, target: null, retarget: 0, born: G.time });
       }
       return true;
     }
@@ -379,7 +384,8 @@ function updateOrbit(inst, s, dt) {
     const a = inst.rt.ang + (i * TAU) / n;
     // blades breathe in and out so they sweep the whole area, not just a ring
     const rr = R * (0.6 + 0.4 * Math.sin(G.time * 2.2 + i * 2.4));
-    const bx = P.x + Math.cos(a) * rr, by = P.y + Math.sin(a) * rr;
+    const center = s.anchoredOrbit && inst.rt.orbitAnchor || P;
+    const bx = center.x + Math.cos(a) * rr, by = center.y + Math.sin(a) * rr;
     blades[i].x = bx; blades[i].y = by; blades[i].a = a;
     enemiesInRadius(bx, by, br, _orbList);
     for (const e of _orbList) {
@@ -437,6 +443,7 @@ function updateMinions(dt) {
       }
       G.minions.splice(i, 1); continue;
     }
+    if (buildcraftMinion(m, s, dt)) continue;
     if (m.retarget <= 0 || !m.target || m.target.dead) {
       m.target = nearestEnemy(m.x, m.y, 520); m.retarget = 0.35;
     }
@@ -453,7 +460,7 @@ function updateMinions(dt) {
     if (m.target && m.atkCd <= 0) {
       const rr = m.target.r + s.size + 4;
       if (dist2(m.x, m.y, m.target.x, m.target.y) < rr * rr) {
-        hitEnemy(m.target, s, m.inst, 1, m.x, m.y);
+        hitEnemy(m.target, s, m.inst, craftMinionMult(m, s), m.x, m.y);
         m.atkCd = s.hitCd / s.minionSpeedMul;
         addEffect({ kind: 'spark', x: m.target.x, y: m.target.y, r: 10, t: 0, dur: 0.15, color: s.color });
       }
