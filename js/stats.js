@@ -26,6 +26,8 @@ function supportBlockReason(supId, inst, ignoreSockets) {
   if (inst.supports.includes(supId)) return 'ใส่ไว้แล้ว';
   for (const c of sup.conflicts) if (inst.supports.includes(c)) return 'ใช้ร่วมกับ ' + SUPPORTS[c].name + ' ไม่ได้';
   const tags = skillTags(inst);
+  const useReason = supportUseReason(supId, SKILLS[inst.id], tags, activeSupports(inst).active);
+  if (useReason) return useReason;
   if (sup.req.length && !sup.req.some((t) => tags.has(t))) return 'ต้องมีแท็ก ' + sup.req.join(' / ');
   if (sup.all && !sup.all.every((t) => tags.has(t))) return 'ต้องมีแท็กเพิ่ม ' + sup.all.join(' / ');
   if (G.player && G.player.mods.ks.loneArcher && tags.has('Bow') && ['ballista_totem', 'mirage_archer'].includes(supId)) return 'Lone Archer ใช้ธนูร่วมกับ Ballista / Mirage Archer ไม่ได้';
@@ -46,14 +48,14 @@ function buildSkillStats(inst, p) {
     dmg: b.dmg, types: Object.assign({}, b.types),
     added: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 },
     cd: b.cd || 0, proj: b.proj || 0, speed: b.speed || 0, life: b.life || 0, size: b.size || 6,
-    spread: b.spread !== undefined ? b.spread : 0.2, pierce: b.pierce || 0, chain: b.chain || 0, fork: false,
+    spread: b.spread !== undefined ? b.spread : 0.2, pierce: b.pierce || 0, chain: b.chain || 0, fork: !!b.fork,
     area: b.area || 0, duration: b.duration || 0, range: b.range || 0, chainRange: b.chainRange || 0,
     maxCount: b.maxCount || 0, count: b.count || 0, hitCd: b.hitCd || 0, knock: b.knock || 0,
     crit: b.crit !== undefined ? b.crit : 0.05, critInc: 0, critMore: 1, critMulti: 1.5,
     ignite: b.ignite || 0, shock: b.shock || 0, poison: b.poison || 0, bleed: b.bleed || 0, bleedMore: 1, chillEff: b.chillEff || 1, noAilment: false,
     more: 1, moreEle: 1, moreChaos: 1, morePhys: 1, burnMore: 1, dotMore: 1, vsChilled: 1,
     speedInc: 0, areaInc: 0, areaMore: 1, durInc: 0, durMore: 1, projSpeedInc: 0,
-    echo: 0, leech: 0, cull: 0, minionSpeed: 0, cloudDps: b.cloudDps || 0,
+    echo: 0, leech: 0, cull: b.cull || 0, minionSpeed: 0, cloudDps: b.cloudDps || 0,
     explode: !!b.explode, wander: !!b.wander, aim: b.aim || 'nearest', pattern: b.pattern || 'fan',
     arrow: !!b.arrow, cloud: !!b.cloud,
     pen: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 }, ailMore: 1, hitMul: 1,
@@ -71,6 +73,7 @@ function buildSkillStats(inst, p) {
     const wm = attackWeaponMul(tags, p.weapon);
     s.more *= wm;
     if (p.weapon) s.crit = p.weapon.crit / 100;
+    s.crit += b.attackCritBonus || 0;
     s.weaponMul = wm;
   }
   for (const sid of activeSupports(inst, p).active) {
@@ -100,7 +103,7 @@ function buildSkillStats(inst, p) {
   s.durInc += m.durInc; s.projSpeedInc += m.projSpeedInc; s.leech += m.leech; s.minionSpeed += m.minionSpeed;
 
   // ascendancy modifiers
-  if (s.behavior === 'projectile') { s.proj += m.projAdd; s.pierce += m.pierceAdd; }
+  if (s.behavior === 'projectile' || s.rangedMinion) { s.proj += m.projAdd; s.pierce += m.pierceAdd; }
   if (tags.has('Projectile') || tags.has('Chaining')) s.chain += m.chainAdd;
   if (tags.has('Minion')) { s.maxCount += m.minionCount; s.more *= m.moreMinion; s.leech += m.minionLeech; }
   s.ignite += m.igniteAdd; s.shock += m.shockAdd; s.poison += m.poisonAdd;
@@ -167,7 +170,7 @@ function buildSkillStats(inst, p) {
   s.speedFinal = s.speed * (1 + s.projSpeedInc);
   s.lifeFinal = s.life * (s.wander ? (1 + s.durInc) * s.durMore : 1);
   s.dotMul = s.dotMore * (1 + m.incDot);
-  s.auraDps = s.hitTotal * s.burnMore * s.dotMul;           // Righteous Fire style
+  s.auraDps = DMG_TYPES.reduce((v, t) => v + (s.hit[t] || 0) * (t === 'fire' ? s.burnMore : 1), 0) * s.dotMul;
   s.cloudDpsFinal = s.hitTotal * s.cloudDps * s.dotMul;     // Caustic cloud
   s.ailmentDur = (1 + s.durInc * 0.5 + m.ailDurInc + (s.ailDurationBonus || 0)) * s.durMore * m.ailDurMore;
   s.minionSpeedMul = 1 + s.minionSpeed;
@@ -179,6 +182,7 @@ function describeStats(s) {
   const out = [];
   const typeStr = DMG_TYPES.filter((t) => s.hit[t]).map((t) => `<span style="color:${TYPE_COLOR[t]}">${fmtNum(s.hit[t])} ${t}</span>`).join(' + ');
   if (s.behavior === 'aura') out.push('ดาเมจเผา/วิ: <b>' + fmtNum(s.auraDps) + '</b>');
+  else if (s.brand === 'dot') out.push('DoT ของตรา/วิ (ก่อนโบนัสความถี่): <b>' + fmtNum(s.auraDps) + '</b> · ไม่ Hit');
   else if (s.herald === 'ice') out.push('ระเบิดเมื่อศัตรูติด Chill ตาย: ' + typeStr);
   else if (s.herald === 'ash') out.push('ปะทุเมื่อศัตรูติด Ignite ตาย: ' + typeStr);
   else if (s.herald === 'thunder') out.push('ฟ้าผ่าทุก ' + s.cdFinal.toFixed(2) + 's: ' + typeStr);
@@ -187,7 +191,8 @@ function describeStats(s) {
   if (s.cloud) out.push('หมอกพิษ/วิ: <b>' + fmtNum(s.cloudDpsFinal) + '</b>');
   if (s.behavior === 'beam') out.push('ลำแสงยาว ' + Math.round(s.range) + ' · ' + (1 / s.cdFinal).toFixed(1) + ' ครั้ง/วิ');
   else if (s.behavior !== 'aura' && s.behavior !== 'herald') out.push('คูลดาวน์: ' + s.cdFinal.toFixed(2) + 's');
-  if (s.brand) out.push('ตราสูงสุด: ' + s.maxCount + ' · ทำงานทุก ' + s.hitCd.toFixed(2) + 's');
+  if (s.brand) out.push('ตราสูงสุด: ' + s.maxCount + ' · ทำงานทุก ' + (s.hitCd / ((s.brandRate || 1) * (1 + s.speedInc * 0.5))).toFixed(2) + 's');
+  if (s.rangedMinion) out.push('มินเนียนยิงทุก ' + (s.hitCd / s.minionSpeedMul).toFixed(2) + 's · กระสุน ' + s.proj + ' ลูก');
   if (s.split) out.push('ลูกธนูย่อย: ' + s.split);
   if (s.fuseArrow) out.push('ชนวน: ' + s.durFinal.toFixed(2) + 's · สูงสุด 12 ดอก');
   if (s.scourge) out.push('ฝัก: ' + s.pods + ' · โต ' + s.durFinal.toFixed(2) + 's · หนาม ' + s.thorns + ' ดอก/ฝัก');

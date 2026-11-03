@@ -1,5 +1,15 @@
 # Changelog
 
+## Browser build 44 — 2026-11-03
+
+- Skill ใหม่ 7 อัน: Power Siphon / Kinetic Bolt (Attack ไม้กายสิทธิ์), Cobra Lash / Venom Gyre (ขว้างมีดสั้น), Wintertide Brand (DoT น้ำแข็ง), Lightning Tendrils (ลำแสงสายฟ้า), Summon Skeletal Mages (มินเนียนยิงไกล)
+- Support เฉพาะสาย 9 อัน: Swiftbrand, Brand Persistence, Brand Relay; Herald Amplification, Herald Echo, Herald Catalyst; Channel Intensity, Mobile Channel, Channel Fan
+- การ์ดสุ่ม, Codex, การใส่ Support และเจมที่ใส่ไว้แล้วใช้กฎความสามารถเดียวกัน ปิดคู่ที่ไม่มีพฤติกรรมรองรับ เช่น Ailment/Hit บน RF, การบิน/Chain ของลูกลาวา Molten Strike และ Spell Cascade บนกรวยที่ไม่มีจุดร่ายเพิ่ม
+- เจมเดิมที่ใช้ไม่ได้ยังอยู่ในช่อง แสดงว่าไม่ทำงานพร้อมเหตุผล ไม่ให้โบนัสหรือแท็ก และไม่สุ่มให้ใส่ซ้ำ
+- เงื่อนไขที่ต้องมีตัวเปิดผล (เช่น Elemental Army + Added Cold, Crimson Bleed + Chance to Bleed) ทำงานทั้งสองลำดับช่อง
+- ตรา DoT และมินเนียนยิงไกลมีข้อมูลในหน้าบิวและดัชนีเทียบไอเทม; Soulrend ใช้การไล่เป้าที่ระบุไว้ในข้อมูลได้จริง
+- รวม 63 Skill / 86 Support / 55 Passive / 21 Keystone · ทุกสกิลใหม่มีไอคอน ร่างวิวัฒน์ และคอมโบใน Codex
+
 ## Browser build 43 — 2026-11-03
 
 - เพิ่มธนู 4 อัน: Burning Arrow (Ignite), Explosive Arrow (ชนวนสะสมสูงสุด 12 ดอก), Puncture (Bleed), Scourge Arrow (ฝักพิษที่ยิงหนาม)

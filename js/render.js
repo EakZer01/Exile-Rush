@@ -771,12 +771,13 @@ function drawSkillExtras(ctx, P) {
       ctx.restore();
     }
     if (s.behavior === 'beam' && inst.rt.beamT > G.time) {
+      if (inst.id === 'lightning_tendrils') { drawTendrils(ctx, inst, s); continue; }
       const a = inst.rt.beamA, L = s.range, w = s.size * Math.sqrt((1 + s.areaInc) * s.areaMore) * (1 + (inst.rt.incStages || 0) * 0.07);
       const x1 = P.x + Math.cos(a) * L, y1 = P.y + Math.sin(a) * L;
       ctx.lineCap = 'round';
       ctx.strokeStyle = hexA(s.color, 0.35 + Math.sin(G.time * 40) * 0.08); ctx.lineWidth = w * 2;
       ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(x1, y1); ctx.stroke();
-      ctx.strokeStyle = hexA(s.core, 0.8); ctx.lineWidth = w * 0.5;
+      ctx.strokeStyle = hexA(s.core, inst.rt.strongFlash > G.time ? 1 : 0.8); ctx.lineWidth = w * (inst.rt.strongFlash > G.time ? 0.85 : 0.5);
       ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(x1, y1); ctx.stroke();
       ctx.lineCap = 'butt';
       if (Math.random() < 0.5) emit('ember', x1 + rand(-10, 10), y1 + rand(-10, 10), 1);

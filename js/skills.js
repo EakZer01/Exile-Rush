@@ -50,7 +50,7 @@ function updateSkills(dt) {
     if (s.behavior === 'orbit') updateOrbit(inst, s, dt);
     if (s.behavior === 'brand') updateBrands(inst, s, dt);
     if (s.behavior === 'spin') inst.rt.spin = (inst.rt.spin || 0) + dt * 12;
-    inst.timer -= dt * speedMul * (inst.vaalT > 0 ? 2.5 : 1);
+    inst.timer -= dt * speedMul * (inst.vaalT > 0 ? 2.5 : 1) * (s.mobileChannel && channelMoving() ? 1.25 : 1);
     if (inst.timer <= 0) {
       // Ruthless: every 3rd attack is a Ruthless Blow (its hits land within this instant)
       if (s.ruthless && (inst.rt.rc || 0) % 3 === 2) inst.rt.ruthT = G.time + 0.12;
@@ -196,14 +196,14 @@ function updateProjectiles(dt) {
       list[i] = list[list.length - 1]; list.pop();
       continue;
     }
-    if (p.s.wander) {
+    if (p.s.wander || p.s.seek) {
       p.wt -= dt;
       if (p.wt <= 0) {
         p.wt = 0.1 + Math.random() * 0.1;
         const sp = Math.hypot(p.vx, p.vy);
         const tgt = p.s.seek ? nearestEnemy(p.x, p.y, 320) : null;
         if (tgt) p.a = angleTo(p.x, p.y, tgt.x, tgt.y) + rand(-0.45, 0.45);
-        else p.a += rand(-0.9, 0.9);
+        else if (p.s.wander) p.a += rand(-0.9, 0.9);
         p.vx = Math.cos(p.a) * sp; p.vy = Math.sin(p.a) * sp;
       }
     }
@@ -434,6 +434,7 @@ function updateMinions(dt) {
     if (m.retarget <= 0 || !m.target || m.target.dead) {
       m.target = nearestEnemy(m.x, m.y, 520); m.retarget = 0.35;
     }
+    if (s.rangedMinion) { updateRangedMage(m, s, dt); continue; }
     const sp = s.speed * s.minionSpeedMul;
     let tx, ty;
     if (m.target) { tx = m.target.x; ty = m.target.y; }
@@ -552,12 +553,21 @@ function updateBrands(inst, s, dt) {
     const b = brands[i];
     b.t -= dt;
     if (b.t <= 0) { brands.splice(i, 1); continue; }
-    if (!b.target || b.target.dead) b.target = nearestEnemy(b.x, b.y, 260);
+    if (!b.target || b.target.dead) {
+      b.target = nearestEnemy(b.x, b.y, s.brandRelay ? 468 : 260);
+      if (b.target && s.brandRelay) { b.act = 0; addEffect({ kind: 'ring', x: b.target.x, y: b.target.y, r: 24, t: 0, dur: 0.2, color: s.color }); }
+    }
     if (b.target) { b.x = b.target.x; b.y = b.target.y; }
     b.act -= dt * (1 + s.speedInc * 0.5);
     if (b.act > 0 || !b.target) continue;
-    b.act = s.hitCd;
-    if (s.brand === 'chain') {
+    b.act = s.hitCd / (s.brandRate || 1);
+    if (s.brand === 'dot') {
+      for (const e of enemiesInRadius(b.x, b.y, s.radius, [])) {
+        dotDamage(e, s.auraDps * s.hitCd, inst, s.color);
+        e.winterSlowUntil = G.time + 0.7;
+      }
+      addEffect({ kind: 'ring', x: b.x, y: b.y, r: s.radius, t: 0, dur: 0.22, color: s.color });
+    } else if (s.brand === 'chain') {
       // lightning from the brand jumping between enemies
       let tgt = b.target; const hit = new Set(), pts = [[b.x, b.y - 14]];
       for (let j = 0; j <= s.chain && tgt; j++) {
@@ -632,6 +642,7 @@ function heraldThunder(inst, s) {
     emit('spark', e.x, e.y, 5);
   }
   Sfx.play('zap');
+  echoHeraldThunder(inst, s);
   return true;
 }
 
@@ -751,7 +762,8 @@ function castBeam(inst, s) {
   const want = angleTo(P.x, P.y, tgt.x, tgt.y);
   const cur = inst.rt.beamA === undefined ? want : inst.rt.beamA;
   let da = ((want - cur + Math.PI * 3) % TAU) - Math.PI;
-  inst.rt.beamA = cur + clamp(da, -0.6, 0.6);           // sweeps instead of snapping
+  const turn = s.mobileChannel ? 1.2 : 0.6;
+  inst.rt.beamA = cur + clamp(da, -turn, turn);
   inst.rt.beamT = G.time + 0.25;
   if (inst.id === 'incinerate') {
     const rt = inst.rt, moving = Math.hypot(P.vx, P.vy) > 10 || P.dashT > 0;
@@ -759,13 +771,15 @@ function castBeam(inst, s) {
     rt.incLast = G.time;
   }
   const ax = Math.cos(inst.rt.beamA), ay = Math.sin(inst.rt.beamA), L = s.range;
+  const channelMult = channelPulseMultiplier(inst, s);
+  if (s.strongPulse && ((inst.rt.rc || 0) + 1) % s.strongPulse === 0) inst.rt.strongFlash = G.time + 0.12;
   const w = s.size * Math.sqrt((1 + s.areaInc) * s.areaMore) * (1 + (inst.rt.incStages || 0) * 0.07);
   G.hash.query(P.x + ax * L / 2, P.y + ay * L / 2, L / 2 + 40, _beamList);
   for (const e of _beamList) {
     if (e.dead) continue;
     const rx = e.x - P.x, ry = e.y - P.y, along = rx * ax + ry * ay;
     if (along < 0 || along > L) continue;
-    if (Math.abs(rx * ay - ry * ax) < w + e.r) hitEnemy(e, s, inst, 1, P.x, P.y);
+    if (Math.abs(rx * ay - ry * ax) < w + e.r) hitEnemy(e, s, inst, channelMult, P.x, P.y);
   }
   return true;
 }

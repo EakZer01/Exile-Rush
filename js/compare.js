@@ -24,6 +24,8 @@ function statSnapshot(equip) {
     const s = buildSkillStats(inst, fake);
     if (s.disabled) continue;
     if (s.behavior === 'aura') dps += s.auraDps;
+    else if (s.brand === 'dot') dps += s.auraDps * s.maxCount * (s.brandRate || 1) * (1 + s.speedInc * 0.5);
+    else if (s.rangedMinion) dps += avgHit(s) * s.maxCount * Math.max(1, s.proj) / Math.max(0.1, s.hitCd / s.minionSpeedMul);
     else if (s.behavior !== 'herald' || s.herald === 'thunder') dps += (avgHit(s) / Math.max(0.1, s.cdFinal)) * Math.max(1, s.proj || 1) * (1 + (s.echo || 0)) * (s.behavior === 'flicker' ? s.flickers : 1) * (s.herald === 'thunder' ? Math.min(s.bolts, 3) : 1) * (s.totem ? s.totemMax : 1) * (s.mirage ? 1.6 : 1);
   }
   return { life, es, armour: m.armour, evasion: m.evasion, block: Math.min(0.5, m.block), res, move: 200 * (1 + m.moveInc) * m.moveMore, dps };

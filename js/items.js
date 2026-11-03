@@ -241,7 +241,7 @@ function useSkillJeweller(inst, id) {
   recomputePlayer();
   return true;
 }
-function activeSupports(inst) {
+function activeSupports(inst, p = G.player) {
   const so = skillSockets(inst), active = [], inactive = [], slots = Array(so.cap).fill(null), reasons = {};
   const tags = new Set(SKILLS[inst.id].tags), candidates = [], seen = new Set(), enabled = new Set();
   for (const [index, sid] of inst.supports.entries()) {
@@ -256,6 +256,7 @@ function activeSupports(inst) {
       if (enabled.has(sid) || enabled.size >= so.cap) continue;
       const sup = SUPPORTS[sid];
       if (sup.all && !sup.all.every((t) => tags.has(t))) continue;
+      if (supportUseReason(sid, SKILLS[inst.id], tags, [...enabled], p && p.mods)) continue;
       if ((sup.req.length && !sup.req.some((t) => tags.has(t))) || sup.excl.some((t) => tags.has(t)) || sup.conflicts.some((s) => enabled.has(s))) continue;
       enabled.add(sid); changed = true;
       for (const tag of sup.addTags) tags.add(tag);
@@ -266,7 +267,7 @@ function activeSupports(inst) {
     if (enabled.has(sid)) { slots[inst.supports.indexOf(sid)] = sid; active.push(sid); }
     else {
       inactive.push(sid);
-      reasons[sid] = enabled.size >= so.cap ? 'ช่อง Support ไม่พอ · ใช้ Jeweller เพิ่มช่อง' : 'แท็กสกิลไม่ตรง หรือขัดกับ Support ที่ทำงานอยู่';
+      reasons[sid] = supportUseReason(sid, SKILLS[inst.id], tags, [...enabled], p && p.mods) || (enabled.size >= so.cap ? 'ช่อง Support ไม่พอ · ใช้ Jeweller เพิ่มช่อง' : 'แท็กสกิลไม่ตรง หรือขัดกับ Support ที่ทำงานอยู่');
     }
   }
   return { active, inactive, slots, so, reasons };

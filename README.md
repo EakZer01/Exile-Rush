@@ -15,6 +15,16 @@
 
 ## ระบบหลัก
 
+Build 44 เพิ่ม [js/data/specialists.js](js/data/specialists.js) และ [js/specialists.js](js/specialists.js):
+
+- **Attack ไม้กายสิทธิ์**: Power Siphon (คริ+กระโดด+ประหาร), Kinetic Bolt (กายภาพแตกแขนง) · **มีดสั้น**: Cobra Lash (พิษกระโดด), Venom Gyre (คมพิษบินกลับหนึ่งรอบ)
+- **Wintertide Brand**: ตราน้ำแข็ง DoT รอบเป้าพร้อมหน่วงการเดิน ไม่ Hit/คริ/สร้าง Ailment · **Lightning Tendrils**: ลำแสงสายฟ้าพัลส์แรงทุกครั้งที่ 4 · **Summon Skeletal Mages**: มินเนียนยิงน้ำแข็งจากตัวเอง เพิ่มกระสุน/Chain/ความเร็วมินเนียนได้
+- **Support Brand**: Swiftbrand (ถี่ขึ้นแลกอายุ), Brand Persistence (นานขึ้นแลกความถี่), Brand Relay (ย้ายหาเป้าใหม่ไกลขึ้นเมื่อเจ้าบ้านตาย)
+- **Support Herald**: Herald Amplification (แรง/กว้างขึ้น), Herald Echo (ซ้ำครั้งเดียวที่ 45%), Herald Catalyst (Ice/Ash กระตุ้นจากศพใกล้ตัวได้ทุกศพแลกดาเมจ; Thunder เพิ่มเป้าที่ติด Shock)
+- **Support Channelling**: Channel Intensity (ยืนนิ่งสะสมดาเมจ), Mobile Channel (หันไว/ยิงถี่ขึ้นขณะเดิน), Channel Fan (กว้างขึ้นแลกระยะ)
+- แก้ Support ที่ไม่เข้ากับกลไก: ไม่สุ่ม/ให้ใส่คู่ที่ใช้ผลหลักไม่ได้ เช่น Deadly Ailments / Unbound Ailments / Combustion / Penetration กับ RF; เจมเดิมยังอยู่ในช่องแต่ไม่ให้ผลและมีเหตุผลแสดงในกระเป๋า
+
+
 Build 43 เพิ่มชุดธนูใน [js/data/bows.js](js/data/bows.js) และ [js/bows.js](js/bows.js):
 
 - **Burning Arrow** ยิงไฟและ Ignite, **Explosive Arrow** ปักชนวนสะสมแล้วระเบิด, **Puncture** ยิงทะลุพร้อม Bleed, **Scourge Arrow** ยิงอัตโนมัติและวางฝักพิษที่แตกยิงหนาม (ไม่ต้องกดชาร์จ)
@@ -34,8 +44,8 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
 - Spell Totem ใช้กับเวทที่ยิงกระสุนเท่านั้น ป้อมไม่มีเลือดตามระบบเดิม; Raise Zombie ไม่ต้องใช้ศพและไม่มีเลือดมินเนียน; Life Gain on Hit สูงสุด 5% ชีวิต/วินาที/สกิล; ร่าง Vaal ใหม่เป็นรูปแบบดัดแปลงของเกมนี้
 - อ้างอิง: [PoEDB Skill Gems](https://poedb.tw/us/Skill_Gems), [PoEDB Support Gems](https://poedb.tw/us/Support_Gems), [Passive Tree ทางการ](https://www.pathofexile.com/passive-skill-tree) (ลิงก์ PoEDB Passive API ตอบ 404 ตอนตรวจ)
 
-- **Skill Gem 56 อัน** ร่ายอัตโนมัติ (เริ่ม 4 ช่องสกิล — Milestone เลเวล 30 ขึ้นไปมีการ์ดช่องสกิล +1 ได้สูงสุด 2 ครั้ง · Ascendancy Wanderlust +1 · Keystone Specialist -1 / Collector +2 · เลเวลเจม 1–20) มีรูปแบบ Projectile, Nova, Chain, Orbit, Ground, Aura, Minion, Spin, **Brand** (ประทับตราบนศัตรู), **Strike**, **Slam + Aftershock**, **Beam** (Channelling), **Herald** (ทำงานตอนศัตรูตาย) และ **Flicker Strike** (วาร์ปตัวจริงเป็นชุดสั้น ๆ กดเดินเพื่อหยุด หรือ T เพื่อเปิด/พัก) · สกิลใหม่: Lacerate (ดาบ/ขวาน, Bleed), Viper Strike (มีดสั้น/ดาบ, Poison), Ground Slam (กระบอง/คทา/ขวาน/คทายาว, คลื่นกรวย), Ice Shot (ธนู, กรวยน้ำแข็ง), Rain of Arrows (ธนู, ห่าฝน), **Herald of Ash** (ศัตรูที่ติด Ignite ตายแล้วไฟลุกลามต่อ), **Herald of Thunder** (ฟ้าผ่าศัตรูที่ติด Shock รอบตัวเป็นระยะ)
-- **Support Gem 77 อัน** (ใหม่: **Ballista Totem** วางป้อมยิงอัตโนมัติแทนการยิงเอง, **Mirage Archer** ร่างเงายิงตาม, **Melee Splash** สำหรับสกิล Strike, **Onslaught** ฆ่าแล้วเร็วขึ้น) ทุกสกิลเริ่มด้วย **2 ช่อง Support ของตัวเอง** เพิ่มได้ถึง **6 ช่อง Support** ด้วย Jeweller's Orb · ไม่จำกัดสี ไม่มี Socket/Link บนอุปกรณ์ · Support ยังต้องมีแท็กที่เข้ากับสกิลและไม่ขัดกัน รวมถึงคำสาป (Hextouch), Penetration, Elemental Proliferation, Spell Cascade, Multistrike, Ruthless, Brutality, Deadly Ailments, Returning Projectiles, Fortify, Close Combat, Impale, Trinity, Arcane Surge, Unleash, Barrage, Pulverise
+- **Skill Gem 63 อัน** ร่ายอัตโนมัติ (เริ่ม 4 ช่องสกิล — Milestone เลเวล 30 ขึ้นไปมีการ์ดช่องสกิล +1 ได้สูงสุด 2 ครั้ง · Ascendancy Wanderlust +1 · Keystone Specialist -1 / Collector +2 · เลเวลเจม 1–20) มีรูปแบบ Projectile, Nova, Chain, Orbit, Ground, Aura, Minion, Spin, **Brand** (ประทับตราบนศัตรู), **Strike**, **Slam + Aftershock**, **Beam** (Channelling), **Herald** (ทำงานตอนศัตรูตาย) และ **Flicker Strike** (วาร์ปตัวจริงเป็นชุดสั้น ๆ กดเดินเพื่อหยุด หรือ T เพื่อเปิด/พัก) · สกิลใหม่: Lacerate (ดาบ/ขวาน, Bleed), Viper Strike (มีดสั้น/ดาบ, Poison), Ground Slam (กระบอง/คทา/ขวาน/คทายาว, คลื่นกรวย), Ice Shot (ธนู, กรวยน้ำแข็ง), Rain of Arrows (ธนู, ห่าฝน), **Herald of Ash** (ศัตรูที่ติด Ignite ตายแล้วไฟลุกลามต่อ), **Herald of Thunder** (ฟ้าผ่าศัตรูที่ติด Shock รอบตัวเป็นระยะ)
+- **Support Gem 86 อัน** (ใหม่: **Ballista Totem** วางป้อมยิงอัตโนมัติแทนการยิงเอง, **Mirage Archer** ร่างเงายิงตาม, **Melee Splash** สำหรับสกิล Strike, **Onslaught** ฆ่าแล้วเร็วขึ้น) ทุกสกิลเริ่มด้วย **2 ช่อง Support ของตัวเอง** เพิ่มได้ถึง **6 ช่อง Support** ด้วย Jeweller's Orb · ไม่จำกัดสี ไม่มี Socket/Link บนอุปกรณ์ · Support ยังต้องมีแท็กที่เข้ากับสกิลและไม่ขัดกัน รวมถึงคำสาป (Hextouch), Penetration, Elemental Proliferation, Spell Cascade, Multistrike, Ruthless, Brutality, Deadly Ailments, Returning Projectiles, Fortify, Close Combat, Impale, Trinity, Arcane Surge, Unleash, Barrage, Pulverise
 - **Passive 55 อัน + Keystone 21 อัน** (เช่น Crimson Dance, Elemental Overload, Avatar of Fire, Elemental Equilibrium, Runebinder, Hex Master, **Chaos Inoculation**, Perfect Agony, Arrow Dancing)
 - **คอมโบตัวอย่าง**: Herald of Ice + Ice Nova/Freezing Pulse (ศัตรูแช่แข็งแตกระเบิดต่อเนื่อง) · Contagion + Essence Drain (พิษแพร่ทั้งฝูง) · Storm/Armageddon Brand + Runebinder · คำสาป + Penetration ทะลุ map mod Warded · Elemental Equilibrium + สกิลหลายธาตุ
 - **เลเวลอัป**: เลือกการ์ด 3 ใบ (สกิลใหม่ / เลเวลเจม +2 / Support / Passive +2 ระดับ) ประมาณ 50–60 ครั้งต่อรอบ การ์ดที่เข้ากับบิลด์มีป้าย **★** · ทุก 10 เลเวลเป็น **MILESTONE** (Keystone ที่เข้ากับสกิลของคุณ, Awaken, Empower +3 เลเวลเจมหลัก, ช่องสกิล +1 ตั้งแต่เลเวล 30)
