@@ -25,7 +25,7 @@ defAsc({ id: 'pyromancer', cls: 'witch', name: 'Pyromancer', th: 'นักเ�
 defAsc({ id: 'bonecaller', cls: 'witch', name: 'Bonecaller', th: 'ผู้ปลุกวิญญาณ', color: '#a070ff', icon: '☠',
   desc: 'สายมินเนียน กองทัพหัวกะโหลกรับใช้',
   nodes: [
-    { id: 'grave_command', name: 'Grave Command', icon: '☠', desc: 'ได้ Summon Raging Spirit Lv 3 ฟรี (ถ้ามีแล้ว +3 เลเวล) · มินเนียนสูงสุด +1', grant: 'raging_spirit', apply(m) { m.minionCount += 1; } },
+    { id: 'grave_command', name: 'Grave Command', icon: '☠', desc: 'ได้ Summon Raging Spirit Lv 3 ฟรี (ถ้ามีแล้ว +3 เลเวล; ถ้าช่องเต็ม +3 ให้เจมมินเนียนที่มีอยู่ หรือเจมที่ทำดาเมจสูงสุดแทน ไม่เกิน Lv 20) · มินเนียนสูงสุด +1', grant: 'raging_spirit', apply(m) { m.minionCount += 1; } },
     { id: 'bone_legion', name: 'Bone Legion', icon: '⚔', desc: 'ดาเมจมินเนียน 40% more · มินเนียนเร็วขึ้น 20%', apply(m) { m.moreMinion *= 1.4; m.minionSpeed += 0.2; } },
     { id: 'soul_tether', name: 'Soul Tether', icon: '♥', desc: 'ดูดชีวิต 3% ของดาเมจมินเนียน · รับดาเมจ 15% less ขณะมีมินเนียน 3 ตัวขึ้นไป', apply(m) { m.minionLeech += 0.03; m.ks.minionGuard = true; } },
     { id: 'pyre_rite', name: 'Pyre Rite', icon: '✷', desc: 'ศัตรูที่ถูกมินเนียนฆ่าจะระเบิดเป็นไฟ ทำดาเมจรอบตัว', apply(m) { m.ks.minionKillBoom = true; } },
@@ -130,7 +130,7 @@ defAsc({ id: 'paragon', cls: 'scion', name: 'Paragon', th: 'ผู้สมบ�
 defAsc({ id: 'wayfarer', cls: 'scion', name: 'Wayfarer', th: 'ผู้พเนจร', color: '#a8c8ff', icon: '✈',
   desc: 'สายเจม สกิลเยอะ ช่วยเพิ่มช่อง Support',
   nodes: [
-    { id: 'wanderlust', name: 'Wanderlust', icon: '✈', desc: 'ช่องสกิล +1 · +8% ความเร็วเคลื่อนที่', apply(m) { m.skillSlots += 1; m.moveInc += 0.08; } },
+    { id: 'wanderlust', name: 'Wanderlust', icon: '✈', desc: 'ช่องสกิล +1 (รวมทุกโบนัสสูงสุด 6) · +8% ความเร็วเคลื่อนที่', apply(m) { m.skillSlots += 1; m.moveInc += 0.08; } },
     { id: 'gem_prodigy', name: 'Gem Prodigy', icon: '◆', desc: 'เจมสกิลทุกอันเลเวล +2 ทันที', instant: 'gems2', apply() {} },
     { id: 'linkmaster', name: 'Gemsmith', icon: '⬡', desc: "ได้ Jeweller's Orb 3 ×2 · เลเวล Skill Gem ทุกอัน +1", instant: 'jeweller3x2', apply(m) { m.gemLevel += 1; } },
     { id: 'fortune', name: 'Fortune', icon: '✪', desc: 'ตัวเลือกตอนเลเวลอัพ +1 ใบ · ได้ Chaos Orb 3 ลูก', instant: 'chaos3', apply(m) { m.extraChoices += 1; } },

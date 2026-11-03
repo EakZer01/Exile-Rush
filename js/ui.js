@@ -136,7 +136,7 @@ function milestoneChoices(n) {
   for (const a of weightedSample(aw, Math.min(2, aw.length), () => 1)) pool.push(a);
   for (const inst of P.skills.slice().sort((a, b) => b.dmgDealt - a.dmgDealt).slice(0, 2)) if (inst.level < MAX_GEM_LEVEL) pool.push({ type: 'empower', inst });
   // late Milestones can open a 5th / 6th skill slot instead
-  if (P.level - G.pendingLevels + 1 >= MILESTONE_SLOT_LEVEL && P.extraSlots < MILESTONE_SLOT_MAX) pool.push({ type: 'slot' });
+  if (P.level - G.pendingLevels + 1 >= MILESTONE_SLOT_LEVEL && canExpandSkills(P)) pool.push({ type: 'slot' });
   const out = weightedSample(pool, Math.min(n, pool.length), (c) => (c.type === 'keystone' || c.type === 'slot' ? 2 : 1));
   const evo = P.skills.find(evolveRecipeMet);
   if (evo) { if (out.length >= n) out.pop(); out.unshift({ type: 'evolve', inst: evo }); }
@@ -147,7 +147,7 @@ function regularChoices(n) {
   const P = G.player, owned = new Set(P.skills.map((s) => s.id));
   const cats = { skill: [], level: [], support: [], passive: [], keystone: [] };
   // new gems must work with the weapon in hand (universal gems always do)
-  if (P.skills.length < MAX_SKILLS + P.mods.skillSlots) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id) && skillWeaponOk(id, P.weapon)) cats.skill.push({ type: 'skill', id });
+  if (P.skills.length < skillCapacity(P)) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id) && skillWeaponOk(id, P.weapon)) cats.skill.push({ type: 'skill', id });
   for (const inst of P.skills) if (inst.level < MAX_GEM_LEVEL) cats.level.push({ type: 'level', inst });
   for (const id in SUPPORTS) {
     if (P.skills.some((inst) => canSocketSupport(id, inst))) cats.support.push({ type: 'support', id });
@@ -267,10 +267,10 @@ function cardHtml(c, idx) {
       ${star}<div class="card-desc">${to - r > 1 ? `×${to - r}: ` : ''}${d.desc}</div>${pid ? pathNoteHtml(P, pid, to - r) : ''}</div>`;
   }
   if (c.type === 'slot') {
-    const cap = MAX_SKILLS + P.mods.skillSlots;
+    const cap = skillCapacity(P);
     return `<div class="card card-keystone card-ms">${key}
       <div class="card-head"><span class="node node-key">✚</span><div><div class="card-name">Expanded Arsenal</div><div class="card-th">ช่องสกิล +1</div></div><div class="badge badge-key">SLOT</div></div>
-      <div class="card-desc">มีสกิลได้สูงสุด ${cap} → <b>${cap + 1}</b> สกิล</div><div class="card-note">เลือกได้อีก ${MILESTONE_SLOT_MAX - P.extraSlots} ครั้งในรอบนี้ · สกิลเยอะ = การ์ดเลเวลและ Support กระจายมากขึ้น</div></div>`;
+      <div class="card-desc">มีสกิลได้สูงสุด ${cap} → <b>${Math.min(HARD_SKILL_CAP, cap + 1)}</b> สกิล</div><div class="card-note">เลือกได้อีก ${Math.min(MILESTONE_SLOT_MAX - P.extraSlots, HARD_SKILL_CAP - cap)} ครั้งในรอบนี้ · รวมทุกโบนัสไม่เกิน ${HARD_SKILL_CAP} สกิล</div></div>`;
   }
   if (c.type === 'mastery') {
     const o = MASTERY_OPT[c.id], path = RUN_PATHS[o.path], other = path.mastery.find((x) => x.id !== o.id);
@@ -378,11 +378,20 @@ function openAscend() {
 }
 function grantAscNode(id) {
   const P = G.player, n = ASC_NODES[id];
+  if (!n || P.ascNodes.includes(id)) return;
   P.ascNodes.push(id);
+  recomputePlayer();
   if (n.grant) {
     const have = P.skills.find((s) => s.id === n.grant);
     if (have) have.level = Math.min(MAX_GEM_LEVEL, have.level + 3);
-    else { const inst = newSkillInstance(n.grant); inst.level = 3; P.skills.push(inst); }
+    else if (P.skills.length < skillCapacity(P)) { const inst = newSkillInstance(n.grant); inst.level = 3; P.skills.push(inst); }
+    else {
+      const available = P.skills.filter(s => s.level < MAX_GEM_LEVEL);
+      const fallback = available.filter(s => SKILLS[s.id].tags.includes('Minion')).sort((a, b) => b.dmgDealt - a.dmgDealt)[0]
+        || available.slice().sort((a, b) => b.dmgDealt - a.dmgDealt)[0];
+      if (fallback) fallback.level = Math.min(MAX_GEM_LEVEL, fallback.level + 3);
+      announce('ช่องสกิลเต็ม', fallback ? skillDisplayName(fallback) + ' +3 เลเวลแทนสกิลฟรี' : 'รับโบนัสโหนดตามปกติ · เจมทุกอันเต็มเลเวลแล้ว', '#e8c870');
+    }
   }
   if (n.instant === 'gems2') for (const s of P.skills) s.level = Math.min(MAX_GEM_LEVEL, s.level + 2);
   if (n.instant === 'jeweller3x2') P.currency.jeweller3 += 2;
@@ -400,6 +409,9 @@ function skipLevel() {
 function chooseCard(i) {
   const c = G.choices[i], P = G.player;
   if (!c) return;
+  // Recheck at acquisition as well as generation, including stale/double clicks.
+  if (c.type === 'skill' && (P.skills.length >= skillCapacity(P) || P.skills.some(s => s.id === c.id))) return;
+  if (c.type === 'slot' && !canExpandSkills(P)) return;
   Sfx.play('select');
   if (c.type === 'skill') { const inst = newSkillInstance(c.id); inst.level = newSkillLevel() + gemStartBonus(c.id); P.skills.push(inst); recomputePlayer(); finishChoice(); }
   else if (c.type === 'level') { c.inst.level = Math.min(MAX_GEM_LEVEL, c.inst.level + GEM_LEVELS); recomputePlayer(); finishChoice(); }
@@ -899,7 +911,7 @@ function openInventory() {
     return `<span class="cur" style="color:${d.color}" title="${d.name}${d.th ? ': ' + d.th : ''}"><img class="cur-ico" src="${orbIconURL(d.color, d.icon)}" alt=""> ${JEWELLERS[k] ? 'J' + d.sockets + ' ×' : ''}${P.currency[k] || 0}</span>`;
   }).join('') + Object.keys(P.essences).filter((k) => P.essences[k] > 0).map((k) => `<span class="cur" style="color:${ESSENCES[k].color}" title="${ESSENCES[k].name}: การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')}">◆ ${P.essences[k]}</span>`).join('');
   $('inv-links').innerHTML = skillSocketsPanelHtml();
-  $('inv-links-n').textContent = `(${P.skills.length} สกิล${P.skills.some((s) => activeSupports(s).inactive.length) ? ' · ⚠ มี Support ไม่ทำงาน' : ''})`;
+  $('inv-links-n').textContent = `(${P.skills.length}/${skillCapacity(P)} สกิล${P.skills.some((s) => activeSupports(s).inactive.length) ? ' · ⚠ มี Support ไม่ทำงาน' : ''})`;
   $('inv-msg').textContent = invMsg; invMsg = '';
   // drag sources + hover preview (mouse only)
   const root = $('inventory'), hover = window.matchMedia && window.matchMedia('(hover: hover)').matches;

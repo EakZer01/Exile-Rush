@@ -6,6 +6,7 @@
 // ============================================================
 const MAX_GEM_LEVEL = 20;
 const MAX_SKILLS = 4;      // base skill slots; Milestone cards and some nodes add more
+const HARD_SKILL_CAP = 6;  // all slot bonuses and free skill grants share this ceiling
 const MILESTONE_SLOT_LEVEL = 30;  // from this Milestone a "+1 skill slot" card can show up
 const MILESTONE_SLOT_MAX = 2;     // at most two of them per run (4 → 6)
 const START_SOCKETS = 2;   // every skill starts with two neutral support slots

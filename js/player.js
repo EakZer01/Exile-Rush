@@ -56,6 +56,12 @@ function createPlayer(cls) {
 }
 
 // every modifier source for a given set of equipment (the item comparison uses other sets)
+function skillCapacity(p = G.player) {
+  return clamp(MAX_SKILLS + (p ? p.mods.skillSlots : 0), 1, HARD_SKILL_CAP);
+}
+function canExpandSkills(p = G.player) {
+  return !!p && p.extraSlots < MILESTONE_SLOT_MAX && skillCapacity(p) < HARD_SKILL_CAP;
+}
 function buildPlayerMods(equip) {
   const P = G.player, m = defaultMods();
   P.cls.apply(m);
@@ -69,6 +75,7 @@ function buildPlayerMods(equip) {
   const fx = G.mapFx;
   m.lifeMore *= fx.pLife; m.regen *= fx.pRegen; m.leechCap *= fx.pRegen; m.flaskGainMore *= fx.pFlask;
   m.extraChoices -= fx.pChoicesLess;
+  m.skillSlots = Math.min(m.skillSlots, HARD_SKILL_CAP - MAX_SKILLS);
   return m;
 }
 

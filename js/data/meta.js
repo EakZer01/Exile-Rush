@@ -45,7 +45,7 @@ const TREE_BRANCHES = [
     notA: tNotable('Fleetness', 'ฝีเท้าลม', '+6% ความเร็วเคลื่อนที่ · หลบการโจมตี 6%', (m) => { m.moveInc += 0.06; m.evade += 0.06; }),
     armB: [tSmall('+5% ดาเมจ Projectile', (m) => { m.incProj += 0.05; }), tSmall('+5% ดาเมจ Projectile', (m) => { m.incProj += 0.05; })],
     notB: tNotable('Barrage', 'ห่าธนู', 'Projectile ทะลุ +1 · +10% ดาเมจ Projectile', (m) => { m.pierceAdd += 1; m.incProj += 0.1; }),
-    key: tKey('Collector', 'นักสะสม', 'ช่องสกิล +2 (เริ่ม 6 สกิล) · ทุกสกิลทำดาเมจ 15% less', (m) => { m.skillSlots += 2; m.moreAll *= 0.85; }) },
+    key: tKey('Collector', 'นักสะสม', 'ช่องสกิล +2 (รวมทุกโบนัสสูงสุด 6 สกิล) · ทุกสกิลทำดาเมจ 15% less', (m) => { m.skillSlots += 2; m.moreAll *= 0.85; }) },
   { id: 'warden', name: 'Bastion', th: 'สายป้อมปราการ', color: '#e05a4a', icon: '❤', angle: 90,
     trunk: [tSmall('+5% ชีวิตสูงสุด', (m) => { m.lifeInc += 0.05; }), tSmall('+5% ชีวิตสูงสุด', (m) => { m.lifeInc += 0.05; })],
     hub: tNotable('Vitality', 'พลังชีวิต', '+12% ชีวิตสูงสุด · ฟื้นชีวิต +0.3%/วิ', (m) => { m.lifeInc += 0.12; m.regen += 0.003; }),

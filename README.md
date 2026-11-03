@@ -15,6 +15,9 @@
 
 ## ระบบหลัก
 
+ช่อง Skill Gem เริ่มที่ 4 และ **รวมทุกโบนัสแล้วไม่เกิน 6 ช่อง** (Collector, Wanderlust, Expanded Arsenal ใช้เพดานร่วมกัน) · เมื่อถึง 6 จะไม่มีการ์ดเพิ่มช่องให้เลือกอีก · สกิลฟรีจาก Grave Command ต้องมีช่องว่าง หากเต็มจะได้ +3 เลเวลให้เจมมินเนียนที่ยังไม่เต็มหรือเจมที่ทำดาเมจสูงสุดแทน ไม่เกิน Lv 20
+
+
 Build 44 เพิ่ม [js/data/specialists.js](js/data/specialists.js) และ [js/specialists.js](js/specialists.js):
 
 - **Attack ไม้กายสิทธิ์**: Power Siphon (คริ+กระโดด+ประหาร), Kinetic Bolt (กายภาพแตกแขนง) · **มีดสั้น**: Cobra Lash (พิษกระโดด), Venom Gyre (คมพิษบินกลับหนึ่งรอบ)
