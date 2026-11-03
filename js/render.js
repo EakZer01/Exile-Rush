@@ -583,26 +583,30 @@ function drawPlayer(ctx, P) {
   }
 }
 
-// ---- minimap: the whole arena, bottom-right ----
-function drawMinimap(ctx, W, H, P) {
-  if (!G.settings.minimap) return;
-  const S = W < 700 ? 112 : 168, x0 = W - S - 12, y0 = H - S - 12, k = S / (ARENA * 2);
+// ---- minimap: the whole arena; the HUD picks where it goes ----
+function drawMinimap(ctx, P, x0, y0, S) {
+  if (!G.settings.minimap) { G.minimapRect = null; return; }
+  const k = S / (ARENA * 2);
   const mx = (x) => x0 + (x + ARENA) * k, my = (y) => y0 + (y + ARENA) * k;
-  ctx.fillStyle = 'rgba(12,9,6,0.75)'; ctx.fillRect(x0, y0, S, S);
-  ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = 1.5; ctx.strokeRect(x0 + 0.5, y0 + 0.5, S - 1, S - 1);
+  // forged frame: dark gap ring, then a thin bronze line
+  ctx.fillStyle = HUD.line2; ctx.fillRect(x0 - 4, y0 - 4, S + 8, S + 8);
+  ctx.fillStyle = HUD.screen; ctx.fillRect(x0 - 3, y0 - 3, S + 6, S + 6);
+  ctx.fillStyle = 'rgba(6,10,8,0.85)'; ctx.fillRect(x0, y0, S, S);
+  ctx.strokeStyle = HUD.frame; ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0 + 0.5, S - 1, S - 1);
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, S, S); ctx.clip();
   // what's on screen
   const hw = G.W / 2 / G.zoom, hh = G.H / 2 / G.zoom;
-  ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,240,200,0.22)'; ctx.lineWidth = 1;
   ctx.strokeRect(mx(G.cam.x - hw), my(G.cam.y - hh), hw * 2 * k, hh * 2 * k);
-  const dot = (x, y, r, c) => { ctx.fillStyle = c; ctx.fillRect(mx(x) - r / 2, my(y) - r / 2, r, r); };
+  const dot = (x, y, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(mx(x), my(y), r / 2, 0, TAU); ctx.fill(); };
   for (const e of G.enemies) {
     if (e.dead || e.rarity === 3) continue;
-    if (e.rarity === 2) dot(e.x, e.y, 3.5, '#ffd84a'); else if (e.rarity === 1) dot(e.x, e.y, 2.5, '#8a8cff'); else dot(e.x, e.y, 1.6, 'rgba(220,70,60,0.85)');
+    if (e.rarity === 2) dot(e.x, e.y, 4, '#ffd84a'); else if (e.rarity === 1) dot(e.x, e.y, 3, '#8a8cff'); else dot(e.x, e.y, 2, 'rgba(224,65,58,0.85)');
   }
-  for (const g of G.items) if (g.item.rarity === 'unique' || g.item.rarity === 'rare') dot(g.x, g.y, 3, RARITY_COLOR[g.item.rarity]);
-  for (const s of G.shrines) dot(s.x, s.y, 4, SHRINES[s.kind].color);
+  for (const g of G.items) if (g.item.rarity === 'unique' || g.item.rarity === 'rare') dot(g.x, g.y, 4, RARITY_COLOR[g.item.rarity]);
+  for (const s of G.shrines) dot(s.x, s.y, 5, SHRINES[s.kind].color);
   // league content as rings so it stands out
-  const ring = (x, y, c) => { ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(mx(x), my(y), 4, 0, TAU); ctx.stroke(); };
+  const ring = (x, y, c) => { ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(mx(x), my(y), 5, 0, TAU); ctx.stroke(); };
   const B = G.breach; if (B && (B.state === 'placed' || B.state === 'open')) ring(B.x, B.y, '#c070ff');
   const L = G.league;
   if (L) {
@@ -612,11 +616,18 @@ function drawMinimap(ctx, W, H, P) {
     for (const e of G.enemies) if (e.encased && !e.dead) ring(e.x, e.y, ESSENCES[e.essence].color);
   }
   const boss = G.bossRef && !G.bossRef.dead ? G.bossRef : null;
-  if (boss) { dot(boss.x, boss.y, 7, boss.bossDef.glow); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(mx(boss.x) - 3.5, my(boss.y) - 3.5, 7, 7); }
-  // the player: white dot with a facing tick
+  if (boss) { dot(boss.x, boss.y, 8, boss.bossDef.glow); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(mx(boss.x) - 4.5, my(boss.y) - 4.5, 9, 9); }
+  // the player: white diamond with a facing tick
   const px = mx(P.x), py = my(P.y);
-  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py, 3, 0, TAU); ctx.fill();
-  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(P.facing) * 7, py + Math.sin(P.facing) * 7); ctx.stroke();
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(P.facing) * 9, py + Math.sin(P.facing) * 9); ctx.stroke();
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 5, py); ctx.lineTo(px, py + 5); ctx.lineTo(px - 5, py); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // area name, top-left
+  const name = BIOMES[G.map.biome].name.toLowerCase();
+  let fs = S < 120 ? 10 : 12;
+  ctx.textAlign = 'left'; ctx.font = `600 ${fs}px Cinzel, Sarabun, serif`;
+  while (fs > 7 && ctx.measureText(name).width > S - 14) { fs--; ctx.font = `600 ${fs}px Cinzel, Sarabun, serif`; }
+  ctx.fillStyle = HUD.faint; ctx.fillText(name, x0 + 7, y0 + (S < 120 ? 14 : 18));
   G.minimapRect = { x: x0, y: y0, w: S, h: S };
 }
 
@@ -799,281 +810,401 @@ function syncFlickerButton() {
   b.setAttribute('aria-pressed', String(!P.flickerPaused));
   b.title = P.flickerPaused ? 'เปิด Flicker (T)' : 'พัก Flicker (T) · กดเดินเพื่อหยุดวาร์ปทันที';
 }
-function drawHUD(ctx, W, H, P) {
-  const mobile = W < 700;
-  // XP bar
-  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, 12);
-  const xg = ctx.createLinearGradient(0, 0, 0, 12);
-  xg.addColorStop(0, '#7ad0ff'); xg.addColorStop(1, '#2a6ab0');
-  ctx.fillStyle = xg; ctx.fillRect(0, 1, W * clamp(P.xp / P.xpNext, 0, 1), 10);
-  ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = 1; ctx.strokeRect(0.5, 0.5, W - 1, 12);
+// Forged HUD palette (same tokens as css/style.css :root)
+const HUD = { screen: '#0b0908', void: '#050404', frame: '#5a4a36', line: '#3a2e1e', line2: '#3a3022', gold: '#c8a860', goldHi: '#f0d890',
+  cream: '#e8dcc0', time: '#f0e0b0', muted: '#b8a888', faint: '#8a7f6c', lvlup: '#ffd84a', es: '#7ab8ff', esText: '#9fd0ff', boss: '#d8622a' };
+const RARITY_FRAME = { normal: '#6a6a6a', magic: '#5a5cc0', rare: '#b8a030', unique: '#c06a2a' };
 
-  ctx.textAlign = 'left'; ctx.fillStyle = '#e8d8a8';
-  ctx.font = '700 15px Cinzel, serif';
-  ctx.fillText('Lv ' + P.level, 10, 32);
-  if ((G.cos && G.cos.title) || G.heat) {
-    ctx.font = '600 11px Sarabun, sans-serif'; ctx.fillStyle = '#e8c870';
-    ctx.fillText([G.cos && G.cos.title ? `「${G.cos.title.name}」` : '', G.heat ? `☠${G.heat}` : ''].filter(Boolean).join(' '), 10, 47);
-  }
-  if (P.asc) {
-    const a = ASCENDANCY[P.asc];
-    ctx.font = '700 12px Cinzel, serif'; ctx.fillStyle = a.color;
-    ctx.fillText(a.icon + ' ' + a.name, 10, 50);
-  }
-  // banked level-ups / boss chests waiting to be picked
-  const waiting = G.pendingLevels + G.pendingChests;
-  if (waiting > 0 && G.state === 'play') {
-    const txt = `⬆ เลือกการ์ด ×${waiting} (${mobile ? 'แตะ' : 'U'})`;
-    ctx.font = '700 14px Sarabun, sans-serif';
-    const w = ctx.measureText(txt).width + 16, y = 100;
-    ctx.fillStyle = hexA('#3a2a08', 0.9); ctx.fillRect(8, y - 16, w, 24);
-    ctx.strokeStyle = hexA('#ffd84a', 0.6 + Math.sin(G.time * 6) * 0.35); ctx.lineWidth = 2; ctx.strokeRect(8, y - 16, w, 24);
-    ctx.fillStyle = '#ffe9a0'; ctx.textAlign = 'left'; ctx.fillText(txt, 16, y + 1);
-    G.lvlRect = { x: 8, y: y - 16, w, h: 24 };
-  } else G.lvlRect = null;
-  if (P.revives > 0) {
-    ctx.font = '700 13px Sarabun, sans-serif'; ctx.fillStyle = '#fff0c0';
-    ctx.fillText('✟ Second Wind', 10, P.mods.ks.rage ? 86 : 68);
-  }
-  if (P.mods.ks.rage) {
-    ctx.font = '700 13px Sarabun, sans-serif'; ctx.fillStyle = P.rage > 0 ? '#ff5a4a' : '#7a4a40';
-    ctx.fillText('✊ Rage ' + Math.floor(P.rage), 10, 68);
-  }
+function hudSpacing(ctx, px) { ctx.letterSpacing = px + 'px'; }
+// one line made of differently coloured parts: [[text, colour], ...]
+function hudRun(ctx, parts, x, y, align) {
+  const ws = parts.map(([t]) => ctx.measureText(t).width), total = ws.reduce((a, w) => a + w, 0);
+  let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+  ctx.textAlign = 'left';
+  parts.forEach(([t, c], i) => { ctx.fillStyle = c; ctx.fillText(t, cx, y); cx += ws[i]; });
+  return total;
+}
+// text with a dark halo so it reads over the game
+function hudText(ctx, t, x, y, color, halo) {
+  ctx.lineWidth = halo || 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.strokeText(t, x, y);
+  ctx.fillStyle = color; ctx.fillText(t, x, y);
+}
+// flask silhouette: rounded shoulders, nearly square base
+function flaskPath(ctx, x, y, w, h) {
+  const rt = Math.min(10, w / 2), rb = 3;
+  ctx.beginPath();
+  ctx.moveTo(x, y + rt); ctx.arcTo(x, y, x + rt, y, rt); ctx.lineTo(x + w - rt, y); ctx.arcTo(x + w, y, x + w, y + rt, rt);
+  ctx.lineTo(x + w, y + h - rb); ctx.arcTo(x + w, y + h, x + w - rb, y + h, rb); ctx.lineTo(x + rb, y + h); ctx.arcTo(x, y + h, x, y + h - rb, rb);
+  ctx.closePath();
+}
+function diamondPath(ctx, cx, cy, half) {
+  ctx.beginPath(); ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half, cy); ctx.lineTo(cx, cy + half); ctx.lineTo(cx - half, cy); ctx.closePath();
+}
 
-  // timer
-  ctx.textAlign = 'center';
-  ctx.font = '700 26px Cinzel, serif';
-  ctx.fillStyle = '#f0e0b0';
-  ctx.fillText(fmtTime(G.time), W / 2, 42);
-  ctx.font = '600 13px Sarabun, sans-serif'; ctx.fillStyle = '#b8a888';
-  ctx.fillText('☠ ' + G.stats.kills, W / 2, 60);
-  if (G.endless) {
-    ctx.font = '700 13px Cinzel, serif'; ctx.fillStyle = '#ff6a5a';
-    ctx.fillText(`ENDGAME ∞ ${fmtTime(G.time - G.endStart)} · Echo ${G.stats.echoes || 0} · ตัวถัดไป ${Math.max(0, Math.ceil(G.nextEcho - G.time))}s`, W / 2, G.bossRef && !G.bossRef.dead ? 134 : 92);
+// left column: shrine buffs, Rage and Second Wind as underlined coloured words
+function hudBuffs(P) {
+  const out = [];
+  for (const k in G.buffs) if (G.buffs[k] > 0) out.push([SHRINES[k].name.replace(' Shrine', '') + ' ' + Math.ceil(G.buffs[k]) + 's', SHRINES[k].color]);
+  if (P.mods.ks.rage) out.push(['Rage ' + Math.floor(P.rage), P.rage > 0 ? '#ff7a6a' : '#7a4a40']);
+  if (P.revives > 0) out.push(['✟ Second Wind', '#fff0c0']);
+  return out;
+}
+function drawBuffRow(ctx, list, x, y, size) {
+  ctx.font = `600 ${size}px Sarabun, sans-serif`; ctx.textAlign = 'left';
+  for (const [t, c] of list) {
+    const w = ctx.measureText(t).width;
+    hudText(ctx, t, x, y, c, 2);
+    ctx.fillStyle = c; ctx.fillRect(x, y + 4, w, 1);
+    x += w + 14;
   }
-  if (G.map.tier > 1 || G.map.biome !== 'graveyard' || G.map.mods.length) {
-    ctx.fillStyle = BIOMES[G.map.biome].color; ctx.font = '600 12px Cinzel, Sarabun, serif';
-    ctx.fillText(mapLabel(G.map) + (G.map.mods.length ? ` · ${G.map.mods.length} mods` : ''), W / 2, G.bossRef && !G.bossRef.dead ? 116 : 76);
+}
+// "pick a card" call-out; also the tap target for banked level-ups
+function drawCardButton(ctx, x, y, mobile, waiting) {
+  const txt = mobile ? `⬆ แตะเลือกการ์ด ×${waiting}` : `⬆ เลือกการ์ด ×${waiting} · U`;
+  ctx.font = `700 ${mobile ? 13 : 14}px Sarabun, sans-serif`;
+  const padX = 12, h = mobile ? 44 : 28, w = ctx.measureText(txt).width + padX * 2;
+  ctx.fillStyle = 'rgba(40,30,8,0.85)'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = hexA(HUD.lvlup, 0.65 + Math.sin(G.time * 6) * 0.35); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#ffe9a0'; ctx.fillText(txt, x + padX, y + h / 2 + 5);
+  G.lvlRect = { x, y, w, h };
+}
+// boss name, phase counter and a bar with ticks at the real phase thresholds
+function drawBossBar(ctx, boss, x, y, w, mobile) {
+  const def = boss.bossDef, phases = def.phases || [];
+  ctx.textAlign = 'left'; ctx.font = `700 ${mobile ? 15 : 18}px Cinzel, Sarabun, serif`;
+  hudSpacing(ctx, mobile ? 1 : 2); hudText(ctx, boss.name, x, y, '#f8e8c0'); hudSpacing(ctx, 0);
+  if (phases.length) {
+    ctx.textAlign = 'right'; ctx.font = '600 12px Sarabun, sans-serif';
+    hudText(ctx, `เฟส ${phases.length - boss.phases.length + 1} / ${phases.length + 1}`, x + w, y, HUD.faint, 2);
   }
-
-  // currency
-  ctx.textAlign = 'right'; ctx.font = '600 14px Sarabun, sans-serif';
-  ctx.fillStyle = PICKUPS.chaos.color; ctx.fillText('✪ Chaos ×' + P.currency.chaos, W - 12, 32);
-  ctx.fillStyle = JEWELLERS.jeweller4.color; ctx.fillText('⬡ Jeweller ×' + Object.keys(JEWELLERS).reduce((n, k) => n + (P.currency[k] || 0), 0), W - 12, 50);
-  ctx.fillStyle = P.newItems > 0 ? hexA('#ffe866', 0.7 + Math.sin(G.time * 6) * 0.3) : '#b8a888';
-  ctx.fillText(`🎒 ${mobile ? 'แตะ' : 'I'} กระเป๋า (${P.backpack.length})`, W - 12, 68);
-  const orbs = ['regal', 'exalt', 'divine', 'annul', 'whetstone', 'scrap', 'vaal'].reduce((a, k) => a + (P.currency[k] || 0), 0);
-  if (orbs > 0) { ctx.fillStyle = '#c8b8e8'; ctx.fillText(`Orb คราฟต์ ×${orbs}`, W - 12, 86); }
-  const B = G.breach;
-  let ly = G.bossRef && !G.bossRef.dead ? 134 : 96;
-  if (B && B.state === 'open') {
-    ctx.textAlign = 'center'; ctx.font = '700 16px Cinzel, serif'; ctx.fillStyle = '#d8a0ff';
-    ctx.fillText(`BREACH ${Math.max(0, B.t).toFixed(1)}s · ☠ ${B.kills}`, W / 2, ly); ly += 20;
-    ctx.textAlign = 'right'; ctx.font = '600 14px Sarabun, sans-serif';
+  const by = y + (mobile ? 6 : 8), bh = mobile ? 6 : 8;
+  ctx.fillStyle = HUD.void; ctx.fillRect(x, by, w, bh);
+  ctx.fillStyle = boss.immuneT > 0 ? '#f0b080' : HUD.boss; ctx.fillRect(x, by, w * clamp(boss.hp / boss.maxHp, 0, 1), bh);
+  ctx.strokeStyle = HUD.frame; ctx.lineWidth = 1; ctx.strokeRect(x - 0.5, by - 0.5, w + 1, bh + 1);
+  ctx.fillStyle = HUD.goldHi;
+  for (const t of phases) ctx.fillRect(Math.round(x + w * t), by - 3, 1, bh + 6);
+  return by + bh;
+}
+// life globe with the Energy Shield as a thin ring outside it
+function drawLifeGlobe(ctx, P, cx, cy, r, mobile) {
+  // ring: dark gap then a bronze line (box-shadow 0 0 0 3px bg, 0 0 0 4px frame)
+  ctx.fillStyle = HUD.frame; ctx.beginPath(); ctx.arc(cx, cy, r + 4, 0, TAU); ctx.fill();
+  ctx.fillStyle = HUD.screen; ctx.beginPath(); ctx.arc(cx, cy, r + 3, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#0a0505'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();
+  const lr = clamp(P.life / P.maxLife, 0, 1), top = cy + r - r * 2 * lr;
+  const lg = ctx.createLinearGradient(0, top, 0, cy + r);
+  lg.addColorStop(0, '#e0402e'); lg.addColorStop(0.6, '#7a0c0c'); lg.addColorStop(1, '#2a0404');
+  ctx.fillStyle = lg;
+  ctx.beginPath(); ctx.moveTo(cx - r, cy + r);
+  for (let i = 0; i <= 16; i++) ctx.lineTo(cx - r + (i / 16) * r * 2, top + Math.sin(G.time * 3 + i * 0.8) * 1.5);
+  ctx.lineTo(cx + r, cy + r); ctx.closePath(); ctx.fill();
+  const sh = ctx.createRadialGradient(cx - r * 0.32, cy - r * 0.44, 0, cx - r * 0.32, cy - r * 0.44, r * 2);
+  sh.addColorStop(0, 'rgba(255,255,255,0.28)'); sh.addColorStop(0.34, 'rgba(255,255,255,0)'); sh.addColorStop(0.92, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = sh; ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  ctx.restore();
+  ctx.strokeStyle = HUD.gold; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r + 0.5, 0, TAU); ctx.stroke();
+  const es = P.maxES > 0;
+  if (es) {
+    const er = r + 7;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(60,80,120,0.3)'; ctx.beginPath(); ctx.arc(cx, cy, er, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = HUD.es; ctx.beginPath(); ctx.arc(cx, cy, er, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(P.es / P.maxES, 0, 1)); ctx.stroke();
   }
-  drawLeagueHUD(ctx, W, H, ly);
-  if (B && B.state === 'placed') {
-    const dx = (B.x - G.cam.x) * G.zoom, dy = (B.y - G.cam.y) * G.zoom;
-    if (Math.abs(dx) > W / 2 - 20 || Math.abs(dy) > H / 2 - 20) {
-      const a = Math.atan2(dy, dx), m = Math.min((W / 2 - 34) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - 34) / Math.abs(Math.sin(a) || 1e-6));
-      ctx.save(); ctx.translate(W / 2 + Math.cos(a) * m, H / 2 + Math.sin(a) * m); ctx.rotate(a);
-      ctx.fillStyle = '#c070ff'; ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-8, -10); ctx.lineTo(-8, 10); ctx.closePath(); ctx.fill();
+  ctx.textAlign = 'center'; ctx.font = `700 ${mobile ? 14 : 17}px Sarabun, sans-serif`;
+  const ty = es ? cy + 2 : cy + 6;
+  hudText(ctx, Math.ceil(P.life) + ' / ' + Math.round(P.maxLife), cx, ty, '#fff');
+  if (es) { ctx.font = `700 ${mobile ? 11 : 12}px Sarabun, sans-serif`; hudText(ctx, 'ES ' + Math.ceil(P.es), cx, ty + 16, HUD.esText); }
+}
+// five flasks: frame by rarity, fill = charges, dim when a use isn't ready
+function drawFlasks(ctx, P, x, y, fw, fh, gap, mobile) {
+  G.flaskRects = [];
+  for (let i = 0; i < FLASK_SLOTS; i++) {
+    const f = P.flasks[i], fx = x + i * (fw + gap);
+    G.flaskRects.push({ x: fx, y, w: fw, h: fh, i });
+    flaskPath(ctx, fx, y, fw, fh); ctx.fillStyle = HUD.void; ctx.fill();
+    if (f) {
+      const st = flaskStats(f), ratio = clamp(f.charges / st.max, 0, 1);
+      ctx.save(); flaskPath(ctx, fx, y, fw, fh); ctx.clip();
+      ctx.globalAlpha = f.charges >= st.use ? 1 : 0.45;
+      ctx.fillStyle = FLASK_COLOR[st.kind]; ctx.fillRect(fx, y + fh - fh * ratio, fw, fh * ratio);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      for (let c = st.use; c < st.max; c += st.use) ctx.fillRect(fx, Math.round(y + fh - fh * (c / st.max)), fw, 1);
+      if (f.active > 0) { ctx.fillStyle = 'rgba(255,246,192,0.22)'; ctx.fillRect(fx, y, fw, fh * clamp(f.active / st.dur, 0, 1)); }
       ctx.restore();
     }
+    flaskPath(ctx, fx + 0.5, y + 0.5, fw - 1, fh - 1);
+    ctx.strokeStyle = f && f.active > 0 ? '#fff6c0' : f ? RARITY_FRAME[f.rarity] : '#3a2e1c'; ctx.lineWidth = f && f.active > 0 ? 2 : 1; ctx.stroke();
+    ctx.textAlign = 'center';
+    if (mobile) { ctx.font = '700 10px Sarabun, sans-serif'; hudText(ctx, String(i + 1), fx + fw / 2, y + 13, HUD.cream, 2); }
+    else { ctx.font = '600 12px Cinzel, serif'; ctx.fillStyle = f ? HUD.faint : '#4a4034'; ctx.fillText(String(i + 1), fx + fw / 2, y + fh + 16); }
   }
-  G.bagRect = { x: W - 150, y: 54, w: 150, h: 20 };
-  drawMinimap(ctx, W, H, P);
-  // loot log (recent pickups)
-  ctx.font = '700 13px Sarabun, sans-serif';
-  G.lootLog.forEach((l, i) => {
-    const a = clamp(4 - l.t, 0, 1);
-    if (a <= 0) return;
-    ctx.globalAlpha = a; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
-    ctx.strokeText(l.text, W - 12, 106 + i * 17); ctx.fillStyle = l.color; ctx.fillText(l.text, W - 12, 106 + i * 17);
+}
+// Flame Dash: ember disc that refills clockwise
+function drawDash(ctx, P, cx, cy, r, mobile) {
+  const g = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.3, 0, cx, cy, r);
+  g.addColorStop(0, '#f09a5a'); g.addColorStop(1, '#7a300c');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+  const cd = clamp(P.dashCd / 3, 0, 1);
+  if (cd > 0) {
+    ctx.fillStyle = 'rgba(0,0,0,0.62)';
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, -Math.PI / 2 + TAU * (1 - cd), -Math.PI / 2 + TAU); ctx.closePath(); ctx.fill();
+  }
+  ctx.strokeStyle = HUD.gold; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r + 0.5, 0, TAU); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.font = `700 ${mobile ? 11 : 10}px Sarabun, sans-serif`;
+  hudText(ctx, 'DASH', cx, cy + 4, '#fff', 2);
+  if (!mobile) { ctx.font = '600 12px Cinzel, serif'; ctx.fillStyle = HUD.faint; ctx.fillText('space', cx, cy + r + 18); }
+}
+// one skill: a diamond socket with the gem art in a round window
+function drawSkillSlot(ctx, inst, cx, cy, size, mobile) {
+  const half = size / Math.SQRT2, gr = size / 2 - (mobile ? 6 : 8);
+  const ready = inst.evo && inst.souls >= vaalSouls();
+  diamondPath(ctx, cx, cy, half); ctx.fillStyle = '#0a0908'; ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, gr, 0, TAU); ctx.clip();
+  ctx.drawImage(skillIcon(inst.id), cx - gr * 1.25, cy - gr * 1.25, gr * 2.5, gr * 2.5);
+  const shade = ctx.createRadialGradient(cx - gr * 0.3, cy - gr * 0.4, 0, cx, cy, gr);
+  shade.addColorStop(0, 'rgba(255,255,255,0.22)'); shade.addColorStop(0.45, 'rgba(255,255,255,0)'); shade.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = shade; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
+  if (inst.st.disabled) { ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2); }
+  else if (inst.st.behavior !== 'aura' && inst.timer > 0 && inst.st.cdFinal > 0.3) {
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, gr, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(inst.timer / inst.st.cdFinal, 0, 1)); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  ctx.strokeStyle = '#2a2014'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, gr, 0, TAU); ctx.stroke();
+  // Vaal: soul gauge around the gem, red frame that pulses when ready
+  if (inst.evo) {
+    ctx.strokeStyle = ready ? '#ff4040' : '#a01818'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, gr + 2, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(inst.souls / vaalSouls(), 0, 1)); ctx.stroke();
+  }
+  if (inst.st.disabled) {
+    ctx.strokeStyle = '#e04040'; ctx.lineWidth = 2.5; const d = gr * 0.55;
+    ctx.beginPath(); ctx.moveTo(cx - d, cy - d); ctx.lineTo(cx + d, cy + d); ctx.moveTo(cx + d, cy - d); ctx.lineTo(cx - d, cy + d); ctx.stroke();
+  }
+  diamondPath(ctx, cx, cy, half - 0.5);
+  ctx.strokeStyle = inst.vaalT > 0 ? '#ff6060' : ready ? hexA('#ff4040', 0.6 + Math.sin(G.time * 8) * 0.4) : inst.evo ? '#c02828' : '#8a6a3a';
+  ctx.lineWidth = ready || inst.vaalT > 0 ? 2 : 1; ctx.stroke();
+  if (ready) {
+    ctx.font = '700 13px Cinzel, serif';
+    if (mobile) { ctx.textAlign = 'right'; hudText(ctx, 'VAAL', cx - half - 6, cy + 5, '#ff6060'); }
+    else { ctx.textAlign = 'center'; hudText(ctx, 'vaal · V', cx, cy - half - 8, '#ff6060'); }
+  }
+}
+// support pips under a skill: small diamonds, filled per socketed support
+function drawPips(ctx, inst, cx, y) {
+  const total = skillSockets(inst).cap, slots = activeSupports(inst).slots, s = 3.5, step = 9;
+  let x = cx - ((total - 1) * step) / 2;
+  for (let i = 0; i < total; i++) {
+    const sup = slots[i], awk = sup && inst.awakened.includes(sup);
+    diamondPath(ctx, x, y, s);
+    ctx.fillStyle = sup ? '#d8be82' : '#17120d'; ctx.fill();
+    ctx.strokeStyle = awk ? '#fff0a0' : sup ? '#f0dba6' : '#6a5a3a'; ctx.lineWidth = 1; ctx.stroke();
+    x += step;
+  }
+}
+function drawSkillBar(ctx, P, W, H, mobile, left, right) {
+  const n = P.skills.length;
+  if (!n) { G.skillBarRect = null; return; }
+  if (mobile) {
+    // vertical column on the right, above the dash button
+    const sz = 34, step = sz + 18, cx = W - 16 - sz / 2;
+    let cy = H - 150 - sz / 2;
+    G.skillBarRect = { x: cx - 30, y: cy - (n - 1) * step - 30, w: 60, h: (n - 1) * step + 60 };
+    for (let i = n - 1; i >= 0; i--) { drawSkillSlot(ctx, P.skills[i], cx, cy, sz, true); cy -= step; }
+    return;
+  }
+  // centred between the flasks and the minimap; lifted above them when the screen is too narrow
+  const sz = 50, gap = 22, totalW = n * sz + (n - 1) * gap, fits = right - left >= totalW;
+  const x0 = fits ? clamp((W - totalW) / 2, left, right - totalW) : (W - totalW) / 2;
+  const cy = H - (fits ? 34 : 190) - 6 - 22 - 12 - sz / 2;
+  G.skillBarRect = { x: x0 - 12, y: cy - sz / 2 - 14, w: totalW + 24, h: H - (cy - sz / 2 - 14) - 24 };
+  P.skills.forEach((inst, i) => {
+    const cx = x0 + i * (sz + gap) + sz / 2;
+    drawSkillSlot(ctx, inst, cx, cy, sz, false);
+    ctx.textAlign = 'center'; ctx.font = '700 12px Sarabun, sans-serif';
+    hudText(ctx, String(inst.level), cx, cy + sz / 2 + 22, HUD.cream, 2);
+    drawPips(ctx, inst, cx, cy + sz / 2 + 33);
   });
+}
+// currency ledger + bag line (also the tap target that opens the bag)
+function drawLedger(ctx, P, W, y, mobile) {
+  const jew = Object.keys(JEWELLERS).reduce((n, k) => n + (P.currency[k] || 0), 0);
+  const orbs = ['regal', 'exalt', 'divine', 'annul', 'whetstone', 'scrap', 'vaal'].reduce((a, k) => a + (P.currency[k] || 0), 0);
+  const bagCol = P.newItems > 0 ? hexA('#ffe866', 0.7 + Math.sin(G.time * 6) * 0.3) : HUD.muted;
+  if (mobile) {
+    const x = W - 16;
+    ctx.textAlign = 'right'; ctx.font = '600 12px Sarabun, sans-serif';
+    hudText(ctx, 'Chaos ' + P.currency.chaos, x, y + 12, '#d0c8ff', 2);
+    hudText(ctx, 'Jeweller ' + jew, x, y + 30, '#9fe3ff', 2);
+    hudText(ctx, 'กระเป๋า ' + P.backpack.length + (P.newItems > 0 ? ' · ' + P.newItems + ' ใหม่' : ''), x, y + 48, bagCol, 2);
+    G.bagRect = { x: W - 130, y: y + 34, w: 130, h: 22 };
+    return y + 54;
+  }
+  const w = 200, x1 = W - 22, x0 = x1 - w;
+  const rows = [['Chaos', P.currency.chaos, '#d0c8ff'], ['Jeweller', jew, '#9fe3ff'], ['Orb คราฟต์', orbs, '#c8b8e8']];
+  ctx.font = '600 14px Sarabun, sans-serif';
+  let ry = y + 14;
+  for (const [k, v, c] of rows) {
+    ctx.textAlign = 'left'; hudText(ctx, k, x0, ry, c, 2);
+    ctx.textAlign = 'right'; hudText(ctx, String(v), x1, ry, '#fff', 2);
+    ctx.fillStyle = HUD.line; ctx.fillRect(x0, ry + 5, w, 1);
+    ry += 24;
+  }
+  ctx.textAlign = 'left'; hudText(ctx, 'กระเป๋า (I)', x0, ry, bagCol, 2);
+  ctx.textAlign = 'right'; hudText(ctx, P.backpack.length + (P.newItems > 0 ? ' · ' + P.newItems + ' ใหม่' : ''), x1, ry, bagCol, 2);
+  G.bagRect = { x: x0, y: ry - 16, w, h: 22 };
+  return ry + 8;
+}
+// last three pickups, coloured by rarity, fading out
+function drawLootFeed(ctx, x, y, size) {
+  ctx.font = `700 ${size}px Sarabun, sans-serif`; ctx.textAlign = 'right';
+  let n = 0;
+  for (const l of G.lootLog) {
+    if (n >= 3) break;
+    const a = clamp(4 - l.t, 0, 1);
+    if (a <= 0) continue;
+    ctx.globalAlpha = a; hudText(ctx, l.text, x, y + n * (size + 4), l.color);
+    n++;
+  }
   ctx.globalAlpha = 1;
+  return y + 3 * (size + 4);
+}
+function drawEdgeArrows(ctx, W, H) {
+  const arrow = (x, y, c, len) => {
+    const dx = (x - G.cam.x) * G.zoom, dy = (y - G.cam.y) * G.zoom;
+    if (Math.abs(dx) < W / 2 - 20 && Math.abs(dy) < H / 2 - 20) return;
+    const a = Math.atan2(dy, dx), m = Math.min((W / 2 - 34) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - 34) / Math.abs(Math.sin(a) || 1e-6));
+    ctx.save(); ctx.translate(W / 2 + Math.cos(a) * m, H / 2 + Math.sin(a) * m); ctx.rotate(a);
+    ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(len, 0); ctx.lineTo(-8, -9); ctx.lineTo(-8, 9); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  };
+  const B = G.breach;
+  if (B && B.state === 'placed') arrow(B.x, B.y, '#c070ff', 15);
+  for (const s of G.shrines) arrow(s.x, s.y, SHRINES[s.kind].color, 12);
+}
 
-  // boss bar
-  const boss = G.bossRef && !G.bossRef.dead ? G.bossRef : null;
-  if (boss) {
-    const bw = Math.min(520, W - 40), bx = (W - bw) / 2, by = 72;
-    ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 16);
-    ctx.fillStyle = boss.bossDef.glow; ctx.fillRect(bx, by, bw * clamp(boss.hp / boss.maxHp, 0, 1), 12);
-    ctx.strokeStyle = '#c8a860'; ctx.strokeRect(bx - 2, by - 2, bw + 4, 16);
-    ctx.textAlign = 'center'; ctx.font = '700 14px Cinzel, serif'; ctx.fillStyle = '#f8e8c0';
-    ctx.fillText(boss.name, W / 2, by + 30);
+function drawHUD(ctx, W, H, P) {
+  const mobile = W < 700, boss = G.bossRef && !G.bossRef.dead ? G.bossRef : null;
+  const waiting = G.state === 'play' ? G.pendingLevels + G.pendingChests : 0;
+  const xpPct = clamp(P.xp / P.xpNext, 0, 1);
+  // XP: a thin gold seam across the top
+  const xh = mobile ? 4 : 5;
+  ctx.fillStyle = HUD.void; ctx.fillRect(0, 0, W, xh);
+  ctx.fillStyle = HUD.gold; ctx.fillRect(0, 0, W * xpPct, xh);
+  ctx.fillStyle = HUD.frame; ctx.fillRect(0, xh, W, 1);
+
+  const a = P.asc ? ASCENDANCY[P.asc] : null;
+  const sub = [G.cos && G.cos.title ? `「${G.cos.title.name}」` : '', G.heat ? `☠${G.heat}` : ''].filter(Boolean);
+  const kills = G.stats.kills.toLocaleString('en-US');
+  const biome = BIOMES[G.map.biome];
+  let centerY, rightY;
+
+  if (mobile) {
+    const top = 16 + xh;
+    // left: level + class
+    ctx.textAlign = 'left'; ctx.font = '600 28px Cinzel, serif'; hudText(ctx, String(P.level), 16, top + 24, HUD.goldHi);
+    ctx.font = '600 12px Sarabun, sans-serif';
+    hudText(ctx, [a ? a.name : P.cls.name].concat(sub).join(' · '), 16, top + 42, a ? a.color : HUD.faint, 2);
+    // centre: time + kills · tier
+    ctx.textAlign = 'center'; ctx.font = '600 28px Cinzel, serif'; hudText(ctx, fmtTime(G.time), W / 2, top + 24, HUD.time);
+    ctx.font = '600 11px Sarabun, sans-serif';
+    hudRun(ctx, [[kills + ' · ', HUD.faint], ['T' + G.map.tier, biome.color]], W / 2, top + 40, 'center');
+    rightY = drawLedger(ctx, P, W, top, true);
+    centerY = top + 64;
+    if (boss) centerY = drawBossBar(ctx, boss, 16, centerY + 12, W - 32, true) + 12;
+  } else {
+    // left column: level, class · ascendancy, title · corruption · XP
+    const lx = 22;
+    ctx.textAlign = 'left'; ctx.font = '600 34px Cinzel, serif';
+    hudText(ctx, String(P.level), lx, 22 + 28, HUD.goldHi);
+    const lw = ctx.measureText(String(P.level)).width;
+    ctx.font = '600 17px Cinzel, Sarabun, serif'; hudSpacing(ctx, 1);
+    hudRun(ctx, a ? [[P.cls.name + ' · ', HUD.cream], [a.name, a.color]] : [[P.cls.name, HUD.cream]], lx + lw + 10, 22 + 28, 'left');
+    hudSpacing(ctx, 0);
+    ctx.font = '600 12px Sarabun, sans-serif';
+    hudText(ctx, sub.concat('ประสบการณ์ ' + Math.floor(xpPct * 100) + '%').join(' · '), lx, 22 + 50, HUD.faint, 2);
+    // centre: timer, kills · map · mods, boss
+    ctx.textAlign = 'center'; ctx.font = '600 36px Cinzel, serif'; hudSpacing(ctx, 3);
+    hudText(ctx, fmtTime(G.time), W / 2, 20 + 30, HUD.time); hudSpacing(ctx, 0);
+    ctx.font = '600 13px Sarabun, sans-serif';
+    const parts = [[`สังหาร ${kills} · `, HUD.faint], [mapLabel(G.map), biome.color]];
+    if (G.map.mods.length) parts.push([` · ${G.map.mods.length} mods`, HUD.faint]);
+    hudRun(ctx, parts, W / 2, 20 + 50, 'center');
+    centerY = 20 + 62;
+    if (boss) { const bw = Math.min(600, W - 2 * 250); centerY = drawBossBar(ctx, boss, (W - bw) / 2, centerY + 22, bw, false) + 22; }
+    rightY = drawLedger(ctx, P, W, 22, false);
+  }
+
+  // endgame line + breach/league counters stack under the centre column
+  ctx.textAlign = 'center';
+  if (G.endless) {
+    ctx.font = `700 ${mobile ? 12 : 13}px Cinzel, Sarabun, serif`;
+    hudText(ctx, `ENDGAME ∞ ${fmtTime(G.time - G.endStart)} · Echo ${G.stats.echoes || 0} · ตัวถัดไป ${Math.max(0, Math.ceil(G.nextEcho - G.time))}s`, W / 2, centerY + 14, '#ff6a5a');
+    centerY += 20;
+  }
+  const B = G.breach;
+  let ly = centerY + 16;
+  if (B && B.state === 'open') {
+    ctx.textAlign = 'center'; ctx.font = '700 16px Cinzel, serif';
+    hudText(ctx, `BREACH ${Math.max(0, B.t).toFixed(1)}s · ☠ ${B.kills}`, W / 2, ly, '#d8a0ff'); ly += 20;
+  }
+  drawLeagueHUD(ctx, W, H, ly);
+  drawEdgeArrows(ctx, W, H);
+
+  // left column, lower part: buffs and the card call-out
+  const buffs = hudBuffs(P);
+  G.lvlRect = null;
+  if (mobile) {
+    let y = centerY + 4;
+    if (waiting > 0) { drawCardButton(ctx, 16, y, true, waiting); y += 58; }
+    if (buffs.length) drawBuffRow(ctx, buffs, 16, y + 4, 12);
+    const fy = drawLootFeed(ctx, W - 16, Math.max(rightY, centerY) + 16, 12);
+    drawMinimap(ctx, P, W - 16 - 96, fy, 96);
+  } else {
+    let y = 22 + 76;
+    if (buffs.length) { drawBuffRow(ctx, buffs, 22, y, 13); y += 22; }
+    if (waiting > 0) drawCardButton(ctx, 22, y, false, waiting);
+    drawLootFeed(ctx, W - 22, rightY + 18, 13);
+    drawMinimap(ctx, P, W - 22 - 190, H - 22 - 190, 190);
   }
 
   // announcement
   if (G.announce) {
-    const an = G.announce, a = an.t < 0.3 ? an.t / 0.3 : an.t > an.dur - 0.6 ? (an.dur - an.t) / 0.6 : 1;
-    ctx.globalAlpha = clamp(a, 0, 1);
+    const an = G.announce, al = an.t < 0.3 ? an.t / 0.3 : an.t > an.dur - 0.6 ? (an.dur - an.t) / 0.6 : 1;
+    ctx.globalAlpha = clamp(al, 0, 1);
     ctx.textAlign = 'center';
-    ctx.font = `700 ${mobile ? 22 : 30}px Cinzel, Sarabun, serif`;
-    ctx.lineWidth = 4; ctx.strokeStyle = '#000';
-    ctx.strokeText(an.text, W / 2, H * 0.24); ctx.fillStyle = an.color; ctx.fillText(an.text, W / 2, H * 0.24);
-    if (an.sub) {
-      ctx.font = '600 16px Sarabun, sans-serif';
-      ctx.strokeText(an.sub, W / 2, H * 0.24 + 26); ctx.fillStyle = '#e8e0d0'; ctx.fillText(an.sub, W / 2, H * 0.24 + 26);
-    }
+    ctx.font = `700 ${mobile ? 22 : 30}px Cinzel, Sarabun, serif`; hudSpacing(ctx, 2);
+    hudText(ctx, an.text, W / 2, H * 0.24, an.color, 4); hudSpacing(ctx, 0);
+    if (an.sub) { ctx.font = '600 16px Sarabun, sans-serif'; hudText(ctx, an.sub, W / 2, H * 0.24 + 26, HUD.cream, 4); }
     ctx.globalAlpha = 1;
   }
 
-  // life globe
-  const gr = mobile ? 40 : 54, gx = gr + 16, gy = H - gr - 16;
-  ctx.fillStyle = '#0a0606';
-  ctx.beginPath(); ctx.arc(gx, gy, gr, 0, TAU); ctx.fill();
-  ctx.save();
-  ctx.beginPath(); ctx.arc(gx, gy, gr - 3, 0, TAU); ctx.clip();
-  const lr = clamp(P.life / P.maxLife, 0, 1);
-  const top = gy + gr - (gr * 2) * lr;
-  const lg = ctx.createLinearGradient(0, gy - gr, 0, gy + gr);
-  lg.addColorStop(0, '#ff4a3a'); lg.addColorStop(1, '#6a0808');
-  ctx.fillStyle = lg;
-  ctx.beginPath(); ctx.moveTo(gx - gr, gy + gr);
-  for (let i = 0; i <= 20; i++) { const xx = gx - gr + (i / 20) * gr * 2; ctx.lineTo(xx, top + Math.sin(G.time * 3 + i * 0.7) * 2.5); }
-  ctx.lineTo(gx + gr, gy + gr); ctx.closePath(); ctx.fill();
-  const sh = ctx.createRadialGradient(gx - gr * 0.35, gy - gr * 0.4, 2, gx, gy, gr);
-  sh.addColorStop(0, 'rgba(255,255,255,0.35)'); sh.addColorStop(0.4, 'rgba(255,255,255,0.03)'); sh.addColorStop(1, 'rgba(0,0,0,0.45)');
-  ctx.fillStyle = sh; ctx.fillRect(gx - gr, gy - gr, gr * 2, gr * 2);
-  ctx.restore();
-  ctx.strokeStyle = '#8a7040'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.arc(gx, gy, gr, 0, TAU); ctx.stroke();
-  ctx.textAlign = 'center'; ctx.font = '700 14px Sarabun, sans-serif';
-  ctx.lineWidth = 3; ctx.strokeStyle = '#000';
-  const lt = Math.ceil(P.life) + '/' + Math.round(P.maxLife);
-  ctx.strokeText(lt, gx, gy + 5); ctx.fillStyle = '#fff'; ctx.fillText(lt, gx, gy + 5);
-  // Energy Shield: blue ring around the life globe
-  if (P.maxES > 0) {
-    ctx.strokeStyle = 'rgba(40,60,120,0.6)'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.arc(gx, gy, gr + 5, 0, TAU); ctx.stroke();
-    ctx.strokeStyle = '#7ab8ff'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.arc(gx, gy, gr + 5, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(P.es / P.maxES, 0, 1)); ctx.stroke();
-    ctx.font = '700 11px Sarabun, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
-    const es = 'ES ' + Math.ceil(P.es);
-    ctx.strokeText(es, gx, gy + 21); ctx.fillStyle = '#9fd0ff'; ctx.fillText(es, gx, gy + 21);
+  // bottom-left: life globe, flasks, dash; skills; dash on the right for touch
+  if (mobile) {
+    const gr = 50, gx = 16 + gr, gy = H - 28 - gr;
+    drawLifeGlobe(ctx, P, gx, gy, gr, true);
+    const fw = clamp((W - 16 - gr * 2 - 12 - 12 - 60 - 16 - 4 * 6) / 5, 20, 30), fh = 58;
+    drawFlasks(ctx, P, gx + gr + 12, H - 28 - fh, fw, fh, 6, true);
+    drawDash(ctx, P, W - 16 - 30, H - 30 - 30, 30, true);
+  } else {
+    const gr = 64, gx = 22 + gr, gy = H - 22 - gr;
+    drawLifeGlobe(ctx, P, gx, gy, gr, false);
+    const fx = gx + gr + (P.maxES > 0 ? 24 : 16), fh = 60, fy = H - 22 - 4 - 20 - fh;
+    drawFlasks(ctx, P, fx, fy, 24, fh, 6, false);
+    const dx = fx + 5 * 24 + 4 * 6 + 16 + 22;
+    drawDash(ctx, P, dx, fy + fh - 22, 22, false);
+    drawSkillBar(ctx, P, W, H, false, dx + 22 + 24, W - 22 - (G.settings.minimap ? 190 + 24 : 0));
   }
-
-  // flasks
-  let fx0 = gx + gr + (P.maxES > 0 ? 20 : 14);
-  G.flaskRects = [];
-  for (let i = 0; i < FLASK_SLOTS; i++) {
-    const f = P.flasks[i], fw = mobile ? 18 : 20, fh = mobile ? 44 : 56, fy = H - fh - 18;
-    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(fx0, fy, fw, fh);
-    G.flaskRects.push({ x: fx0, y: fy, w: fw, h: fh, i });
-    if (f) {
-      const st = flaskStats(f), ratio = clamp(f.charges / st.max, 0, 1);
-      ctx.fillStyle = FLASK_COLOR[st.kind];
-      ctx.globalAlpha = f.charges >= st.use ? 1 : 0.4;
-      ctx.fillRect(fx0 + 2, fy + fh - 2 - (fh - 4) * ratio, fw - 4, (fh - 4) * ratio);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1;
-      for (let c = st.use; c < st.max; c += st.use) { const yy = fy + fh - 2 - (fh - 4) * (c / st.max); ctx.beginPath(); ctx.moveTo(fx0 + 2, yy); ctx.lineTo(fx0 + fw - 2, yy); ctx.stroke(); }
-      if (f.active > 0) { ctx.fillStyle = 'rgba(255,246,192,0.25)'; ctx.fillRect(fx0, fy, fw, fh * clamp(f.active / st.dur, 0, 1)); }
-    }
-    ctx.strokeStyle = f && f.active > 0 ? '#fff6c0' : f && f.rarity === 'magic' ? '#6a6cc0' : '#8a7040'; ctx.lineWidth = f && f.active > 0 ? 3 : 2;
-    ctx.strokeRect(fx0, fy, fw, fh);
-    ctx.font = '700 11px Sarabun, sans-serif'; ctx.fillStyle = f ? '#e8d8a8' : '#5a4a30'; ctx.textAlign = 'center';
-    ctx.fillText(i + 1, fx0 + fw / 2, fy - 4);
-    fx0 += fw + 5;
-  }
-  fx0 += 4;
-  // dash
-  {
-    const dr = 18, dx = fx0 + dr + 2, dy = H - 36;
-    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.beginPath(); ctx.arc(dx, dy, dr, 0, TAU); ctx.fill();
-    ctx.fillStyle = P.dashCd <= 0 ? '#ff8a3d' : '#5a3a20';
-    ctx.beginPath(); ctx.moveTo(dx, dy); ctx.arc(dx, dy, dr - 3, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - clamp(P.dashCd / 3, 0, 1))); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#8a7040'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(dx, dy, dr, 0, TAU); ctx.stroke();
-    ctx.font = '700 10px Sarabun, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(mobile ? 'Dash' : 'Space', dx, dy + 4);
-  }
-
-  // skill bar
-  const n = P.skills.length, sz = mobile ? 34 : 44, gap = mobile ? 8 : 14;
-  const totalW = n * sz + (n - 1) * gap;
-  let sx = mobile ? W - totalW - 12 : (W - totalW) / 2;
-  const sy = H - sz - (mobile ? 104 : 40);
-  G.skillBarRect = { x: sx, y: sy, w: totalW, h: sz };
-  for (const inst of P.skills) {
-    ctx.fillStyle = '#100c08'; ctx.fillRect(sx, sy, sz, sz);
-    ctx.drawImage(skillIcon(inst.id), sx + 1, sy + 1, sz - 2, sz - 2);
-    const ready = inst.evo && inst.souls >= vaalSouls();
-    if (inst.evo) {
-      // Vaal: red frame, soul gauge filling up the left edge, pulse when ready
-      ctx.fillStyle = 'rgba(160,0,0,0.25)'; ctx.fillRect(sx + 1, sy + 1, sz - 2, sz - 2);
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(sx - 7, sy, 5, sz);
-      ctx.fillStyle = ready ? '#ff4040' : '#a01818';
-      const fh = sz * clamp(inst.souls / vaalSouls(), 0, 1);
-      ctx.fillRect(sx - 7, sy + sz - fh, 5, fh);
-    }
-    ctx.strokeStyle = inst.vaalT > 0 ? '#ff6060' : ready ? hexA('#ff4040', 0.6 + Math.sin(G.time * 8) * 0.4) : inst.evo ? '#b02a2a' : '#8a7040';
-    ctx.lineWidth = ready || inst.vaalT > 0 ? 3 : 2; ctx.strokeRect(sx, sy, sz, sz);
-    if (ready) {
-      ctx.font = '700 12px Cinzel, serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
-      const lbl = mobile ? 'VAAL' : 'V';
-      ctx.strokeText(lbl, sx + sz / 2, sy - 6); ctx.fillStyle = '#ff6060'; ctx.fillText(lbl, sx + sz / 2, sy - 6);
-    }
-    // gem silenced by the held weapon: dark slot with a red cross
-    if (inst.st.disabled) {
-      ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(sx + 1, sy + 1, sz - 2, sz - 2);
-      ctx.strokeStyle = '#e04040'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(sx + 8, sy + 8); ctx.lineTo(sx + sz - 8, sy + sz - 8); ctx.moveTo(sx + sz - 8, sy + 8); ctx.lineTo(sx + 8, sy + sz - 8); ctx.stroke();
-    }
-    // cooldown
-    else if (inst.st.behavior !== 'aura' && inst.timer > 0 && inst.st.cdFinal > 0.3) {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.beginPath(); ctx.moveTo(sx + sz / 2, sy + sz / 2);
-      ctx.arc(sx + sz / 2, sy + sz / 2, sz / 2, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(inst.timer / inst.st.cdFinal, 0, 1));
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.font = '700 11px Sarabun, sans-serif'; ctx.textAlign = 'right';
-    ctx.lineWidth = 3; ctx.strokeStyle = '#000';
-    ctx.strokeText(inst.level, sx + sz, sy + sz); ctx.fillStyle = '#fff'; ctx.fillText(inst.level, sx + sz, sy + sz);
-    // sockets
-    const ss = mobile ? 2.5 : 3.5, total = skillSockets(inst).cap;
-    const rowW = total * ss * 2 + (total - 1) * 2;
-    let ox = sx + sz / 2 - rowW / 2 + ss;
-    const oy = sy + sz + ss + 4;
-    for (let i = 0; i < total; i++) {
-      const sup = activeSupports(inst).slots[i];
-      ctx.fillStyle = sup ? '#d8be82' : '#1a1612';
-      const awk = sup && inst.awakened.includes(sup);
-      ctx.strokeStyle = awk ? '#fff0a0' : '#6a5a3a'; ctx.lineWidth = awk ? 2 : 1;
-      ctx.beginPath(); ctx.arc(ox, oy, ss, 0, TAU); ctx.fill(); ctx.stroke();
-      ox += ss * 2 + 2;
-    }
-    sx += sz + gap;
-  }
-
-  // buffs
-  let bxp = mobile ? 12 : W / 2 - 120, byp = mobile ? 80 : sy - 26;
-  ctx.textAlign = 'left'; ctx.font = '600 12px Sarabun, sans-serif';
-  for (const k in G.buffs) {
-    if (G.buffs[k] <= 0) continue;
-    const def = SHRINES[k];
-    ctx.fillStyle = def.color;
-    ctx.fillText(def.name.replace(' Shrine', '') + ' ' + Math.ceil(G.buffs[k]) + 's', bxp, byp);
-    bxp += ctx.measureText(def.name).width - 10;
-  }
-
-  // shrine arrows (offscreen)
-  for (const s of G.shrines) {
-    const dx = (s.x - G.cam.x) * G.zoom, dy = (s.y - G.cam.y) * G.zoom;
-    if (Math.abs(dx) < W / 2 - 20 && Math.abs(dy) < H / 2 - 20) continue;
-    const a = Math.atan2(dy, dx), m = Math.min((W / 2 - 30) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - 30) / Math.abs(Math.sin(a) || 1e-6));
-    const ax = W / 2 + Math.cos(a) * m, ay = H / 2 + Math.sin(a) * m;
-    ctx.save(); ctx.translate(ax, ay); ctx.rotate(a);
-    ctx.fillStyle = SHRINES[s.kind].color;
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-6, -8); ctx.lineTo(-6, 8); ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
+  if (mobile) drawSkillBar(ctx, P, W, H, true);
 
   // touch joystick
   if (G.input.joyOrigin) {
     const o = G.input.joyOrigin, j = G.input.joy || { x: 0, y: 0 };
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(232,220,192,0.25)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(o.x, o.y, 50, 0, TAU); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillStyle = 'rgba(200,168,96,0.3)';
     ctx.beginPath(); ctx.arc(o.x + j.x * 50, o.y + j.y * 50, 20, 0, TAU); ctx.fill();
   }
 }
