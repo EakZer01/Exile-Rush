@@ -6,6 +6,21 @@
 
 function isBoss(e) { return e.rarity === 3; }
 
+let _infernalTime = -1, _infernalBudget = 32;
+function infernalBurst(e) {
+  if (G.time < _infernalTime || G.time - _infernalTime >= 1) { _infernalTime = G.time; _infernalBudget = 32; }
+  if (_infernalBudget-- <= 0) return;
+  const { inst, s } = e.infernal, x = e.x, y = e.y;
+  if (!G.player.skills.includes(inst)) return;
+  // Secondary damage cannot reapply the mark, preventing unbounded corpse chains.
+  const burst = Object.assign({}, s, { proc: true, infernal: false, ancestral: 0, lifeGain: 0 });
+  G.delayed.push({ t: 0.08, fn: () => {
+    for (const n of enemiesInRadius(x, y, s.radius, [])) hitEnemy(n, burst, inst, 1.5, x, y);
+    addEffect({ kind: 'boom', x, y, r: s.radius, t: 0, dur: 0.3, color: s.color });
+    emit('ember', x, y, 10);
+  } });
+}
+
 // Conditional "more" multipliers from ascendancy / Vaal surge that depend
 // on the target or the player's current state.
 function situationalMore(e, inst) {
@@ -29,7 +44,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (e.immuneT > G.time) { if (Math.random() < 0.05) addText(e.x, e.y - e.r - 10, 'IMMUNE', '#c8c8c8', 0.8); return 0; }
   const P = G.player, ks = P.mods.ks;
   let crit = false;
-  if (!ks.resolute) {
+  if (!ks.resolute && !s.noCrit) {
     const cc = s.critChance * P.flaskFx.critMul;
     crit = G.buffs.diamond > 0 || P.critT > 0 || Math.random() < cc || (ks.luckyCrit && Math.random() < cc);
   }
@@ -95,9 +110,10 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   }
 
   // knockback
-  if (s.knock && !isBoss(e) && fromX !== undefined) {
+  const knock = (s.knock || 0) + (crit ? s.critKnock || 0 : 0);
+  if (knock && !isBoss(e) && fromX !== undefined) {
     const a = Math.atan2(e.y - fromY, e.x - fromX);
-    const k = s.knock * (14 / e.r);
+    const k = knock * (14 / e.r);
     e.kx += Math.cos(a) * k * 3; e.ky += Math.sin(a) * k * 3;
   }
 
@@ -106,6 +122,14 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (ks.ee && ELE[mainType] && total > 0) e.ee = { type: mainType, t: G.time + 4 };
   if (s.contagion) e.contagion = { s, inst, t: G.time + 4 * s.ailmentDur };
   total *= s.hitMul || 1;
+  if (s.maim && total > 0) e.maimUntil = G.time + 2;
+  if (total > 0 && inst && s.lifeGain && !s.totem && !s.proc) {
+    const rt = inst.rt;
+    if (rt.gainWindow === undefined || G.time - rt.gainWindow >= 1 || G.time < rt.gainWindow) { rt.gainWindow = G.time; rt.gainUsed = 0; }
+    const gain = Math.max(0, Math.min(s.lifeGain, 0.05 - rt.gainUsed));
+    P.life = Math.min(P.maxLife, P.life + P.maxLife * gain); rt.gainUsed += gain;
+  }
+  if (s.infernal && !s.proc) e.infernal = { inst, s, until: G.time + 4 };
   if (s.leech) P.leechPool += total * s.leech;
   fxHit(e, mainType, crit, fromX, fromY);
   dealDamage(e, total, inst, crit, mainType);
@@ -195,6 +219,7 @@ function killEnemy(e, inst) {
   }
   if (e.rarity === 3) bossDefeated(e);
   if (e.bleeds && e.bleeds.length) bloodBurst(e);
+  if (e.infernal && e.infernal.until > G.time) infernalBurst(e);
   rollItemDrop(e);
   rollLeagueDrops(e);
   rollScarabDrops(e);

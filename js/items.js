@@ -255,6 +255,7 @@ function activeSupports(inst) {
     for (const sid of candidates) {
       if (enabled.has(sid) || enabled.size >= so.cap) continue;
       const sup = SUPPORTS[sid];
+      if (sup.all && !sup.all.every((t) => tags.has(t))) continue;
       if ((sup.req.length && !sup.req.some((t) => tags.has(t))) || sup.excl.some((t) => tags.has(t)) || sup.conflicts.some((s) => enabled.has(s))) continue;
       enabled.add(sid); changed = true;
       for (const tag of sup.addTags) tags.add(tag);

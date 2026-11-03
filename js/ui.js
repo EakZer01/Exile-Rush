@@ -129,7 +129,7 @@ function milestoneChoices(n) {
   if (mastery.length) n = Math.max(1, n - mastery.length);
   // only keystones that can matter for the skills you have
   const tags = new Set(P.skills.flatMap((s) => [...s.st.tags]));
-  const fits = (k) => !KS_NEED[k] || KS_NEED[k].some((t) => tags.has(t));
+  const fits = (k) => (!KS_NEED[k] || KS_NEED[k].some((t) => tags.has(t))) && !(KEYSTONES[k].conflicts || []).some(id => P.keystones[id]);
   if (Object.keys(P.keystones).length < MAX_KEYSTONES + P.mods.keystoneAdd) for (const id of weightedSample(Object.keys(KEYSTONES).filter((k) => !P.keystones[k] && fits(k)), 2, () => 1)) pool.push({ type: 'keystone', id });
   const aw = [];
   for (const inst of P.skills) for (const sid of activeSupports(inst).active) if (!inst.awakened.includes(sid)) aw.push({ type: 'awaken', inst, id: sid });
@@ -530,7 +530,7 @@ function buildViewHtml(final) {
       <div>${socketsHtml(inst)} <span class="muted">${skillSocketLabel(inst)}</span></div>
       ${!final ? `<small class="muted">Jeweller · เพิ่มช่อง Support</small><div class="inv-actions jeweller-actions">${jewellerButtonsHtml(inst)}</div>` : ''}
       <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
-      ${s.disabled ? `<div class="bad">⚠ หยุดทำงาน — ต้องถือ ${weaponReqText(inst.id)}</div>` : ''}
+      ${s.disabled ? `<div class="bad">⚠ หยุดทำงาน — ${s.disableReason || 'ต้องถือ ' + weaponReqText(inst.id)}</div>` : ''}
       <div class="bv-stats">${describeStats(s).join(' · ')}</div>
       ${inst.evo ? `<div class="bv-vaal">Vaal: วิญญาณ ${inst.souls}/${vaalSouls()}${inst.souls >= vaalSouls() ? ' — <b>พร้อม! กด V</b>' : ''}</div>` : evolveHintHtml(inst.id)}
       <div class="bv-dmg"><div class="bar"><div style="width:${(inst.dmgDealt / total) * 100}%"></div></div>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills} · <b>DPS ${fmtNum(skillDps(inst))}</b> <span class="muted">(10 วิล่าสุด) · Hit เฉลี่ยรวมคริ ${fmtNum(avgHit(s))}</span></div>
@@ -600,7 +600,7 @@ function maxHitHtml(P) {
 }
 // measured DPS: damage dealt over the last 10 one-second samples
 function skillDps(inst) { const h = inst.rt.dh; return h && h.length > 1 ? (h[h.length - 1] - h[0]) / (h.length - 1) : 0; }
-const avgHit = (s) => s.hitTotal * (1 + s.critChance * (s.critMulti - 1));
+const avgHit = (s) => s.hitTotal * (s.hitMul === undefined ? 1 : s.hitMul) * (1 + s.critChance * (s.critMulti - 1));
 
 // what killed you: the last few seconds of damage, by source and element
 function deathRecapHtml() {

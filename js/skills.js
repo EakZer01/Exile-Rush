@@ -135,27 +135,37 @@ function castSkill(inst, s) {
 // (ox, oy): fire from somewhere other than the player (totems, mirages)
 function castProjectiles(inst, s, ox, oy) {
   const P = G.player, x = ox === undefined ? P.x : ox, y = oy === undefined ? P.y : oy;
+  const aimRange = 650 * (s.totem ? 1 + (s.totemRangeInc || 0) : 1);
+  if (s.arrowNova) {
+    const target = nearestEnemy(x, y, aimRange);
+    if (!target) return false;
+    queueArrowNova(inst, s, x, y, target); return true;
+  }
   let base;
+  let distance = 300;
   if (s.pattern === 'ring') {
     if (!nearestEnemy(x, y, 420)) return false;
     base = P.facing;
   } else {
-    const tgt = s.aim === 'random' ? (randomEnemyNear(x, y, 480) || nearestEnemy(x, y, 650)) : nearestEnemy(x, y, 650);
+    const tgt = s.aim === 'random' ? (randomEnemyNear(x, y, 480) || nearestEnemy(x, y, aimRange)) : nearestEnemy(x, y, aimRange);
     if (!tgt) return false;
     base = angleTo(x, y, tgt.x, tgt.y);
+    distance = Math.hypot(tgt.x - x, tgt.y - y);
   }
   const n = s.proj;
   for (let i = 0; i < n; i++) {
     let a;
     if (s.pattern === 'ring') a = base + (i * TAU) / n;
-    else if (n === 1) a = base;
+    else if (n === 1 || s.volley) a = base;
     else {
       const total = Math.min(s.spread * (n - 1), s.wander ? 2.6 : 1.8);
       a = base - total / 2 + (total * i) / (n - 1);
     }
     if (s.wander) a += rand(-0.15, 0.15);
-    spawnProjectile(inst, s, x, y, a, null);
+    const offset = s.volley ? (i - (n - 1) / 2) * 22 : 0;
+    spawnProjectile(inst, s, clampArena(x - Math.sin(base) * offset, 5), clampArena(y + Math.cos(base) * offset, 5), a, null);
   }
+  if (s.scourge) plantScourgePods(inst, s, x, y, base, distance);
   return true;
 }
 
@@ -229,7 +239,8 @@ function onProjectileHit(p, e) {
   p.hit.add(e.id);
   // Freezing Pulse fades with distance travelled
   const mult = (s.tags.has('Projectile') ? pointBlankMult(p) : 1) * (s.decay ? Math.max(0.25, 1 - p.t / p.life) : 1);
-  if (s.explode) explodeAt(p, p.x, p.y, mult);
+  if (s.fuseArrow) { attachBowFuse(p, e, mult); hitEnemy(e, s, p.inst, mult * 0.15, p.x, p.y); }
+  else if (s.explode) explodeAt(p, p.x, p.y, mult);
   else hitEnemy(e, s, p.inst, mult, p.x - p.vx * 0.05, p.y - p.vy * 0.05);
   if (s.cloud) spawnCloud(p.inst, s, e.x, e.y);
   addEffect({ kind: 'spark', x: p.x, y: p.y, r: 8, t: 0, dur: 0.15, color: s.color });
@@ -253,6 +264,7 @@ function onProjectileHit(p, e) {
     const nxt = nearestEnemy(p.x, p.y, 320, p.hit);
     if (nxt) {
       p.chain--;
+      if (s.id === 'rolling_magma') p.exploded = false;
       p.a = angleTo(p.x, p.y, nxt.x, nxt.y);
       const sp = Math.hypot(p.vx, p.vy);
       p.vx = Math.cos(p.a) * sp; p.vy = Math.sin(p.a) * sp;
@@ -568,6 +580,14 @@ function castStrike(inst, s) {
   const P = G.player, tgt = nearestEnemy(P.x, P.y, s.range);
   if (!tgt) return false;
   hitEnemy(tgt, s, inst, 1, P.x, P.y);
+  if (s.ancestral) {
+    // Extra targets receive one strike, not another full cast (no recursion).
+    const extra = enemiesInRadius(tgt.x, tgt.y, 120, []).filter(e => e !== tgt && dist2(e.x, e.y, P.x, P.y) <= (s.range + 100) ** 2).slice(0, s.ancestral);
+    for (const e of extra) {
+      hitEnemy(e, s, inst, 1, P.x, P.y);
+      addEffect({ kind: 'bolt', pts: [[tgt.x, tgt.y], [e.x, e.y]], t: 0, dur: 0.12, color: s.color });
+    }
+  }
   addEffect({ kind: 'spark', x: tgt.x, y: tgt.y, r: 22, t: 0, dur: 0.18, color: s.color });
   // Melee Splash: the blow also lands around the target
   if (s.splash) {
@@ -651,14 +671,14 @@ function updateTotems(inst, s, dt, speedMul) {
     } else t.timer = 0.15;
   }
   inst.timer -= dt;
-  if (inst.timer > 0 || !nearestEnemy(P.x, P.y, 520)) return;
+  if (inst.timer > 0 || !nearestEnemy(P.x, P.y, 520 * (1 + (s.totemRangeInc || 0)))) return;
   // once every totem is far behind, the oldest one is moved to you
   const far = T.every((t) => dist2(t.x, t.y, P.x, P.y) > 350 * 350);
   if (T.length >= s.totemMax) { if (!far) return; T.shift(); }
   const x = clampArena(P.x + rand(-20, 20), 20), y = clampArena(P.y + rand(-20, 20), 20);
   T.push({ x, y, t: s.totemDur, timer: 0.25, id: uid() });
   addEffect({ kind: 'ring', x, y, r: 26, t: 0, dur: 0.35, color: s.color });
-  inst.timer = 1.2;
+  inst.timer = 1.2 / (1 + (s.totemPlaceInc || 0));
 }
 
 // enemies on a line from (x, y) at angle a, length L, half-width w
@@ -733,8 +753,13 @@ function castBeam(inst, s) {
   let da = ((want - cur + Math.PI * 3) % TAU) - Math.PI;
   inst.rt.beamA = cur + clamp(da, -0.6, 0.6);           // sweeps instead of snapping
   inst.rt.beamT = G.time + 0.25;
+  if (inst.id === 'incinerate') {
+    const rt = inst.rt, moving = Math.hypot(P.vx, P.vy) > 10 || P.dashT > 0;
+    rt.incStages = moving || rt.incLast === undefined || G.time - rt.incLast > 0.4 ? 0 : Math.min(8, (rt.incStages || 0) + 1);
+    rt.incLast = G.time;
+  }
   const ax = Math.cos(inst.rt.beamA), ay = Math.sin(inst.rt.beamA), L = s.range;
-  const w = s.size * Math.sqrt((1 + s.areaInc) * s.areaMore);
+  const w = s.size * Math.sqrt((1 + s.areaInc) * s.areaMore) * (1 + (inst.rt.incStages || 0) * 0.07);
   G.hash.query(P.x + ax * L / 2, P.y + ay * L / 2, L / 2 + 40, _beamList);
   for (const e of _beamList) {
     if (e.dead) continue;

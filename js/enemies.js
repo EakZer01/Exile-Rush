@@ -346,6 +346,7 @@ function updateEnemies(dt) {
     }
     if (e.def.flutter) { e.wob += dt * 8; mx += Math.cos(e.wob) * 0.5; my += Math.sin(e.wob) * 0.5; }
 
+    if (e.maimUntil > G.time) spd *= isBoss(e) ? 0.85 : 0.7;
     e.x = clampArena(e.x + mx * spd * dt + e.kx * dt, e.r);
     e.y = clampArena(e.y + my * spd * dt + e.ky * dt, e.r);
     const kd = Math.exp(-9 * dt); e.kx *= kd; e.ky *= kd;

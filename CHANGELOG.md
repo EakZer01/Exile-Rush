@@ -1,5 +1,25 @@
 # Changelog
 
+## Browser build 43 — 2026-11-03
+
+- เพิ่มธนู 4 อัน: Burning Arrow (Ignite), Explosive Arrow (ชนวนสะสมสูงสุด 12 ดอก), Puncture (Bleed), Scourge Arrow (ฝักพิษที่ยิงหนาม)
+- เพิ่ม Support Volley, Arrow Nova, Maim และ Deadly Draw พร้อมข้อจำกัดแท็กและไอคอน
+- เพิ่ม Passive Heavy Draw, King of the Hill, Ballistic Mastery และ Watchtowers ในสาย Mastery เดิม
+- เพิ่ม Keystone ที่ออกแบบเอง Lone Archer และ Siege Doctrine เลือกสองอันนี้ร่วมกันไม่ได้
+- ชนวนเริ่มจับเวลาจากดอกแรก ไม่ยืดเวลาจากการยิงซ้ำ; ฝักสร้างหนึ่งชุดต่อการร่าย; จำกัดชนวน/ฝักค้างและล้างเมื่อเริ่มรอบใหม่
+- ทุกธนูใหม่มีร่างวิวัฒน์ ไอคอน และคอมโบใน Codex · รวม 56 Skill / 77 Support / 55 Passive / 21 Keystone
+- แก้ Hit เฉลี่ยในหน้าบิวและตัวเปรียบเทียบไอเทมให้นับตัวคูณเฉพาะ Hit (เช่น Deadly Draw / Deadly Ailments)
+
+## Browser build 42 — 2026-11-03
+
+- เพิ่ม Skill Gem 12 อัน: Cleave, Heavy Strike, Glacial Hammer, Infernal Blow, Sweep, Sunder, Rolling Magma, Blazing Salvo, Ice Spear, Soulrend, Incinerate, Raise Zombie
+- เพิ่ม Support 12 อัน: Slower Projectiles, Less Duration, Chance to Poison, Cold to Fire, Physical to Lightning, Elemental Damage with Attacks, Spell Totem, Multiple Totems, Life Gain on Hit, Ancestral Call, Unbound Ailments, Combustion
+- เพิ่ม Passive 16 อันในสาย Mastery เดิม และ Keystone Precise Technique, Ancestral Bond, Iron Grip
+- รวม 52 Skill / 73 Support / 51 Passive / 19 Keystone · ช่องสกิลเริ่มต้นยังเป็น 4
+- ทุกสกิลใหม่มีไอคอน สูตรวิวัฒน์ และร่าง Vaal ที่ดัดแปลงสำหรับเกมนี้ รวมถึงคอมโบแนะนำใน Codex
+- Spell Totem จำกัดเฉพาะเวทกระสุน · Multiple Totems ใช้ได้ทั้งสองลำดับช่อง · Life Gain on Hit จำกัดการฮีล 5% ต่อวินาทีต่อสกิล
+- อ้างอิงชื่อ/แนวคิดจากรายการ PoEDB และ Passive Tree ทางการ ใช้ตัวเลขและพฤติกรรมที่ปรับสำหรับ survivor ไม่ได้ดึง API ตอนเล่น
+
 ## Browser build 41 — 2026-11-04
 
 - **🎯 เป้าหมายถัดไป** ที่เมนูหลัก: แสดง 4 อย่างที่ใกล้สำเร็จที่สุด พร้อมแถบความคืบหน้า และกดเพื่อไปหน้าที่เกี่ยวข้องได้

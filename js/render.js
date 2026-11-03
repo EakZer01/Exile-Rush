@@ -284,6 +284,7 @@ function render() {
   ctx.imageSmoothingEnabled = true;
 
   // player projectiles
+  drawBowEntities(ctx, inView);
   ctx.globalCompositeOperation = 'lighter';
   for (const p of G.projectiles) {
     if (!inView(p.x, p.y, 30)) continue;
@@ -770,7 +771,7 @@ function drawSkillExtras(ctx, P) {
       ctx.restore();
     }
     if (s.behavior === 'beam' && inst.rt.beamT > G.time) {
-      const a = inst.rt.beamA, L = s.range, w = s.size * Math.sqrt((1 + s.areaInc) * s.areaMore);
+      const a = inst.rt.beamA, L = s.range, w = s.size * Math.sqrt((1 + s.areaInc) * s.areaMore) * (1 + (inst.rt.incStages || 0) * 0.07);
       const x1 = P.x + Math.cos(a) * L, y1 = P.y + Math.sin(a) * L;
       ctx.lineCap = 'round';
       ctx.strokeStyle = hexA(s.color, 0.35 + Math.sin(G.time * 40) * 0.08); ctx.lineWidth = w * 2;

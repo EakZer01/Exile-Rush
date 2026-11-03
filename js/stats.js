@@ -27,6 +27,8 @@ function supportBlockReason(supId, inst, ignoreSockets) {
   for (const c of sup.conflicts) if (inst.supports.includes(c)) return 'ใช้ร่วมกับ ' + SUPPORTS[c].name + ' ไม่ได้';
   const tags = skillTags(inst);
   if (sup.req.length && !sup.req.some((t) => tags.has(t))) return 'ต้องมีแท็ก ' + sup.req.join(' / ');
+  if (sup.all && !sup.all.every((t) => tags.has(t))) return 'ต้องมีแท็กเพิ่ม ' + sup.all.join(' / ');
+  if (G.player && G.player.mods.ks.loneArcher && tags.has('Bow') && ['ballista_totem', 'mirage_archer'].includes(supId)) return 'Lone Archer ใช้ธนูร่วมกับ Ballista / Mirage Archer ไม่ได้';
   if (sup.excl.some((t) => tags.has(t))) return 'ใช้กับสกิล ' + sup.excl.filter((t) => tags.has(t)).join('/') + ' ไม่ได้';
   if (!ignoreSockets) {
     const act = activeSupports(inst);
@@ -48,7 +50,7 @@ function buildSkillStats(inst, p) {
     area: b.area || 0, duration: b.duration || 0, range: b.range || 0, chainRange: b.chainRange || 0,
     maxCount: b.maxCount || 0, count: b.count || 0, hitCd: b.hitCd || 0, knock: b.knock || 0,
     crit: b.crit !== undefined ? b.crit : 0.05, critInc: 0, critMore: 1, critMulti: 1.5,
-    ignite: b.ignite || 0, shock: b.shock || 0, poison: b.poison || 0, bleed: b.bleed || 0, bleedMore: 1, chillEff: 1, noAilment: false,
+    ignite: b.ignite || 0, shock: b.shock || 0, poison: b.poison || 0, bleed: b.bleed || 0, bleedMore: 1, chillEff: b.chillEff || 1, noAilment: false,
     more: 1, moreEle: 1, moreChaos: 1, morePhys: 1, burnMore: 1, dotMore: 1, vsChilled: 1,
     speedInc: 0, areaInc: 0, areaMore: 1, durInc: 0, durMore: 1, projSpeedInc: 0,
     echo: 0, leech: 0, cull: 0, minionSpeed: 0, cloudDps: b.cloudDps || 0,
@@ -81,6 +83,7 @@ function buildSkillStats(inst, p) {
 
   // build-changing uniques reshape their gem
   for (const f of m.skillHooks) f(s, inst.id);
+  if (s.totem) { s.totemMax = 2 + (s.totemBonus || 0); s.totemDur = 8 * (1 + (s.totemDurationInc || 0)); }
   // cross-run Gem Mastery: more damage per level and the chosen alternate quality
   const gm = gemMastery(inst.id);
   if (gm) { s.more *= gemMasteryMore(gm.lv); if (gm.alt) applyAltQuality(s, gm.alt, inst.id); }
@@ -129,6 +132,10 @@ function buildSkillStats(inst, p) {
   // base + added damage per type
   const raw = {};
   for (const t of DMG_TYPES) raw[t] = (s.types[t] || 0) * s.dmg + s.added[t] * s.dmg;
+  // Convert before increases; Brutality still removes all non-physical damage.
+  for (const [from, to, fraction] of [['cold', 'fire', s.convertCold], ['physical', 'lightning', s.convertPhys]]) {
+    if (fraction) { const v = raw[from] * fraction; raw[from] -= v; raw[to] += v; }
+  }
   if (s.brutality) for (const t of DMG_TYPES) if (t !== 'physical') raw[t] = 0;
   if (m.ks.avatarFire) {
     let sum = 0; for (const t of DMG_TYPES) { sum += raw[t]; raw[t] = 0; }
@@ -152,7 +159,7 @@ function buildSkillStats(inst, p) {
   if (m.ks.agony) s.hitMul *= 0.8;
   s.mainType = 'physical';
   { let best = 0; for (const t in s.hit) if (s.hit[t] > best) { best = s.hit[t]; s.mainType = t; } }
-  s.critChance = m.ks.resolute ? 0 : clamp(s.crit * (1 + s.critInc) * s.critMore, 0, 0.95);
+  s.critChance = m.ks.resolute || s.noCrit ? 0 : clamp(s.crit * (1 + s.critInc) * s.critMore, 0, 0.95);
   if (m.ks.eo) s.critMulti = 1;
   s.cdFinal = s.cd / (1 + s.speedInc);
   s.radius = s.area * Math.sqrt(Math.max(0.1, (1 + s.areaInc) * s.areaMore));
@@ -162,7 +169,7 @@ function buildSkillStats(inst, p) {
   s.dotMul = s.dotMore * (1 + m.incDot);
   s.auraDps = s.hitTotal * s.burnMore * s.dotMul;           // Righteous Fire style
   s.cloudDpsFinal = s.hitTotal * s.cloudDps * s.dotMul;     // Caustic cloud
-  s.ailmentDur = (1 + s.durInc * 0.5 + m.ailDurInc) * s.durMore * m.ailDurMore;
+  s.ailmentDur = (1 + s.durInc * 0.5 + m.ailDurInc + (s.ailDurationBonus || 0)) * s.durMore * m.ailDurMore;
   s.minionSpeedMul = 1 + s.minionSpeed;
   return s;
 }
@@ -182,6 +189,10 @@ function describeStats(s) {
   else if (s.behavior !== 'aura' && s.behavior !== 'herald') out.push('คูลดาวน์: ' + s.cdFinal.toFixed(2) + 's');
   if (s.brand) out.push('ตราสูงสุด: ' + s.maxCount + ' · ทำงานทุก ' + s.hitCd.toFixed(2) + 's');
   if (s.split) out.push('ลูกธนูย่อย: ' + s.split);
+  if (s.fuseArrow) out.push('ชนวน: ' + s.durFinal.toFixed(2) + 's · สูงสุด 12 ดอก');
+  if (s.scourge) out.push('ฝัก: ' + s.pods + ' · โต ' + s.durFinal.toFixed(2) + 's · หนาม ' + s.thorns + ' ดอก/ฝัก');
+  if (s.volley) out.push('ยิงแนวขนาน');
+  if (s.arrowNova) out.push('กระจายรอบจุดตกหลัง 0.4s');
   if (s.flickers) out.push('วาร์ปต่อชุด: 3 · พักอย่างน้อย 0.25s · เดินเพื่อหยุด · T เปิด/พัก');
   if (s.bolts) out.push('สายฟ้า: ' + s.bolts);
   if (s.blades) out.push('ใบมีด: ' + (s.blades + s.proj));

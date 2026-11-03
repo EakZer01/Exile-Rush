@@ -116,7 +116,7 @@ function startGame(cls, map) {
   _bgPattern = null;
   hide('menu'); hide('gameover'); hide('pause'); hide('levelup'); hide('socket');
   Object.assign(G, {
-    time: 0, enemies: [], projectiles: [], eproj: [], novas: [], meteors: [], grounds: [], minions: [],
+    time: 0, enemies: [], projectiles: [], eproj: [], novas: [], meteors: [], grounds: [], minions: [], bowFuses: [], bowSeeds: [],
     orbs: [], pickups: [], effects: [], texts: [], hazards: [], shrines: [], delayed: [], items: [], lootLog: [], epools: [],
     buffs: { diamond: 0, acceleration: 0, resistance: 0, echoing: 0 }, announce: null,
     pendingLevels: 0, pendingChests: 0, pendingAscend: 0, bossRef: null, victoryT: 0, shake: 0, banned: new Set(),
@@ -174,6 +174,7 @@ function update(dt) {
   updateSpawner(dt);
   updateSkills(dt);
   updateProjectiles(dt);
+  updateBowEntities(dt);
   updateNovas(dt);
   updateMeteors(dt);
   updateGrounds(dt);
