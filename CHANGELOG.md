@@ -1,5 +1,37 @@
 # Changelog
 
+## Browser build 49 — 2026-11-04
+
+ลดความแรงของสกิลใหม่จาก build 48 ให้อยู่ระดับเดียวกับสกิลเดิม (จากตัวจำลอง: ค่ากลางของสกิลใหม่เดิมแรงกว่าสกิลเก่าประมาณ 2 เท่า ตอนนี้ใกล้เคียงกัน และตัวที่แรงที่สุดไม่เกินสกิลเก่าที่แรงที่สุด)
+
+- **ลดดาเมจฐาน**:
+  - Bladestorm 22 → 10.3
+  - Shield Crush 32 → 15
+  - Ice Crash 48 → 22.6
+  - Blade Flurry 24 → 11.3
+  - Volcanic Fissure 17.4 → 8.2
+  - Splitting Steel 19.2 → 9
+  - Earthshatter 10.8 → 5.1
+  - Storm Rain 10.8 → 5.1
+  - Artillery Ballista 7 → 3.3
+  - Absolution 32 → 15
+  - Penance Brand 20 → 9.4
+  - Galvanic Arrow 28 → 13.2
+  - Spectral Helix 23 → 11.3
+  - Dark Pact 35 → 18.2
+  - Elemental Hit 32 → 17.3
+  - Kinetic Fusion 65 → 37
+  - Hexblast 65 → 45.5
+  - Spectral Throw 26 → 18.2
+  - Rage Vortex 25 → 17
+- **คอมโบที่เคลียร์ฝูงแรงกว่าคู่สกิลปกติ**:
+  - Detonate Dead 70 → 52
+  - Volatile Dead 38 → 28
+  - Cremation 27 → 20
+  - Bladefall 27 → 23
+  - Blade Blast 40 → 34
+- Spectral Shield Throw 35 → 49 (อ่อนเกินไป)
+
 ## Browser build 48 — 2026-11-03
 
 - เพิ่ม 31 Skill และ 24 Support รวม 94 Skill / 110 Support: เงาอาวุธย้อนกลับ/เกลียว, สะสมฟัน, หนามระเบิดด้วย Dash, ตาข่ายสายฟ้า, โล่, ชุดใบมีด/ศพ, Hexblast, Conduit, Relic, Reaper และ Penance Brand

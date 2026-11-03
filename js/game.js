@@ -310,6 +310,7 @@ function init() {
   G.canvas = $('game');
   G.ctx = G.canvas.getContext('2d');
   loadSettings();
+  $('game-version').textContent = 'Build ' + GAME_BUILD;
   flushRunStats();       // runs that could not be sent last time
   resize();
   window.addEventListener('resize', resize);
