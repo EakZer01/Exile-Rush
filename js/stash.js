@@ -35,7 +35,7 @@ function renderOverStash(r) {
   const box = $('over-stash');
   const limit = stashKeepLimit(r), items = runItems(), M = loadMeta();
   if (!overPick) overPick = { sel: new Set(), done: false, view: null };
-  if (G.daily) { box.innerHTML = '<div class="muted">Daily Challenge: เก็บของเข้า Stash ไม่ได้</div>'; return; }
+  if (G.daily || G.weekly) { box.innerHTML = `<div class="muted">${G.daily ? 'Daily' : 'Weekly'} Challenge: เก็บของเข้า Stash ไม่ได้</div>`; return; }
   if (!limit) { box.innerHTML = '<div class="bad">Hardcore: ตายแล้ว — เก็บของเข้า Stash ไม่ได้</div>'; return; }
   if (overPick.done) { box.innerHTML = `<div class="ok">เก็บเข้า Stash แล้ว ${overPick.sel.size} ชิ้น ✓</div>`; return; }
   if (!items.length) { box.innerHTML = '<div class="muted">ไม่มีไอเทมให้เก็บ (Heirloom กลับเข้า Stash เองแล้ว)</div>'; return; }
@@ -170,4 +170,19 @@ function dailyMenuHtml() {
   return `<div class="daily-box"><div class="daily-h">DAILY · ${String(d.key).slice(6)}/${String(d.key).slice(4, 6)}</div>
     <div class="daily-run">${d.cls.name} · ${mapLabel(d.map)}${d.map.mods.length ? ` · ${d.map.mods.length} mods` : ''}</div>
     <div class="daily-best">${D ? `ดีที่สุด ${fmtTime(Math.min(D.best, RUN_LENGTH))}${D.best > RUN_LENGTH ? ' (ชนะ!)' : ''} · เล่น ${D.tries} ครั้ง` : 'ยังไม่ได้เล่นวันนี้ · กดปุ่ม Daily'}</div></div>`;
+}
+
+// ---------------- Weekly challenge: harder map, first win pays shards ----------------
+function startWeekly() {
+  const w = weeklySetup();
+  hide('menu');
+  seedRandom(w.key * 31 + 7);
+  startGame(w.cls, Object.assign({}, w.map, { weekly: w.key }));
+  announce('Weekly Challenge', `${w.cls.name} · ${mapLabel(w.map)} · ${w.map.mods.length} mods — เทียบอันดับกับทุกคนที่ Leaderboard`, '#ffd84a');
+}
+function weeklyMenuHtml() {
+  const w = weeklySetup(), M = loadMeta(), W = M.weekly && M.weekly.key === w.key ? M.weekly : null;
+  return `<div class="daily-box"><div class="daily-h">WEEKLY · สัปดาห์ที่ ${String(w.key).slice(4)}/${String(w.key).slice(0, 4)}</div>
+    <div class="daily-run">${w.cls.name} · ${mapLabel(w.map)}${w.map.mods.length ? ` · ${w.map.mods.length} mods` : ''}</div>
+    <div class="daily-best">${W ? `ดีที่สุด ${fmtTime(Math.min(W.best, RUN_LENGTH))}${W.best > RUN_LENGTH ? ' (ชนะ!)' : ''} · เล่น ${W.tries} ครั้ง${W.winClaimed ? ' · ✦ รางวัลแล้ว' : ''}` : `ยังไม่ได้เล่น · ชนะครั้งแรกได้ ✦${WEEKLY_WIN_SHARDS}`}</div></div>`;
 }

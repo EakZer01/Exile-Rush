@@ -158,6 +158,11 @@ function nextGoals() {
     const cos = mark && Object.values(COSMETICS).find((c) => c.src === 'ชนะ Corruption ' + mark);
     if (mark) out.push({ icon: '☠', text: `ชนะ Corruption ${mark}${cos ? `: ปลด <b>${cos.name}</b>` : ''}`, sub: `สถิติสูงสุด ${best} · เลือกได้ที่ Map Device`, p: best / mark });
   }
+  // Endgame Echo ladder: only once the player has seen the victory screen
+  if (M.life.wins >= 1) {
+    const best = M.echoBest || 0, ms = ECHO_MILESTONES.find((m) => m.n > best);
+    if (ms) out.push({ icon: '∞', text: `Endgame Echo ${ms.n}: <b>${ms.teaser}</b>`, sub: `สถิติสูงสุด Echo ${best} · เข้า Endgame ได้หลังโค่นบอสสุดท้าย`, p: best / ms.n, go: 'lb' });
+  }
   const used = treePointsUsed();
   if (used < treePointCap()) {
     const cost = treeNodeCost({ kind: 'small' }, used);

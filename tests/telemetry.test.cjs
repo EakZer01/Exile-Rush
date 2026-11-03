@@ -11,7 +11,7 @@ function statsGame() {
   return g;
 }
 
-test('run record matches the table: ids, result, main skill by damage, no names', () => {
+test('run record matches the table: ids, result, main skill, name only when opted in', () => {
   const { run } = statsGame();
   run(`const Q = G.player; G.time = 412; Q.killedBy = 'Bone Husk'; Q.skills[0].dmgDealt = 900;
     const b = newSkillInstance('arc'); b.dmgDealt = 5000; b.supports = ['inc_aoe']; Q.skills.push(b);
@@ -25,7 +25,11 @@ test('run record matches the table: ids, result, main skill by damage, no names'
   assert.deepEqual(Array.from(run('R.skills[1].sup')), ['inc_aoe']);
   assert.match(run('R.player'), /^p[a-z0-9]{6,}$/);
   assert.equal(run('R.player'), run('runRecord(false).player'));   // stable per browser
-  assert.equal(run('"name" in R || "email" in R'), false);
+  assert.equal(run('R.name'), null);   // anonymous until the player sets a display name
+  run(`G.settings.displayName = 'Mek';`);
+  assert.equal(run('runRecord(true).name'), 'Mek');
+  run(`G.settings.displayName = 'x'.repeat(30);`);
+  assert.equal(run('runRecord(true).name').length, 20);   // capped at the schema limit
 });
 
 test('nothing is sent without a configured project, when switched off, or for very short deaths', () => {

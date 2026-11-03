@@ -961,3 +961,21 @@ details.bench { margin-top: 6px; }
 .flicker-toggle[aria-pressed="false"] { border-color: #b89250; color: #e6c888; }
 .flicker-toggle[hidden] { display: none; }
 @media (max-width: 699px) { .flicker-toggle { left: 16px; bottom: 146px; max-width: calc(100vw - 100px); } .tip { bottom: 150px; } }
+
+/* ---------- Leaderboard ---------- */
+.lb-cats { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px; }
+.lb-cats .btn.lb-on { border-color: var(--gold-hi); color: var(--gold-hi); box-shadow: 0 0 10px rgba(240, 216, 144, .35); }
+.lb-sub { text-align: center; margin-bottom: 10px; font-size: 13px; }
+.lb-body { max-height: min(58vh, 560px); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--box, #17120e); border: 1px solid var(--line, #3a2e1e); }
+.lb-row.me { border-color: var(--gold); box-shadow: 0 0 10px rgba(200, 168, 96, .3); }
+.lb-rank { flex: 0 0 34px; text-align: center; font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); }
+.lb-main { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-main b { color: var(--gold-hi); }
+.lb-flag { flex: 0 0 auto; font-size: 11px; padding: 1px 6px; border: 1px solid var(--line, #3a2e1e); color: var(--muted); white-space: nowrap; }
+.lb-flag.win { color: #9aff9a; border-color: #3a7a3a; }
+.lb-flag.end { color: #ff8a8a; border-color: #7a2a2a; }
+.lb-stat { flex: 0 0 auto; font-size: 13px; color: var(--cream); white-space: nowrap; }
+.lb-sep { text-align: center; font-size: 11px; padding: 2px 0; }
+.lb-note { padding: 16px; text-align: center; }
+@media (max-width: 699px) { .lb-row { flex-wrap: wrap; } .lb-main { flex-basis: calc(100% - 110px); } }

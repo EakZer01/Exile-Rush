@@ -104,8 +104,8 @@ function resize() {
 function startGame(cls, map) {
   G.craft = { nodes: [], corpses: [], blades: [] };
   G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), scarabs: (map.scarabs || []).slice(), heat: Object.assign({}, map.heat) } : Object.assign({}, DEFAULT_MAP, { mods: [], scarabs: [], heat: {} });
-  G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.runScarabs = []; G.vault = null;
-  if (!G.daily) restoreRandom();
+  G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.weekly = (map && map.weekly) || 0; G.runScarabs = []; G.vault = null;
+  if (!G.daily && !G.weekly) restoreRandom();
   G.mapFx = mapFx(G.map);
   G.atlasFx = atlasFx();
   applyMapBonuses(G.atlasFx, G.mapFx, G.map);
@@ -329,7 +329,7 @@ function init() {
   $('btn-reroll').onclick = reroll;
   $('btn-flicker').onclick = () => { toggleFlicker(); $('btn-flicker').blur(); };
   $('btn-altar').onclick = () => { Sfx.init(); openAltar(); };
-  for (const [id, tab] of [['btn-gems', 'gems'], ['btn-chal', 'chal'], ['btn-atlas', 'void'], ['btn-uniques', 'coll'], ['btn-cosmetic', 'cos']]) $(id).onclick = () => { Sfx.init(); openRecords(tab); };
+  for (const [id, tab] of [['btn-gems', 'gems'], ['btn-chal', 'chal'], ['btn-atlas', 'void'], ['btn-uniques', 'coll'], ['btn-cosmetic', 'cos'], ['btn-lb', 'lb']]) $(id).onclick = () => { Sfx.init(); openRecords(tab); };
   $('btn-records-back').onclick = closeRecords;
   $('btn-codex').onclick = () => { Sfx.init(); openCodex(); };
   $('btn-codex-close').onclick = closeCodex;
@@ -356,6 +356,7 @@ function init() {
   $('btn-stash').onclick = () => { Sfx.init(); stashView = null; openStash(); };
   $('btn-stash-close').onclick = closeStash;
   $('btn-daily').onclick = () => { Sfx.init(); startDaily(); };
+  $('btn-weekly').onclick = () => { Sfx.init(); startWeekly(); };
   $('btn-map-atlas').onclick = toggleAtlasTree;
   $('btn-menu').onclick = () => { hide('gameover'); G.state = 'menu'; G.player = null; buildMenu(); show('menu'); };
 
@@ -368,6 +369,7 @@ window.addEventListener('load', init);
 function retryRun() {
   hide('gameover');
   if (G.daily) startDaily();
+  else if (G.weekly) startWeekly();
   else if (G.lastMap.tier > 1 || G.hc) { G.state = 'menu'; G.player = null; openMapDevice(G.lastClass); }
   // scarabs were spent on the first try: a quick retry runs without them
   else startGame(G.lastClass, Object.assign({}, G.lastMap, { scarabs: [] }));
@@ -377,8 +379,8 @@ function retryRun() {
 function openVictory() {
   G.state = 'victory';
   $('vic-sub').textContent = `เคลียร์ ${mapLabel(G.map)} ใน ${fmtTime(G.time)} · ออกไปรับรางวัลตอนนี้ หรืออยู่ต่อใน Endgame`;
-  // the Vault is rolled once per cleared map (the Daily has none)
-  if (!G.vault && !G.daily) G.vault = { cards: rollVault(), pick: null };
+  // the Vault is rolled once per cleared map (the Daily and Weekly have none)
+  if (!G.vault && !G.daily && !G.weekly) G.vault = { cards: rollVault(), pick: null };
   if (G.vault) renderVault(); else $('vic-vault').innerHTML = '';
   Sfx.play('victory');
   setVictoryButtons();

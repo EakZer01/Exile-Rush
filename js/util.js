@@ -110,6 +110,10 @@ function hexA(hex, a) {
   _hexA.set(key, out);
   return out;
 }
+// escape a player-provided string for safe use inside HTML attributes/text
+function esc(s) {
+  return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 // ---------- Synth audio ----------
 // Every sound is a few layers of oscillators or filtered noise, mixed into

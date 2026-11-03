@@ -167,11 +167,14 @@ function openSettings(from) {
     <div class="muted set-row">${LOOT_FILTERS[S.lootFilter].desc} · ของที่ถูกซ่อนจะย่อยเป็น Shard อัตโนมัติ</div>` +
     check('hlRes', 'ไฮไลต์ไอเทมที่มีค่าต้านทาน (กรอบเขียว)') +
     (STATS_CONFIG.url ? check('shareStats', '📊 ส่งสถิติการเล่นแบบไม่ระบุตัวตน') +
-      `<div class="muted set-row">ส่งคลาส สกิล Support และผลแพ้/ชนะของแต่ละรอบ เพื่อหาบิวด์ที่แรงหรืออ่อนเกินไป · ไม่ส่งชื่อหรือข้อมูลส่วนตัว · <a href="stats.html" target="_blank" rel="noopener">ดูสถิติรวม</a></div>` : '') +
+      `<div class="muted set-row">ส่งคลาส สกิล Support และผลแพ้/ชนะของแต่ละรอบ เพื่อหาบิวด์ที่แรงหรืออ่อนเกินไป · ไม่ส่งชื่อหรือข้อมูลส่วนตัว · <a href="stats.html" target="_blank" rel="noopener">ดูสถิติรวม</a></div>
+      <label class="set-row">ชื่อบน Leaderboard <input type="text" data-st="displayName" maxlength="20" value="${esc(S.displayName || '')}" placeholder="(ว่าง = ไม่ระบุตัวตน)"></label>
+      <div class="muted set-row">แสดงแทน ID บนกระดาน Daily / Weekly / Endgame (ตั้งได้ที่แท็บ Leaderboard ด้วย)</div>` : '') +
     `<div class="set-row"><button class="btn btn-small" id="btn-tips-reset">แสดงคำแนะนำ (Tips) อีกครั้ง</button></div>`;
   const root = $('settings');
   root.querySelectorAll('[data-sk]').forEach((el) => { el.onchange = () => { G.settings[el.dataset.sk] = el.checked; applySettings(); saveSettings(); }; });
   root.querySelectorAll('[data-sv]').forEach((el) => { el.oninput = () => { G.settings[el.dataset.sv] = el.value / 100; $('sv-' + el.dataset.sv).textContent = el.value + '%'; applySettings(); saveSettings(); }; });
+  root.querySelectorAll('[data-st]').forEach((el) => { el.onchange = () => { G.settings.displayName = el.value.trim().slice(0, 20); saveSettings(); }; });
   root.querySelector('[data-sq]').onchange = (ev) => { G.settings.quality = ev.target.value; saveSettings(); };
   root.querySelector('[data-sl]').onchange = (ev) => { G.settings.levelMode = ev.target.value; saveSettings(); };
   root.querySelector('[data-sf]').onchange = (ev) => { G.settings.lootFilter = +ev.target.value; saveSettings(); openSettings(settingsFrom); };

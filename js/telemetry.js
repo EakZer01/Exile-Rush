@@ -32,6 +32,7 @@ function runRecord(win) {
     build: GAME_BUILD, player: statsPlayerId(), cls: P.cls.id, asc_class: P.asc || null,
     result: G.endless ? 'endgame' : win ? 'win' : 'dead',
     time_s: Math.round(G.time), level: P.level, tier: G.map.tier || 1, heat: G.heat || 0, hc: !!G.hc, daily: !!G.daily,
+    weekly: G.weekly || 0, name: (G.settings.displayName || '').slice(0, 20) || null, echoes: G.stats.echoes || 0,
     kills: G.stats.kills, bosses: G.stats.bosses, killer: !win && P.killedBy ? String(P.killedBy).slice(0, 80) : null,
     main_skill: main ? main.id : null, weapon: P.weapon ? P.weapon.wtype : null,
     skills, keystones: Object.keys(P.keystones), masteries: P.masteries.slice(),

@@ -16,6 +16,9 @@ create table if not exists public.runs (
   heat        int  not null default 0 check (heat between 0 and 100),
   hc          boolean not null default false,
   daily       boolean not null default false,
+  weekly      int     not null default 0,                        -- ISO week key (e.g. 202645), 0 = not a weekly run
+  name        text          check (char_length(name) <= 20),   -- optional display name, null = anonymous
+  echoes      int     not null default 0 check (echoes between 0 and 1000),  -- Endgame Echo bosses killed this run
   kills       int  not null default 0 check (kills between 0 and 10000000),
   bosses      int  not null default 0 check (bosses between 0 and 100),
   killer      text          check (char_length(killer) <= 80),
@@ -29,6 +32,9 @@ create table if not exists public.runs (
 
 create index if not exists runs_build_idx on public.runs (build);
 create index if not exists runs_main_skill_idx on public.runs (main_skill);
+create index if not exists runs_daily_idx on public.runs (daily);
+create index if not exists runs_weekly_idx on public.runs (weekly);
+create index if not exists runs_echoes_idx on public.runs (echoes);
 
 alter table public.runs enable row level security;
 

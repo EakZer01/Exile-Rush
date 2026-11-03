@@ -56,6 +56,9 @@ const COSMETICS = {
   title_regicide:  { kind: 'title', name: 'ผู้โค่นราชันกลวง', src: 'โค่น The Hollow Crown', test: (M) => M.chal.crown },
   title_collector: { kind: 'title', name: 'นักสะสม', src: 'ค้นพบ Unique 30 ชิ้น', test: (M) => Object.keys(M.found).length >= 30 },
   title_corrupted: { kind: 'title', name: 'ผู้แบกความมืด', src: 'ชนะ Corruption 25', test: (M) => heatBest(M) >= 25 },
+  aura_echo:       { kind: 'aura', name: 'ออร่าเสียงก้อง', color: '#7affd0', src: 'โค่น Echo บอส 5 ตัวใน Endgame เดียว', test: (M) => (M.echoBest || 0) >= 5 },
+  title_voidwalker: { kind: 'title', name: 'ผู้ข้ามห้วง', src: 'โค่น Echo บอส 10 ตัวใน Endgame เดียว', test: (M) => (M.echoBest || 0) >= 10 },
+  title_voidking:  { kind: 'title', name: 'ราชาห้วงว่าง', src: 'โค่น Echo บอส 20 ตัวใน Endgame เดียว · ✦ ถาวร +10%', test: (M) => (M.echoBest || 0) >= 20 },
   title_legend:    { kind: 'title', name: 'ตำนานแห่งดินแดนต้องสาป', src: 'ทำ Challenge ครบทุกข้อ', test: (M) => CHALLENGES.every((c) => M.chal[c.id]) },
 };
 const COSMETIC_KIND = { aura: 'ออร่า', trail: 'รอยเท้า', title: 'ฉายา' };

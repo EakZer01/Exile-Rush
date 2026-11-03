@@ -191,10 +191,13 @@ function bossDefeated(e) {
   rollBossUniques(e);
   if (e.final) { G.victoryT = 2.5; announce('ชัยชนะ!', `คุณโค่น ${e.name} ได้แล้ว`, '#ffd84a'); }
   else if (e.bossDef.echo) {
-    G.stats.echoes = (G.stats.echoes || 0) + 1;
+    const before = G.stats.echoes || 0;
+    G.stats.echoes = before + 1;
     spawnPickup(e.x + 40, e.y, randomCraftOrb()); spawnPickup(e.x - 40, e.y, randomCraftOrb());
     if (Math.random() < 0.5) dropItem(e.x, e.y + 50, 'unique');
-    announce(`${e.name} พ่ายแพ้`, `Echo ${G.stats.echoes} · ตัวถัดไปแข็งแกร่งกว่าเดิม`, '#ffd84a');
+    const ms = ECHO_MILESTONES.find((m) => before < m.n && G.stats.echoes >= m.n);
+    announce(`${e.name} พ่ายแพ้`, ms ? `Echo ${G.stats.echoes} — ${ms.th}` : `Echo ${G.stats.echoes} · ตัวถัดไปแข็งแกร่งกว่าเดิม`, ms ? '#b060ff' : '#ffd84a');
+    if (ms && ms.src) dropSourceUnique(e.x, e.y - 60, ms.src);
   } else {
     G.pendingAscend++;
     announce('การทดสอบ Ascendancy สำเร็จ!', G.player.asc ? 'ปลดล็อกโหนด Ascendancy ใหม่' : 'เลือกคลาสย่อยของคุณ', '#ffd84a');

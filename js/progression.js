@@ -13,6 +13,8 @@ function permanentFx(f) {
   const found = foundCount(), done = chalCount();
   for (const b of COLLECTION_BONUS) if (found >= b.n && b.fx) b.fx(f);
   for (const b of CHAL_MILESTONES) if (done >= b.n && b.fx) b.fx(f);
+  // reaching Echo 20 in one run deepens every future run's shard payout
+  if ((loadMeta().echoBest || 0) >= 20) f.shardMul *= 1.1;
 }
 function permanentMods(m) {
   const found = foundCount(), done = chalCount();
@@ -165,7 +167,12 @@ const VAULT_ICON = { shards: '✦', scarab: '✲', jewel: '⬡', gemxp: '💎', 
 function setVictoryButtons() {
   const off = G.vault && G.vault.pick === null;
   $('btn-vic-leave').classList.toggle('disabled', off); $('btn-vic-endless').classList.toggle('disabled', off);
-  $('vic-hint').textContent = off ? 'เลือกรางวัลจากห้องรางวัลก่อน แล้วจึงออกหรืออยู่ต่อ' : '';
+  $('vic-hint').textContent = off ? 'เลือกรางวัลจากห้องรางวัลก่อน แล้วจึงออกหรืออยู่ต่อ' : victoryEchoHint();
+}
+// what the next Endgame Echo milestone gives, shown on the victory screen
+function victoryEchoHint() {
+  const best = loadMeta().echoBest || 0, ms = ECHO_MILESTONES.find((m) => m.n > best);
+  return ms ? `∞ Endgame: Echo ถัดไปที่ ${ms.n} — ${ms.teaser} (สถิติสูงสุด Echo ${best})` : '';
 }
 
 // ---------------- Atlas tier completion ----------------
@@ -200,6 +207,7 @@ function settleProgression(win, endT) {
   }
   // lifetime records used by challenges and voidstones
   M.life.echoes = (M.life.echoes || 0) + (G.stats.echoes || 0);
+  M.echoBest = Math.max(M.echoBest || 0, G.stats.echoes || 0);
   if (win) M.winCls[P.cls.id] = true;
   // Atlas tier completion (map completion was recorded by settleRun)
   for (const t of atlasCompletedTiers()) if (!M.atlasTiers[t]) {
@@ -286,7 +294,7 @@ function voidAtlasHtml(tier) {
 // ---------------- Progress pages: Gem Mastery, Challenges, Voidstones, Collection, Cosmetics ----------------
 // (each has its own button on the main menu; the Altar of Legacy keeps only the Legacy Tree)
 let altarTab = 'gems';
-const RECORD_TITLES = { gems: 'Gem Mastery', chal: 'Challenges', void: 'Atlas & Voidstone', coll: 'คลัง Unique', cos: 'Cosmetic' };
+const RECORD_TITLES = { gems: 'Gem Mastery', chal: 'Challenges', void: 'Atlas & Voidstone', coll: 'คลัง Unique', cos: 'Cosmetic', lb: 'Leaderboard' };
 function openRecords(tab) {
   if (tab && RECORD_TITLES[tab]) altarTab = tab;
   hide('menu');
@@ -310,6 +318,7 @@ function renderAltarProgress() {
   else if (altarTab === 'chal') h += challengesHtml();
   else if (altarTab === 'void') h += voidPanelHtml();
   else if (altarTab === 'cos') h += cosmeticsHtml();
+  else if (altarTab === 'lb') h += leaderboardHtml();
   else h += collectionHtml() + uniquesVaultHtml();
   box.innerHTML = h;
   box.querySelectorAll('[data-infuse]').forEach((b) => { b.onclick = () => { if (gemInfuse(b.dataset.infuse)) { Sfx.play('currency'); openRecords(); } }; });
@@ -321,6 +330,7 @@ function renderAltarProgress() {
     r.onkeydown = (e) => { if (e.target === r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); r.onclick(e); } };
   });
   box.querySelectorAll('.gm-alt[data-alt]').forEach((c) => { c.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.onclick(); } }; });
+  if (altarTab === 'lb') lbBind();
 }
 // mastery milestones along the track: the three alternate qualities, then the +2 level head start
 const GEM_MARKS = () => Object.keys(GEM_ALT_AT).map((a) => ({ at: GEM_ALT_AT[a], key: a, name: ALT_QUALITY[a].name }))

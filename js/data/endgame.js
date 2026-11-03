@@ -18,6 +18,7 @@ const UNIQUE_SOURCES = {
   boss_void:      { th: 'Herald of the Void', where: 'บอสสุดท้ายของ Void Sanctum' },
   pinnacle:       { th: 'The Hollow Crown', where: 'Pinnacle Boss (แผนที่ Tier 8 ขึ้นไป)' },
   echo:           { th: 'Echo บอส', where: 'บอสที่มาทุก 100 วิใน Endgame ∞' },
+  echo15:         { th: 'Echo ลึก', where: 'รางวัลการันตีเมื่อโค่น Echo บอสตัวที่ 15 ในรอบเดียว' },
   breach:         { th: 'Breach', where: 'ปิด Breach โดยฆ่าได้ 60 ตัวขึ้นไป' },
   ritual:         { th: 'Ritual', where: 'แลกด้วย Tribute ในวงพิธี (บางครั้งมีขาย)' },
   delirium:       { th: 'Delirium', where: 'ฆ่า 60 ตัวขึ้นไปในหมอก Delirium' },
@@ -73,6 +74,9 @@ Object.assign(UNIQUES, {
     lines: ['Righteous Fire: รัศมี +40% · ดาเมจเผา 30% more', 'ฟื้นชีวิต 1% ต่อวินาที', '+10% ชีวิตสูงสุด'],
     apply(m) { m.regen += 0.01; m.lifeInc += 0.1; },
     skill(s, id) { if (id === 'righteous_fire') { s.areaInc += 0.4; s.burnMore *= 1.3; } } },
+  sovereign_echo: { slot: 'amulet', base: 'jade_amulet', name: 'Echo of the Sovereign', th: 'เสียงก้องแห่งจักรพรรดิ', src: 'echo15', flavor: 'ราชันผู้ล่วงลับพูดซ้ำในห้วงว่างเปล่า — คราวนี้มันตอบกลับมา',
+    lines: ['ดูดชีวิต 1% ของดาเมจ', '+12% ความเร็วร่าย/โจมตี', 'Vaal Soul ชาร์จเร็วขึ้น 25%'],
+    apply(m) { m.leech += 0.01; m.speedInc += 0.12; m.vaalSoulMul = (m.vaalSoulMul || 1) * 1.25; } },
 });
 for (const id in UNIQUE_SRC) UNIQUES[id].src = UNIQUE_SRC[id];
 const uniqueSrc = (id) => UNIQUES[id].src || 'any';
@@ -181,6 +185,15 @@ const CHAL_MILESTONES = [
   { n: 16, desc: 'ห้องรางวัลหลังชนะ: การ์ด +1', fx(f) { f.vaultExtra += 1; } },
   { n: 20, desc: 'ทุกสกิลทำดาเมจ 5% more · +5% ชีวิตสูงสุด', mods(m) { m.moreAll *= 1.05; m.lifeInc += 0.05; } },
   { n: 24, desc: 'Unique ดรอปบ่อยขึ้น 30%', fx(f) { f.uniqueMul *= 1.3; } },
+];
+
+// Endgame Echo milestones: one-time rewards as the endless ladder deepens
+// (th = in-run announcement, teaser = the "next goals" line on the menu)
+const ECHO_MILESTONES = [
+  { n: 5,  th: 'ปลดล็อกออร่า "เสียงก้อง"', teaser: 'ปลดออร่า "เสียงก้อง"' },
+  { n: 10, th: 'ปลดล็อกฉายา "ผู้ข้ามห้วง"', teaser: 'ปลดฉายา "ผู้ข้ามห้วง"' },
+  { n: 15, th: 'รางวัล Unique เสียงก้องแห่งจักรพรรดิ — ดรอปตรงนี้!', teaser: 'การันตี Unique "เสียงก้องแห่งจักรพรรดิ"', src: 'echo15' },
+  { n: 20, th: 'ปลดล็อกฉายา "ราชาห้วงว่าง" · Shards ถาวร +10%', teaser: 'ปลดฉายา "ราชาห้วงว่าง" + Shards ถาวร +10%' },
 ];
 
 // ---------------- Unique collection: every 5 found adds a permanent bonus ----------------

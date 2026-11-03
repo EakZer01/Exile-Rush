@@ -71,7 +71,7 @@ function buildMenu() {
   $('meta-shards').innerHTML = `✦ Ancient Shards: <b>${M.shards}</b>`;
   const best = loadBest();
   const L = M.life;
-  $('best-run').innerHTML = `<div class="life-line">เล่นทั้งหมด ${L.runs} รอบ · ชนะ ${L.wins} · ฆ่ารวม ${fmtNum(L.kills)} · บอสรวม ${L.bosses}</div>` + (best ? `<div class="best-line">สถิติดีที่สุด: รอด <b>${fmtTime(best.time)}</b> · Lv ${best.level} · ฆ่า ${best.kills} (${best.cls})${best.win ? ' · <span class="win">ชนะ!</span>' : ''}</div>` : '') + dailyMenuHtml();
+  $('best-run').innerHTML = `<div class="life-line">เล่นทั้งหมด ${L.runs} รอบ · ชนะ ${L.wins} · ฆ่ารวม ${fmtNum(L.kills)} · บอสรวม ${L.bosses}</div>` + (best ? `<div class="best-line">สถิติดีที่สุด: รอด <b>${fmtTime(best.time)}</b> · Lv ${best.level} · ฆ่า ${best.kills} (${best.cls})${best.win ? ' · <span class="win">ชนะ!</span>' : ''}</div>` : '') + dailyMenuHtml() + weeklyMenuHtml();
 }
 let menuPick = { c: null, lock: null };
 function playPicked() { if (!menuPick.c) return; if (menuPick.lock) openAltar(); else openMapDevice(menuPick.c); }
@@ -745,7 +745,7 @@ function showGameOver(win) {
   $('over-stats').innerHTML = `<div class="over-summary">${!win && P.killedBy
       ? `<div class="over-cause">ถูก <b class="el-${P.killedElem || 'physical'}">${P.killedBy}</b> (${ELEM_TH[P.killedElem || 'physical']}) ที่ ${fmtTime(G.time)} · ${mapLabel(G.map)}</div>`
       : `<div class="over-cause">${mapLabel(G.map)}</div>`}
-      <div class="over-stats-row">${plate('รอด', fmtTime(G.time), 'os-time')}${plate('เลเวล', P.level, 'os-lv')}${plate('สังหาร', G.stats.kills.toLocaleString('en-US'), 'os-kills')}${plate('บอส', G.stats.bosses, 'os-boss')}${plate('ดาเมจรวม', fmtNum(G.stats.dmg), 'os-dmg')}</div></div>`
+      <div class="over-stats-row">${plate('รอด', fmtTime(G.time), 'os-time')}${plate('เลเวล', P.level, 'os-lv')}${plate('สังหาร', G.stats.kills.toLocaleString('en-US'), 'os-kills')}${plate('บอส', G.stats.bosses, 'os-boss')}${G.stats.echoes ? plate('Echo', G.stats.echoes, 'os-echo') : ''}${plate('ดาเมจรวม', fmtNum(G.stats.dmg), 'os-dmg')}</div></div>`
     + (P.dead ? deathRecapHtml() : '') + metaHtml + buildViewHtml(true);
   renderOverStash(runR);
   show('gameover');

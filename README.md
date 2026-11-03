@@ -117,6 +117,9 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
   - **Atlas Passive Tree**: 6 สาย (Strongbox, Essence, Ritual, Delirium, Breach, Cartography) ปรับว่า league content ไหนเกิดบ่อย/ให้ของมาก แต้ม = แผนที่ที่ผ่าน + บอสสะสมทุก 8 ตัว คืนแต้มฟรี
   - **☠ Hardcore**: ตาย = เสีย Shard แผนที่ Jewel ของรอบนั้น และเก็บของเข้า Stash ไม่ได้ · ชนะ = Shard ×1.5 และเก็บของได้ +2 ชิ้น
 - **📅 Daily Challenge**: ทุกวันได้คลาส แผนที่ Tier และ mod ชุดเดียวกัน (สุ่มแบบ seed ตามวันที่) บันทึกสถิติดีที่สุดของวัน
+- **🗓 Weekly Challenge**: เหมือน Daily แต่เป็นรายสัปดาห์ Tier 3–5 + mod แน่นกว่า ชนะครั้งแรกของสัปดาห์ได้ ✦150 · เทียบอันดับกับทุกคนได้ที่ Leaderboard
+- **🏆 Leaderboard**: แท็บใหม่ในหน้าสถิติ (ปุ่ม 🏆 บนเมนู) ดูอันดับ Daily วันนี้ / Weekly สัปดาห์นี้ / Endgame ที่ลึกที่สุด ตั้งชื่อบนกระดานได้ที่ ⚙ ตั้งค่า (ไม่ตั้ง = ไม่ระบุตัวตน)
+- **∞ Endgame Echo milestone**: โค่น Echo บอสใน Endgame ให้ครบ 5 / 10 / 15 / 20 ตัวในรอบเดียว เพื่อออร่า "เสียงก้อง", ฉายา "ผู้ข้ามห้วง", Unique เสียงก้องแห่งจักรพรรดิ (การันตีดรอป) และฉายา "ราชาห้วงว่าง" + Shards ถาวร +10%
 - **Meta-progression**: จบทุกรอบจะได้ **Ancient Shards ✦** (ตามเวลารอด, จำนวนฆ่า, บอส, เลเวล, ชนะ +100) เอาไปใช้ที่ **Altar of Legacy** ในเมนูหลัก
   - **Legacy Tree** แบบ passive tree ของ PoE มี 66 โหนด แบ่งเป็น 6 สาย: Arcane (เวท/ธาตุ), Shadow (คริ/เคออส), Hunt (Projectile/ความเร็ว), Bastion (ชีวิต/ป้องกัน/ฟลาสก์), Warfare (Attack/กายภาพ/AoE), Occult (มินเนียน/เผาไหม้/XP)
   - แต่ละสายมีโหนดเล็ก, Notable 3 อัน และ **Keystone** ที่เปลี่ยนแนวบิวที่ปลายสาย ได้แก่ Specialist, Glass Cannon, Collector, Born Ascendant, Gem Savant, Minion Lord มีโหนดเชื่อมระหว่างสายเป็นวงใน ทำให้เดินได้หลายเส้นทาง
@@ -155,6 +158,7 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
 | `js/progression.js` | ระบบข้ามรอบข้างต้นตอนเล่นจริง: ดรอป Scarab/Unique ตามแหล่ง, สรุปจบรอบ, หน้า Altar และ Scarab ที่ Map Device |
 | `js/data/goals.js` · `js/goals.js` | ภารกิจผู้เริ่มต้น, Corruption, Cosmetic (ข้อมูล · ระบบ) และ "เป้าหมายถัดไป" ที่เมนูหลัก |
 | `js/stash.js` | แผนที่/Jewel ที่ดรอป, Stash, ของที่พกเข้ารอบ, Atlas Tree, Jewel Socket, Daily Challenge |
+| `js/leaderboard.js` | กระดานผู้นำ (อ่านอย่างเดียวจากตาราง Supabase): Daily/Weekly/Endgame |
 | `js/settings.js` | ตั้งค่า (บันทึกถาวร), เพลงประกอบแบบสังเคราะห์, ลดคุณภาพอัตโนมัติ, Tips |
 | `js/codex.js` | หน้า Codex, คอมโบแนะนำ, หน้าตั้งค่า |
 | `js/data/maps.js` | พื้นที่ (Biome), การเพิ่มความยากตาม Tier, Map Mods, จำนวนแต้มจาก Atlas |
@@ -181,13 +185,14 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
 
 ## สถิติผู้เล่น (Supabase)
 
-ทุกรอบที่จบ (ยกเว้นตายใน 30 วินาทีแรก) จะส่งคลาส, Ascendancy, สกิลพร้อมเลเวลและ Support, Keystone, Tier, Corruption, ผลแพ้/ชนะ, เวลาที่รอด และสาเหตุการตาย ไปที่ตาราง `runs` ใช้รหัสสุ่มประจำเบราว์เซอร์แทนชื่อ ผู้เล่นปิดได้ที่ ⚙ ตั้งค่า ถ้าส่งไม่สำเร็จ (ออฟไลน์) จะเก็บไว้ส่งรอบถัดไป ดูผลรวมได้ที่ `stats.html`
+ทุกรอบที่จบ (ยกเว้นตายใน 30 วินาทีแรก) จะส่งคลาส, Ascendancy, สกิลพร้อมเลเวลและ Support, Keystone, Tier, Corruption, ผลแพ้/ชนะ, เวลาที่รอด, จำนวน Echo และสาเหตุการตาย ไปที่ตาราง `runs` ใช้รหัสสุ่มประจำเบราว์เซอร์แทนชื่อ (ตั้งชื่อบน Leaderboard ได้ที่ ⚙ ตั้งค่า — ไม่ตั้ง = ไม่ระบุตัวตน) ผู้เล่นปิดได้ที่ ⚙ ตั้งค่า ถ้าส่งไม่สำเร็จ (ออฟไลน์) จะเก็บไว้ส่งรอบถัดไป ดูผลรวมได้ที่ `stats.html` และอันดับในเกมได้ที่ 🏆 Leaderboard
 
 ตั้งค่าครั้งแรก:
 1. สร้าง project ฟรีที่ supabase.com
 2. เปิด **SQL Editor** วางเนื้อหา `supabase/schema.sql` ทั้งไฟล์แล้วกด Run
 3. ไปที่ **Project Settings → API** คัดลอก Project URL และ anon public key ใส่ใน `js/stats-config.js`
-4. ถ้าเปลี่ยนตัวเลขสมดุล ให้เพิ่ม `GAME_BUILD` ใน `js/stats-config.js` เพื่อให้หน้าสถิติแยกข้อมูลก่อนและหลังได้
+4. **อัปเดตจากเวอร์ชันเก่า (build 53 ลงมา)**: เปิด **SQL Editor** วางเนื้อหา `supabase/migrate_leaderboard.sql` แล้วกด Run (เพิ่มคอลัมน์ weekly / name / echoes ให้ Leaderboard) — ทำครั้งเดียว
+5. ถ้าเปลี่ยนตัวเลขสมดุล ให้เพิ่ม `GAME_BUILD` ใน `js/stats-config.js` เพื่อให้หน้าสถิติแยกข้อมูลก่อนและหลังได้
 
 anon key ออกแบบมาให้อยู่ในหน้าเว็บได้ ตารางยอมให้เพิ่มและอ่านเท่านั้น แก้หรือลบผ่าน key นี้ไม่ได้
 
@@ -208,4 +213,4 @@ node tools/sim/run.cjs bots
 node --test tests/*.test.cjs
 ```
 
-ครอบคลุม Flicker และการยกเลิกด้วยปุ่มเดิน, ลูปเบื้องหลัง, Tornado Shot/Fork และ Jeweller เพิ่มช่อง Support รวมถึงการย้ายข้อมูล Stash รุ่นเก่า · อาวุธกำหนดสกิล, Mastery, Unique ตามแหล่ง, Scarab, ห้องรางวัล, Heirloom และ Gem Mastery
+ครอบคลุม Flicker และการยกเลิกด้วยปุ่มเดิน, ลูปเบื้องหลัง, Tornado Shot/Fork และ Jeweller เพิ่มช่อง Support รวมถึงการย้ายข้อมูล Stash รุ่นเก่า · อาวุธกำหนดสกิล, Mastery, Unique ตามแหล่ง, Scarab, ห้องรางวัล, Heirloom และ Gem Mastery, Weekly Challenge และรางวัล Echo milestone ของ Leaderboard

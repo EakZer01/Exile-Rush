@@ -7,9 +7,9 @@ let Meta = null;
 
 function freshMeta() {
   return { v: 2, shards: 0, alloc: {}, unlocked: {}, found: {}, atlas: { maxTier: 1, done: {} }, lastMap: null, life: { runs: 0, wins: 0, kills: 0, bosses: 0, time: 0 },
-    stash: [], jewels: {}, atlasAlloc: {}, daily: null,
+    stash: [], jewels: {}, atlasAlloc: {}, daily: null, weekly: null,
     scarabs: {}, gems: {}, chal: {}, voids: {}, atlasTiers: {}, winCls: {},
-    quests: {}, heat: {}, heatSel: {}, cos: {}, cosSeen: {} };
+    quests: {}, heat: {}, heatSel: {}, cos: {}, cosSeen: {}, echoBest: 0 };
 }
 
 function loadMeta() {
@@ -175,6 +175,26 @@ function dailySetup() {
   const mods = Object.keys(MAP_MODS).map((k) => [k, r()]).sort((a, b) => a[1] - b[1]).slice(0, mapModCount(tier)).map((x) => x[0]);
   return { key, cls, map: { biome: pickR(biomes), tier, mods } };
 }
+
+// ---- Weekly challenge: like the Daily but a whole week, one tier harder ----
+// ISO week number as an int key (e.g. 202645) — everyone on earth gets the same run.
+function weeklyKey() {
+  const d = new Date();
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  t.setDate(t.getDate() - ((t.getDay() + 6) % 7) + 3);            // Thursday of this ISO week
+  const isoYear = t.getFullYear(), jan4 = new Date(isoYear, 0, 4);
+  const week1Thu = new Date(isoYear, 0, 4 - ((jan4.getDay() + 6) % 7));
+  return isoYear * 100 + 1 + Math.round((t - week1Thu) / (7 * 86400000));
+}
+function weeklySetup() {
+  const key = weeklyKey(), r = mulberry32(key * 31 + 7);
+  const pickR = (arr) => arr[Math.floor(r() * arr.length)];
+  const cls = pickR(CLASSES), tier = 3 + Math.floor(r() * 3);      // tiers 3-5, spicier than the daily
+  const biomes = Object.keys(BIOMES).filter((b) => BIOMES[b].minTier <= tier);
+  const mods = Object.keys(MAP_MODS).map((k) => [k, r()]).sort((a, b) => a[1] - b[1]).slice(0, mapModCount(tier) + 1).map((x) => x[0]);
+  return { key, cls, map: { biome: pickR(biomes), tier, mods } };
+}
+const WEEKLY_WIN_SHARDS = 150;                                     // first win of the week, once
 function applyMetaStart(P) {
   for (const id in loadMeta().alloc) { const n = TREE_NODES[id]; if (n.start) n.start(P); }
 }
@@ -208,6 +228,17 @@ function settleRun(r) {
     D.tries++;
     const score = r.time + (r.win ? 600 : 0);
     if (score > D.best) { D.best = score; D.kills = r.kills; D.cls = r.cls; D.newBest = true; } else D.newBest = false;
+  }
+  if (r.weekly) {
+    const W = M.weekly && M.weekly.key === r.weekly ? M.weekly : (M.weekly = { key: r.weekly, best: 0, tries: 0, winClaimed: false });
+    W.tries++;
+    const score = r.time + (r.win ? 600 : 0);
+    if (score > W.best) { W.best = score; W.cls = r.cls; W.newBest = true; } else W.newBest = false;
+    if (r.win && !W.winClaimed) {
+      W.winClaimed = true;
+      reward.parts.push(['Weekly Challenge: ชนะครั้งแรกของสัปดาห์', WEEKLY_WIN_SHARDS]);
+      reward.total += WEEKLY_WIN_SHARDS;
+    }
   }
   if (r.win) M.life.wins++;
   const newly = [];
