@@ -956,6 +956,7 @@ function drawDash(ctx, P, cx, cy, r, mobile) {
   ctx.textAlign = 'center'; ctx.font = `700 ${mobile ? 11 : 10}px Sarabun, sans-serif`;
   hudText(ctx, 'DASH', cx, cy + 4, '#fff', 2);
   if (!mobile) { ctx.font = '600 12px Cinzel, serif'; ctx.fillStyle = HUD.faint; ctx.fillText('space', cx, cy + r + 18); }
+  G.dashRect = mobile ? { x: cx - r - 6, y: cy - r - 6, w: r * 2 + 12, h: r * 2 + 12 } : null;
 }
 // one skill: a diamond socket with the gem art in a round window
 function drawSkillSlot(ctx, inst, cx, cy, size, mobile) {

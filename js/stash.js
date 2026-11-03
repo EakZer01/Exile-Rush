@@ -5,23 +5,11 @@
 // ============================================================
 
 // ---------------- in-run drops ----------------
-function dropMapItem(x, y, tier) { spawnPickup(x, y, 'map', { map: makeMapItem(tier) }); }
 function dropJewel(x, y) { G.items.push({ x: x + rand(-14, 14), y: y + rand(-14, 14), item: makeJewel(), t: 0 }); }
-// maps and jewels from monsters (called by killEnemy)
+// jewels from monsters (called by killEnemy)
 function rollLeagueDrops(e) {
-  const AF = G.atlasFx, t = G.map.tier;
-  if (e.rarity === 3) {
-    if (e.final) { dropMapItem(e.x, e.y - 40, t + 1); dropMapItem(e.x + 30, e.y - 40, t); }
-    else if (Math.random() < 0.5 * AF.mapDrop) dropMapItem(e.x, e.y - 40, t);
-    if (Math.random() < 0.35) dropJewel(e.x - 30, e.y - 30);
-  } else if (e.rarity === 2) {
-    if (Math.random() < 0.05 * AF.mapDrop) dropMapItem(e.x, e.y, t + (Math.random() < 0.25 ? 1 : 0));
-    if (Math.random() < 0.04) dropJewel(e.x, e.y);
-  } else if (e.rarity === 1 && Math.random() < 0.004 * AF.mapDrop) dropMapItem(e.x, e.y, t);
-}
-function collectMap(m) {
-  G.runMaps.push(m);
-  lootLog(`แผนที่ T${m.tier}: ${m.name}`, RARITY_COLOR[m.rarity]);
+  if (e.rarity === 3) { if (Math.random() < 0.35) dropJewel(e.x - 30, e.y - 30); }
+  else if (e.rarity === 2 && Math.random() < 0.04) dropJewel(e.x, e.y);
 }
 
 // ---------------- loadout: stash items brought into a run ----------------
@@ -52,8 +40,11 @@ function renderOverStash(r) {
   if (overPick.done) { box.innerHTML = `<div class="ok">เก็บเข้า Stash แล้ว ${overPick.sel.size} ชิ้น ✓</div>`; return; }
   if (!items.length) { box.innerHTML = '<div class="muted">ไม่มีไอเทมให้เก็บ (Heirloom กลับเข้า Stash เองแล้ว)</div>'; return; }
   const room = STASH_CAP - M.stash.length;
-  box.innerHTML = `<div class="bv-title">📦 เลือกไอเทมเก็บเข้า Stash (${overPick.sel.size}/${Math.min(limit, room)})</div>
+  const picked = [...overPick.sel].map((i) => items[i]);
+  box.innerHTML = `<div class="os-head"><span class="bv-title">เก็บเข้า Stash</span><span class="muted">เลือก ${Math.min(limit, room)} ชิ้น · ${overPick.sel.size}/${Math.min(limit, room)}</span></div>
     <div class="stash-grid small">${items.map((it, i) => stashCellHtml(it, 'op', i, overPick.sel.has(i))).join('')}</div>
+    ${picked.length ? `<div class="os-picked">${picked.map((it) => `<span style="color:${RARITY_COLOR[it.rarity]}">${it.name}</span>`).join(' · ')}</div>` : ''}`;
+  box.innerHTML += `
     ${overPick.view !== null ? itemCardHtml(items[overPick.view]) : '<div class="muted">แตะไอเทมเพื่อดูและเลือก</div>'}
     <div class="inv-actions"><button class="btn btn-small" id="btn-keep" ${overPick.sel.size ? '' : 'disabled'}>เก็บ ${overPick.sel.size} ชิ้น</button>
     <span class="muted">Stash ${M.stash.length}/${STASH_CAP}</span></div>`;
@@ -95,23 +86,9 @@ function closeStash() { hide('stash'); buildMenu(); show('menu'); }
 // ---------------- Map Device additions ----------------
 let mapLoadout = new Set(), mapHC = false, atlasOpen = false;
 function loadoutCost() { const M = loadMeta(); let c = 0; for (const i of mapLoadout) if (M.stash[i]) c += LOADOUT_COST[M.stash[i].rarity] || 1; return c; }
-function mapEntryCost() { return mapCfg.itemUid ? 0 : mapBuyCost(mapCfg.tier); }
+function mapEntryCost() { return mapBuyCost(mapCfg.tier); }
 function renderMapExtras() {
   const M = loadMeta(), A = atlasData();
-  // owned map items
-  $('map-owned-n').textContent = `(${M.maps.length}/${MAP_ITEM_CAP})`;
-  $('map-owned').innerHTML = M.maps.map((m) => `<div class="map-item r-${m.rarity}${mapCfg.itemUid === m.uid ? ' sel' : ''}" data-mi="${m.uid}" style="--cc:${BIOMES[m.biome].color}">
-      <b>T${m.tier}</b> ${BIOMES[m.biome].name}<br><span class="muted">${m.rarity === 'normal' ? 'ไม่มี mod' : m.mods.length + ' mod'}</span></div>`).join('')
-    || '<div class="muted">ยังไม่มีแผนที่ — ดรอปจากบอส / มอนสเตอร์ Rare / Strongbox / Ritual</div>';
-  $('mapdev').querySelectorAll('[data-mi]').forEach((el) => {
-    el.onclick = () => {
-      const m = M.maps.find((x) => x.uid === +el.dataset.mi);
-      if (!m) return;
-      if (mapCfg.itemUid === m.uid) { mapCfg.itemUid = null; }
-      else mapCfg = { biome: m.biome, tier: m.tier, mods: m.mods.slice(), itemUid: m.uid };
-      openMapDevice();
-    };
-  });
   // loadout
   const stash = M.stash.map((it, i) => [it, i]).filter(([it]) => it.slot !== 'jewel');
   const lim = loadoutLimit();
@@ -126,7 +103,7 @@ function renderMapExtras() {
   if (mapHC && [...mapLoadout].some((i) => M.stash[i] && M.stash[i].heir)) $('map-loadout-n').textContent += ' · ⚠ Hardcore: ตายแล้ว Heirloom หาย';
   // start button shows what it costs
   const cost = mapEntryCost() + loadoutCost();
-  $('btn-map-start').textContent = mapCfg.itemUid ? `🗺 เปิดแผนที่ (ใช้แผนที่ T${mapCfg.tier})${loadoutCost() ? ` · ${loadoutCost()} ✦` : ''}` : cost ? `🗺 ซื้อและเปิดแผนที่ (${cost} ✦)` : '🗺 เปิดแผนที่';
+  $('btn-map-start').textContent = cost ? `เปิดแผนที่ · ${cost} ✦` : 'เปิดแผนที่';
   $('btn-map-start').disabled = M.shards < cost;
   $('map-atlas').textContent = `Atlas: ผ่านแล้ว ${atlasDoneCount()} แผนที่ · Tier สูงสุด ${A.maxTier} · แต้ม Legacy Tree จาก Atlas +${atlasBonusPoints()}/${ATLAS_POINT_CAP} · แต้ม Atlas Tree ${atlasUsed()}/${atlasPoints()} · ✦ ${M.shards}`;
   renderMapScarabs();
@@ -147,24 +124,16 @@ function renderAtlasTree() {
   });
 }
 function toggleAtlasTree() { atlasOpen = !atlasOpen; openMapDevice(); }
-// keep a selected map item's mods in sync with Alchemy / Chaos / clear
-function syncMapItem() {
-  if (!mapCfg.itemUid) return;
-  const m = loadMeta().maps.find((x) => x.uid === mapCfg.itemUid);
-  if (m) { m.mods = mapCfg.mods.slice(); if (m.mods.length && m.rarity === 'normal') m.rarity = 'rare'; saveMeta(); }
-}
 
-// pay for the map / loadout, then start
+// pay for the map tier / loadout, then start
 function mapStartPaid() {
   const M = loadMeta(), cost = mapEntryCost() + loadoutCost();
   if (M.shards < cost) return;
   M.shards -= cost;
-  if (mapCfg.itemUid) M.maps = M.maps.filter((m) => m.uid !== mapCfg.itemUid);
   const loadout = [...mapLoadout].sort((a, b) => b - a).map((i) => M.stash.splice(i, 1)[0]).filter(Boolean);
   mapLoadout = new Set();
   const cfg = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice(), hc: mapHC, loadout, scarabs: spendMapScarabs(), heat: corruptionOpen() ? Object.assign({}, M.heatSel) : {} };
   M.lastMap = { biome: cfg.biome, tier: cfg.tier, mods: cfg.mods.slice() };
-  mapCfg.itemUid = null;
   saveMeta();
   hide('mapdev');
   startGame(mapCls, cfg);
@@ -198,5 +167,7 @@ function startDaily() {
 }
 function dailyMenuHtml() {
   const d = dailySetup(), M = loadMeta(), D = M.daily && M.daily.key === d.key ? M.daily : null;
-  return `📅 Daily ${String(d.key).slice(6)}/${String(d.key).slice(4, 6)}: ${d.cls.name} · ${mapLabel(d.map)}` + (D ? ` · ดีที่สุด ${fmtTime(Math.min(D.best, RUN_LENGTH))}${D.best > RUN_LENGTH ? ' (ชนะ!)' : ''} · เล่น ${D.tries} ครั้ง` : '');
+  return `<div class="daily-box"><div class="daily-h">DAILY · ${String(d.key).slice(6)}/${String(d.key).slice(4, 6)}</div>
+    <div class="daily-run">${d.cls.name} · ${mapLabel(d.map)}${d.map.mods.length ? ` · ${d.map.mods.length} mods` : ''}</div>
+    <div class="daily-best">${D ? `ดีที่สุด ${fmtTime(Math.min(D.best, RUN_LENGTH))}${D.best > RUN_LENGTH ? ' (ชนะ!)' : ''} · เล่น ${D.tries} ครั้ง` : 'ยังไม่ได้เล่นวันนี้ · กดปุ่ม Daily'}</div></div>`;
 }

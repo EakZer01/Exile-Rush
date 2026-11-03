@@ -216,7 +216,6 @@ function collectPickup(kind, x, y, it) {
   else if (kind === 'life') { P.life = Math.min(P.maxLife, P.life + P.maxLife * 0.3); Sfx.play('heal'); }
   else if (kind === 'magnet') for (const o of G.orbs) o.pull = true;
   else if (kind === 'chest') { if (it && it.boss) G.pendingChests++; else openChestInstant(x, y); }
-  else if (kind === 'map') collectMap(it.map);
   else if (kind === 'essence') { P.essences[it.ess] = (P.essences[it.ess] || 0) + 1; lootLog(def.name, def.color); showTip('essence'); }
   else if (kind === 'scarab') collectScarab(it.scarab);
 }

@@ -193,7 +193,6 @@ function bossDefeated(e) {
   else if (e.bossDef.echo) {
     G.stats.echoes = (G.stats.echoes || 0) + 1;
     spawnPickup(e.x + 40, e.y, randomCraftOrb()); spawnPickup(e.x - 40, e.y, randomCraftOrb());
-    dropMapItem(e.x, e.y - 50, G.map.tier + 1);
     if (Math.random() < 0.5) dropItem(e.x, e.y + 50, 'unique');
     announce(`${e.name} พ่ายแพ้`, `Echo ${G.stats.echoes} · ตัวถัดไปแข็งแกร่งกว่าเดิม`, '#ffd84a');
   } else {

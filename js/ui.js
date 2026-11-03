@@ -37,7 +37,7 @@ function buildMenu() {
   restoreRandom();
   const list = $('class-list');
   list.innerHTML = '';
-  const M = loadMeta();
+  const M = loadMeta(), bestBy = loadClassBest();
   for (const c of CLASSES) {
     const sk = c.start ? SKILLS[c.start] : null;
     const lock = isLocked('class', c.id) ? UNLOCKS.find((u) => u.kind === 'class' && u.ref === c.id) : null;
@@ -51,21 +51,55 @@ function buildMenu() {
       <div class="class-desc">${c.desc}</div>
       <div class="class-bonus">${c.bonus}</div>
       <div class="class-life">❤ ${c.life}</div>
-      ${lock ? `<div class="class-lock">🔒 ${lock.req}<br><span>หรือปลดล็อกด้วย ${lock.cost} ✦ ที่แท่นบูชา</span></div>` : ''}`;
-    el.onclick = () => { Sfx.init(); if (lock) openAltar(); else openMapDevice(c); };
+      ${lock ? `<div class="class-lock">🔒 ${lock.req}<br><span>หรือปลดล็อกด้วย ${lock.cost} ✦ ที่แท่นบูชา</span></div>` : ''}
+      ${!lock && bestBy[c.id] ? `<div class="class-best">ดีที่สุด ${fmtTime(bestBy[c.id].time)} · Lv ${bestBy[c.id].level}${bestBy[c.id].win ? ' · <span class="win">ชนะ</span>' : ''}</div>` : ''}`;
+    // click selects the class (shown large in the centre); Play, a double click or Enter on the picked row starts it
+    el.dataset.cls = c.id;
+    el.tabIndex = 0;
+    el.onclick = () => { Sfx.init(); renderClassPreview(c, lock); };
+    el.ondblclick = () => playPicked();
+    el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (menuPick.c === c) playPicked(); else el.onclick(); } };
     list.appendChild(el);
   }
+  let lastId = null; try { lastId = localStorage.getItem('exile_last_cls'); } catch (e) { /* storage may be blocked */ }
+  const first = CLASSES.find((c) => c.id === lastId && !isLocked('class', c.id)) || CLASSES.find((c) => !isLocked('class', c.id)) || CLASSES[0];
+  renderClassPreview(first, isLocked('class', first.id) ? UNLOCKS.find((u) => u.kind === 'class' && u.ref === first.id) : null);
+  $('roster-count').textContent = `${CLASSES.filter((c) => !isLocked('class', c.id)).length} / ${CLASSES.length} ปลดแล้ว`;
+  $('btn-menu-play').onclick = () => { Sfx.init(); playPicked(); };
   questCheck(null);
   renderMenuGoals();
   $('meta-shards').innerHTML = `✦ Ancient Shards: <b>${M.shards}</b>`;
   const best = loadBest();
-  $('best-run').innerHTML = (best ? `สถิติดีที่สุด: รอด <b>${fmtTime(best.time)}</b> · Lv ${best.level} · ฆ่า ${best.kills} (${best.cls})${best.win ? ' · <span class="win">ชนะ!</span>' : ''}<br>` : '') + dailyMenuHtml();
+  const L = M.life;
+  $('best-run').innerHTML = `<div class="life-line">เล่นทั้งหมด ${L.runs} รอบ · ชนะ ${L.wins} · ฆ่ารวม ${fmtNum(L.kills)} · บอสรวม ${L.bosses}</div>` + (best ? `<div class="best-line">สถิติดีที่สุด: รอด <b>${fmtTime(best.time)}</b> · Lv ${best.level} · ฆ่า ${best.kills} (${best.cls})${best.win ? ' · <span class="win">ชนะ!</span>' : ''}</div>` : '') + dailyMenuHtml();
+}
+let menuPick = { c: null, lock: null };
+function playPicked() { if (!menuPick.c) return; if (menuPick.lock) openAltar(); else openMapDevice(menuPick.c); }
+function renderClassPreview(c, lock) {
+  const box = $('class-preview'), sk = c.start ? SKILLS[c.start] : null;
+  menuPick = { c, lock };
+  $('class-list').querySelectorAll('.class-card').forEach((el) => el.classList.toggle('picked', el.dataset.cls === c.id));
+  $('btn-menu-play').innerHTML = lock ? `ปลดล็อก ${c.name}` : `เล่น<span class="play-cls"> · ${c.name}</span>`;
+  $('btn-menu-play').classList.toggle('locked', !!lock);
+  box.style.setProperty('--cc', c.color);
+  box.classList.toggle('locked', !!lock);
+  box.innerHTML = `
+    <div class="cp-stage"><img class="cp-sprite" src="${spriteURL('cls_' + c.id, 8)}" alt="${c.name}"></div>
+    <div class="cp-name">${c.name}</div>
+    <div class="cp-th">${c.th}</div>
+    <div class="cp-stats"><span class="cp-life">❤ ชีวิต ${c.life}</span><span class="cp-bonus">${c.bonus}</span>
+      ${sk ? `<span class="cp-skill"><img class="cp-skill-ico" src="${skillIconURL(sk.id)}" alt="">${sk.name}</span>` : ''}</div>
+    <div class="cp-desc">${c.desc}</div>
+    ${lock ? `<div class="cp-lock">🔒 ${lock.req}<br><span>หรือปลดล็อกด้วย ${lock.cost} ✦ ที่แท่นบูชา</span></div>` : ''}`;
 }
 function loadBest() { try { return JSON.parse(localStorage.getItem('exile_best') || 'null'); } catch (e) { return null; } }
+function loadClassBest() { try { return JSON.parse(localStorage.getItem('exile_best_cls') || '{}') || {}; } catch (e) { return {}; } }
 function saveBest(rec) {
   try {
     const b = loadBest();
     if (!b || rec.time > b.time || (rec.win && !b.win)) localStorage.setItem('exile_best', JSON.stringify(rec));
+    const all = loadClassBest(), id = G.player && G.player.cls.id, cb = id && all[id];
+    if (id && (!cb || rec.time > cb.time || (rec.win && !cb.win))) { all[id] = rec; localStorage.setItem('exile_best_cls', JSON.stringify(all)); }
   } catch (e) { /* storage may be blocked */ }
 }
 
@@ -331,9 +365,12 @@ function openLevelUp(isChest) {
   else if (G.choices.some((c) => c.type === 'keystone')) showTip('keystone');
   else if (G.choices.some((c) => c.type === 'support')) showTip('support');
   else showTip('levelup');
-  $('levelup-title').textContent = isChest ? 'หีบสมบัติของบอส!' : G.milestone ? `★ MILESTONE — เลเวล ${lv} ★` : 'LEVEL UP!';
-  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่าง' : G.milestone ? (G.choices.some((c) => c.type === 'mastery') ? 'Mastery พร้อมแล้ว — เลือกทางใดทางหนึ่ง หรือรับการ์ด Milestone อื่นแทน' : 'การ์ดพิเศษทุก 10 เลเวล — Keystone, Awaken, Empower, ช่องสกิล · อ่านให้ดี!')
-    : `เลเวล ${lv} — เลือก 1 อย่าง${G.pendingLevels > 1 ? ` (เหลืออีก ${G.pendingLevels - 1})` : ''} · ★ = เข้ากับบิลด์`;
+  // small gold badge on milestones, then the big title; the hint says which keys pick a card
+  $('levelup-badge').textContent = G.milestone ? `MILESTONE · LV ${lv}` : '';
+  $('levelup-title').textContent = isChest ? 'หีบสมบัติของบอส!' : 'LEVEL UP';
+  const keys = ` · กด 1–${G.choices.length}`;
+  $('levelup-sub').textContent = isChest ? 'เลือกของ 1 อย่าง' : G.milestone ? (G.choices.some((c) => c.type === 'mastery') ? 'Mastery พร้อมแล้ว — เลือกทางใดทางหนึ่ง หรือรับการ์ด Milestone อื่นแทน' : 'การ์ดพิเศษทุก 10 เลเวล — Keystone, Awaken, Empower, ช่องสกิล · อ่านให้ดี!') + keys
+    : `เลเวล ${lv} — เลือก 1 อย่าง${keys}${G.pendingLevels > 1 ? ` · เหลืออีก ${G.pendingLevels - 1}` : ''} · ★ = เข้ากับบิลด์`;
   renderCards();
   Sfx.play('levelup');
   show('levelup');
@@ -368,6 +405,7 @@ function openAscend() {
   }
   if (!G.choices.length) { G.pendingAscend = 0; G.state = 'play'; return; }
   $('levelup-title').textContent = 'ASCENDANCY';
+  $('levelup-badge').textContent = '';
   setLevelupButtons(false);
   showTip('ascend');
   const wrap = $('cards');
@@ -531,49 +569,65 @@ function socketBack() {
 }
 
 // ---------------- Build / pause panel ----------------
+// Build view: skill table + defence column, then the Defence / Passive / Ascendancy sections
+// (the pause panel shows one at a time through its tabs; the run-end screen shows them all).
 function buildViewHtml(final) {
   const P = G.player, m = P.mods;
-  const total = P.skills.reduce((a, s) => a + s.dmgDealt, 0) || 1;
+  const total = P.skills.reduce((a, s) => a + s.dmgDealt, 0) || 1, top = Math.max(1, ...P.skills.map(skillDps));
+  const main = P.skills.reduce((b, s) => (!b || s.dmgDealt > b.dmgDealt ? s : b), null);
   let h = '<div class="bv-skills">';
   for (const inst of P.skills) {
-    const d = SKILLS[inst.id], s = inst.st;
-    h += `<div class="bv-skill">
-      <div class="bv-head">${skillGemHtml(d.id, false, inst.evo)}<div><div class="card-name">${skillDisplayName(inst)} <small>Lv ${inst.level}/${MAX_GEM_LEVEL}${m.gemLevel ? ` (+${m.gemLevel})` : ''}</small></div>${tagsHtml(s.tags)}</div></div>
-      <div>${socketsHtml(inst)} <span class="muted">${skillSocketLabel(inst)}</span></div>
-      ${!final ? `<small class="muted">Jeweller · เพิ่มช่อง Support</small><div class="inv-actions jeweller-actions">${jewellerButtonsHtml(inst)}</div>` : ''}
-      <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('') || '<span class="muted">ไม่มี Support</span>'}</div>
+    const d = SKILLS[inst.id], s = inst.st, dps = skillDps(inst), free = Math.max(0, skillSockets(inst).cap - inst.supports.length);
+    h += `<div class="bv-skill${inst === main && main.dmgDealt > 0 ? ' bv-main' : ''}">
+      <div class="bv-head">${skillGemHtml(d.id, false, inst.evo)}<div><div class="card-name">${skillDisplayName(inst)}</div>
+        <div class="bv-lv">Lv ${inst.level}/${MAX_GEM_LEVEL}${m.gemLevel ? ` (+${m.gemLevel})` : ''}</div>${tagsHtml(s.tags)}</div></div>
+      <div class="sup-chips">${inst.supports.map((sid) => `<span class="chip chip-${SUPPORTS[sid].gem}${inst.awakened.includes(sid) ? ' chip-awk' : ''}${activeSupports(inst).inactive.includes(sid) ? ' chip-off' : ''}" title="${SUPPORTS[sid].desc}">${supportDisplayName(inst, sid)}</span>`).join('')}${'<span class="chip-empty" title="ช่อง Support ว่าง"></span>'.repeat(free)}</div>
+      <div class="bv-sockets muted">${skillSocketLabel(inst)}</div>
+      ${!final ? `<div class="inv-actions jeweller-actions">${jewellerButtonsHtml(inst)}</div>` : ''}
       ${s.disabled ? `<div class="bad">⚠ หยุดทำงาน — ${s.disableReason || 'ต้องถือ ' + weaponReqText(inst.id)}</div>` : ''}
       <div class="bv-stats">${describeStats(s).join(' · ')}</div>${!final ? craftLinkButton(inst) : ''}
       ${inst.evo ? `<div class="bv-vaal">Vaal: วิญญาณ ${inst.souls}/${vaalSouls()}${inst.souls >= vaalSouls() ? ' — <b>พร้อม! กด V</b>' : ''}</div>` : evolveHintHtml(inst.id)}
-      <div class="bv-dmg"><div class="bar"><div style="width:${(inst.dmgDealt / total) * 100}%"></div></div>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills} · <b>DPS ${fmtNum(skillDps(inst))}</b> <span class="muted">(10 วิล่าสุด) · Hit เฉลี่ยรวมคริ ${fmtNum(avgHit(s))}</span></div>
+      <div class="bv-dmg"><b class="bv-dps">${fmtNum(dps)}</b><div class="bar"><div style="width:${(dps / top) * 100}%"></div></div>
+        <span>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills}</span><span>Hit เฉลี่ยรวมคริ ${fmtNum(avgHit(s))}</span></div>
     </div>`;
   }
   h += '</div><div class="bv-side">';
-  h += `<div class="bv-box"><div class="bv-title">ตัวละคร — ${P.cls.name}</div>
-    ❤ ชีวิต ${Math.ceil(P.life)}/${Math.round(P.maxLife)}<br>
-    ➹ ความเร็ว ${Math.round(P.moveSpeed)}<br>
-    ✚ ฟื้นฟู ${(m.regen * 100).toFixed(1)}%/วิ${m.ks.vaalPact ? ' (ปิดโดย Vaal Pact)' : ''}<br>
-    ⛨ Armour ${Math.round(P.armour)} · Evasion ${Math.round(P.evasion)} (หลบ ${pct(evadeChance(P))})<br>
-    ◇ Energy Shield ${Math.round(P.maxES)}${P.block ? ' · Block ' + pct(P.block) : ''} · รับดาเมจ ×${m.dmgTaken.toFixed(2)}<br>
-    ☯ ต้านทาน: ${resLineHtml(P)}${G.map.tier > 1 ? ` <span class="muted">(Tier ${G.map.tier}: -${Math.round(resPenalty(G.map.tier) * 100)}%)</span>` : ''}<br>
+  // resistances as bars: the light line is this character's maximum, red when below it
+  h += '<div class="bv-box bv-res"><div class="bv-title">ค่าต้านทาน</div>' + RES_KEYS.map(([t, n]) => {
+    const ci = t === 'chaos' && m.ks.ci, v = ci ? 1 : effRes(P, t), cap = P.resCap[t];
+    return `<div class="res-row" style="--c:${ELEM_COLOR[t]};--w:${Math.max(0, Math.min(1, v)) * 100}%;--cap:${Math.max(0, Math.min(1, cap)) * 100}%">
+      <span class="res-n">${n}</span><div class="res-bar"></div><b class="${!ci && v < cap - 0.005 ? 'res-low' : 'res-ok'}">${ci ? 'อมตะ' : Math.round(v * 100) + '%'}</b></div>`;
+  }).join('') + `<div class="muted">เส้นสว่าง = ค่าสูงสุด${G.map.tier > 1 ? ` · Tier ${G.map.tier} ลด −${Math.round(resPenalty(G.map.tier) * 100)}%` : ''}</div></div>`;
+  const stat = (k, v, cls) => `<div><span>${k}</span><b class="${cls || ''}">${v}</b></div>`;
+  const spd = Math.round((P.moveSpeed / 200 - 1) * 100);
+  h += `<div class="bv-box bv-statgrid">${stat('ชีวิต', `${Math.ceil(P.life)} / ${Math.round(P.maxLife)}`, 'st-life')}${stat('Energy Shield', Math.round(P.maxES), 'st-es')}
+    ${stat('Armour', Math.round(P.armour))}${stat('Evasion', pct(evadeChance(P)))}${stat('Block', pct(P.block || 0))}${stat('ความเร็ว', (spd >= 0 ? '+' : '') + spd + '%')}</div>`;
+  const ks = Object.keys(P.keystones);
+  h += `<div class="bv-box bv-key"><div class="bv-title">Keystone (${ks.length}/${MAX_KEYSTONES + m.keystoneAdd})</div>` +
+    (ks.length ? ks.map((id) => `<b title="${KEYSTONES[id].desc}">${KEYSTONES[id].name}</b><span class="muted">${KEYSTONES[id].desc}</span>`).join('') : '<span class="muted">ยังไม่มี — ได้จาก Milestone ทุก 10 เลเวล</span>') + '</div>';
+  h += '</div>';
+  // Defence detail
+  h += `<div class="bv-sec bv-sec-def"><div class="bv-box"><div class="bv-title">ตัวละคร — ${P.cls.name}</div>
+    ✚ ฟื้นฟู ${(m.regen * 100).toFixed(1)}%/วิ${m.ks.vaalPact ? ' (ปิดโดย Vaal Pact)' : ''} · รับดาเมจ ×${m.dmgTaken.toFixed(2)}<br>
+    ☯ ต้านทาน: ${resLineHtml(P)}<br>
     <span class="muted">Hit ใหญ่สุดที่รับได้: ${maxHitHtml(P)}</span><br>
     ⚔ อาวุธ: ${P.weapon ? WEAPON_TYPE[P.weapon.wtype] + ' ×' + weaponPower(P.weapon).toFixed(2) + ' (สกิล Attack)' : 'มือเปล่า ×0.60'}<br>
     ✪ Chaos ${P.currency.chaos} · ⬡ Jeweller ${Object.keys(JEWELLERS).reduce((n, k) => n + (P.currency[k] || 0), 0)}${m.ks.rage ? '<br>✊ Rage ' + Math.floor(P.rage) + '/30' : ''}</div>`;
-  h += runPathsHtml(P);
   h += `<div class="bv-box"><div class="bv-title" style="color:${BIOMES[G.map.biome].color}">🗺 ${mapLabel(G.map)}</div>` +
     (G.map.mods.length ? G.map.mods.map((id) => `<div class="muted">${MAP_MODS[id].th}</div>`).join('') : '<span class="muted">ไม่มี map mod</span>') + '</div>';
   const eq = ITEM_SLOTS.filter((sl) => P.equip[sl]);
-  if (eq.length) h += '<div class="bv-box bv-items"><div class="bv-title">อุปกรณ์</div>' +
-    eq.map((sl) => `<div>${SLOT_NAME[sl]}: <span style="color:${RARITY_COLOR[P.equip[sl].rarity]}">${P.equip[sl].name}</span></div>`).join('') + '</div>';
+  h += '<div class="bv-box bv-items"><div class="bv-title">อุปกรณ์</div>' + (eq.length
+    ? eq.map((sl) => `<div>${SLOT_NAME[sl]}: <span style="color:${RARITY_COLOR[P.equip[sl].rarity]}">${P.equip[sl].name}</span></div>`).join('') : '<span class="muted">ยังไม่ได้สวมอะไร</span>') + '</div></div>';
+  // Passive & Mastery
+  h += `<div class="bv-sec bv-sec-passive">${runPathsHtml(P)}</div>`;
+  // Ascendancy
+  h += '<div class="bv-sec bv-sec-asc">';
   if (P.asc) {
     const a = ASCENDANCY[P.asc];
     h += `<div class="bv-box bv-asc" style="--cc:${a.color}"><div class="bv-title">${a.icon} ${a.name} <span class="muted">${a.th}</span></div>` +
       P.ascNodes.map((id) => `<b>${ASC_NODES[id].name}</b><br><span class="muted">${ASC_NODES[id].desc}</span>`).join('<br>') + '</div>';
-  } else if (!final) h += '<div class="bv-box"><div class="bv-title">Ascendancy</div><span class="muted">โค่นบอสตัวแรก (3:45) เพื่อเลือกคลาสย่อย</span></div>';
-  const ks = Object.keys(P.keystones);
-  if (ks.length) h += '<div class="bv-box bv-key"><div class="bv-title">Keystone</div>' + ks.map((id) => `<b>${KEYSTONES[id].name}</b><br><span class="muted">${KEYSTONES[id].desc}</span>`).join('<br>') + '</div>';
-  h += '</div>';
-  return h;
+  } else h += `<div class="bv-box"><div class="bv-title">Ascendancy</div><span class="muted">${final ? 'ไม่ได้เลือกคลาสย่อยในรอบนี้' : 'โค่นบอสตัวแรก (3:45) เพื่อเลือกคลาสย่อย'}</span></div>`;
+  return h + '</div>';
 }
 
 // in-run passive tree: each path's ranks, its Mastery progress and the passives in it
@@ -637,8 +691,9 @@ function deathRecapHtml() {
       tip = `ดาเมจ${ELEM_TH[top]} ${Math.round(share * 100)}% · ค่าต้านทาน${ELEM_TH[top]}ของคุณ ${Math.round(r * 100)}%` + (r < 0.5 ? ` → หาไอเทม/ฟลาสก์ที่มีต้านทาน${ELEM_TH[top]}` : '');
     } else if (top === 'physical' && share > 0.5) tip = `ดาเมจกายภาพ ${Math.round(share * 100)}% → เพิ่ม Armour / Evasion / Block หรือ Granite Flask`;
   }
-  return `<div class="death-recap"><div class="bv-title">☠ สรุปก่อนตาย (6 วิสุดท้าย)</div>
-    <div class="dr-bar">${bar}</div><div class="muted">รับดาเมจ ${fmtNum(tot)} · หลบ/Block ได้ ${avoided} ครั้ง</div>${rows}
+  const legend = els.map(([e, d]) => `<span style="color:${ELEM_COLOR[e]}">${ELEM_TH[e]} ${Math.round((d / tot) * 100)}%</span>`).join('');
+  return `<div class="death-recap"><div class="bv-title">6 วินาทีสุดท้าย</div>
+    <div class="dr-bar">${bar}</div><div class="dr-legend">${legend}</div><div class="muted">รับดาเมจ ${fmtNum(tot)} · หลบ/Block ได้ ${avoided} ครั้ง</div>${rows}
     ${tip ? `<div class="dr-tip">💡 ${tip}</div>` : ''}</div>`;
 }
 
@@ -674,21 +729,24 @@ function showGameOver(win) {
     overPick = null;
     const jewels = P.backpack.filter((it) => it.slot === 'jewel');
     const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle,
-      hc: G.hc, daily: G.daily, maps: G.runMaps, jewels, endless: endT, echoes: G.stats.echoes || 0, shardMul: G.atlasFx.shardMul }, rec));
+      hc: G.hc, daily: G.daily, jewels, endless: endT, echoes: G.stats.echoes || 0, shardMul: G.atlasFx.shardMul }, rec));
     const prog = settleProgression(win, endT), goals = settleGoals(prog.r);
     sendRunStats(win);
     metaHtml = `<div class="over-meta"><div class="over-shards">+${res.reward.total} ✦ Ancient Shards</div>
       <div class="muted">${res.reward.parts.filter((p) => p[1] !== 0).map((p) => `${p[0]} ${p[1] > 0 ? '+' : ''}${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
-      ${res.maps || res.jewels ? `<div class="over-unlock">🗺 ได้แผนที่ ${res.maps} ใบ${res.jewels ? ` · ⬡ Jewel ${res.jewels} ชิ้นเข้า Stash` : ''}</div>` : ''}
+      ${res.jewels ? `<div class="over-unlock">⬡ Jewel ${res.jewels} ชิ้นเข้า Stash</div>` : ''}
       ${G.daily && Meta.daily ? `<div class="over-unlock">📅 Daily: ${Meta.daily.newBest ? 'สถิติใหม่ของวันนี้!' : `ดีที่สุดวันนี้ ${fmtTime(Math.min(Meta.daily.best, RUN_LENGTH))}`}</div>` : ''}
       ${res.atlas ? `<div class="over-unlock">🗺 ผ่านแผนที่ ${mapLabel(G.map)}${res.atlas.first ? ' ครั้งแรก! (+1 แต้ม Legacy Tree)' : ''}${res.atlas.tierUp ? ` · ปลดล็อก Tier ${res.atlas.maxTier}` : ''}</div>` : ''}
       ${res.newly.map((u) => `<div class="over-unlock">🔓 ปลดล็อก${u.kind === 'class' ? 'คลาส' : 'เจม'}: <b>${unlockLabel(u)}</b></div>`).join('')}
       ${G.vault && G.vault.pick !== null ? `<div class="over-unlock">🗝 ห้องรางวัล: <b>${G.vault.cards[G.vault.pick].label}</b></div>` : ''}
       ${progressionSummaryHtml(prog)}${goalsSummaryHtml(goals)}</div>`;
   }
-  $('over-stats').innerHTML = `<div class="over-summary">
-      ⏱ รอด <b>${fmtTime(G.time)}</b> · Lv <b>${P.level}</b> · ☠ ฆ่า <b>${G.stats.kills}</b> · บอส <b>${G.stats.bosses}</b> · ดาเมจรวม <b>${fmtNum(G.stats.dmg)}</b>
-      ${!win && P.killedBy ? `<br><span class="muted">ถูกฆ่าโดย: ${P.killedBy}</span>` : ''}</div>` + (P.dead ? deathRecapHtml() : '') + metaHtml + buildViewHtml(true);
+  const plate = (k, v, cls) => `<div class="over-stat"><span>${k}</span><b class="${cls}">${v}</b></div>`;
+  $('over-stats').innerHTML = `<div class="over-summary">${!win && P.killedBy
+      ? `<div class="over-cause">ถูก <b class="el-${P.killedElem || 'physical'}">${P.killedBy}</b> (${ELEM_TH[P.killedElem || 'physical']}) ที่ ${fmtTime(G.time)} · ${mapLabel(G.map)}</div>`
+      : `<div class="over-cause">${mapLabel(G.map)}</div>`}
+      <div class="over-stats-row">${plate('รอด', fmtTime(G.time), 'os-time')}${plate('เลเวล', P.level, 'os-lv')}${plate('สังหาร', G.stats.kills.toLocaleString('en-US'), 'os-kills')}${plate('บอส', G.stats.bosses, 'os-boss')}${plate('ดาเมจรวม', fmtNum(G.stats.dmg), 'os-dmg')}</div></div>`
+    + (P.dead ? deathRecapHtml() : '') + metaHtml + buildViewHtml(true);
   renderOverStash(runR);
   show('gameover');
   if (!G.daily && !G.hc) showTip('stash');
@@ -696,7 +754,7 @@ function showGameOver(win) {
 
 // ---------------- Altar of Legacy: the Legacy Tree ----------------
 const TREE_KIND = { start: 'จุดเริ่มต้น', small: 'โหนดเล็ก', notable: 'Notable', keystone: 'Keystone', jewel: 'Jewel Socket' };
-const TREE_R = { start: 20, small: 11, notable: 18, keystone: 25, jewel: 14 };
+const TREE_R = { start: 20, small: 10, notable: 15, keystone: 23, jewel: 14 };
 let altarSel = null;
 
 function openAltar() {
@@ -709,7 +767,6 @@ function openAltar() {
   renderTree();
   renderTreeInfo();
   renderTreeSummary();
-  renderAltarProgress();
   $('altar-unlocks').innerHTML = UNLOCKS.map((u) => {
     const done = !!M.unlocked[u.id];
     return `<div class="meta-unlock${done ? ' done' : ''}">
@@ -717,13 +774,6 @@ function openAltar() {
       <div class="ul-text"><b>${u.kind === 'class' ? 'คลาส' : 'เจม'} ${unlockLabel(u)}</b><br><span class="muted">${u.req}</span></div>
       ${done ? '<span class="ok">ปลดล็อกแล้ว</span>' : `<button class="btn btn-small" data-unlock="${u.id}" ${M.shards < u.cost ? 'disabled' : ''}>${u.cost} ✦</button>`}</div>`;
   }).join('');
-  const found = M.found || {}, ids = Object.keys(UNIQUES);
-  $('altar-uniques-h').innerHTML = `คลัง Unique <span class="muted">${ids.filter((u) => found[u]).length}/${ids.length} ที่ค้นพบ</span>`;
-  $('altar-uniques').innerHTML = ids.map((u) => found[u]
-    ? `<div class="uq found" title="${UNIQUES[u].lines.join(' · ')}">${UNIQUES[u].name}<br><span class="muted">${SLOT_NAME[UNIQUES[u].slot]} · ${UNIQUES[u].th}</span></div>`
-    : `<div class="uq"><span class="muted">??? · ${SLOT_NAME[UNIQUES[u].slot]}</span></div>`).join('');
-  const L = M.life;
-  $('altar-life').innerHTML = `เล่นทั้งหมด ${L.runs} รอบ · ชนะ ${L.wins} · ฆ่ารวม ${fmtNum(L.kills)} · บอสรวม ${L.bosses}`;
   $('altar').querySelectorAll('[data-unlock]').forEach((b) => { b.onclick = () => { if (buyUnlock(b.dataset.unlock)) { Sfx.play('currency'); openAltar(); } }; });
   const wasHidden = $('altar').classList.contains('hidden');
   show('altar');
@@ -753,6 +803,10 @@ function renderTree() {
       <text class="ic" dy="${r * 0.36}" font-size="${r * 1.05}">${n.icon}</text></g>`;
     if (n.kind === 'keystone') labels += `<text class="tl" x="${n.x.toFixed(1)}" y="${(n.y + r + 26).toFixed(1)}">${n.name}</text>`;
     if (n.kind === 'notable') labels += `<text class="tl tl-n" x="${n.x.toFixed(1)}" y="${(n.y + r + 18).toFixed(1)}">${n.name}</text>`;
+  }
+  for (const B of TREE_BRANCHES) {
+    const a = (B.angle * Math.PI) / 180;
+    labels += `<text class="tl-branch" style="fill:${B.color}" x="${(Math.cos(a) * 600).toFixed(1)}" y="${(Math.sin(a) * 600 + 6).toFixed(1)}">${B.name.toUpperCase()}</text>`;
   }
   const svg = $('tree-svg');
   svg.innerHTML = `<g>${edges}</g><g>${labels}</g><g>${nodes}</g>`;
@@ -784,18 +838,22 @@ function renderTreeInfo() {
   if (!id) { box.innerHTML = '<div class="bv-title">Legacy Tree</div><span class="muted">ชี้หรือแตะโหนดเพื่อดูรายละเอียด · คลิก/แตะซ้ำเพื่อจัดสรร · ต้องเชื่อมต่อจากโหนดที่มีอยู่</span>'; return; }
   const n = TREE_NODES[id];
   const title = n.name || (n.branch ? n.branch.name : 'Bridge');
-  let action = '';
-  if (id === TREE_START) action = '<span class="muted">จุดเริ่มต้น — เส้นทางทุกสายเริ่มจากที่นี่</span>';
-  else if (treeAllocated(id)) action = treeCanRefund(id)
-    ? `<button class="btn btn-small" id="tree-act">คืนแต้ม (+${Meta.alloc[id]} ✦)</button>`
-    : '<span class="muted">คืนแต้มไม่ได้: มีโหนดอื่นต่อจากโหนดนี้</span>';
-  else {
+  const row = (k, v) => `<div class="ti-row"><span>${k}</span>${v}</div>`;
+  let rows = '', btn = '';
+  if (id === TREE_START) rows = '<span class="muted">จุดเริ่มต้น — เส้นทางทุกสายเริ่มจากที่นี่</span>';
+  else if (treeAllocated(id)) {
+    const can = treeCanRefund(id);
+    rows = row('สถานะ', '<span class="ok">จัดสรรแล้ว ✓</span>') + row('คืนแต้ม', can ? `<span class="ti-cost">+${Meta.alloc[id]} ✦</span>` : '<span class="bad">มีโหนดอื่นต่อจากโหนดนี้</span>');
+    if (can) btn = '<button class="btn btn-dim" id="tree-act">คืนแต้ม</button>';
+  } else {
     const why = treeAllocReason(id);
-    action = why ? `<span class="bad">${why}</span> <span class="muted">(${treeNextCost(id)} ✦)</span>` : `<button class="btn btn-small" id="tree-act">จัดสรร (${treeNextCost(id)} ✦)</button>`;
+    rows = row('ราคา', `<span class="ti-cost">${treeNextCost(id)} ✦</span>`) + row('ต้องการ', why ? `<span class="bad">${why}</span>` : '<span class="ok">ติดกับโหนดที่มีแล้ว ✓</span>');
+    if (!why) btn = '<button class="btn" id="tree-act">จัดสรร</button>';
   }
-  box.innerHTML = `<div class="bv-title" style="color:${n.color}">${n.icon} ${title}</div>
-    <div class="muted">${TREE_KIND[n.kind]}${n.branch ? ' · ' + n.branch.th : ''}${n.th ? ' · ' + n.th : ''}</div>
-    <div class="tree-desc${n.kind === 'keystone' ? ' ks' : ''}">${n.desc}</div><div>${action}</div>${n.kind === 'jewel' ? jewelSocketInfoHtml(id) : ''}`;
+  box.innerHTML = `<div class="ti-kind" style="color:${n.color}">${TREE_KIND[n.kind]}${n.branch ? ' · ' + n.branch.name : ''}</div>
+    <div class="bv-title" style="color:${n.kind === 'keystone' || n.kind === 'notable' ? 'var(--gold-hi)' : n.color}">${n.icon} ${title}</div>
+    ${n.th ? `<div class="muted">${n.th}${n.branch ? ' · ' + n.branch.th : ''}</div>` : ''}
+    <div class="tree-desc${n.kind === 'keystone' ? ' ks' : ''}">${n.desc}</div>${rows}${btn}${n.kind === 'jewel' ? jewelSocketInfoHtml(id) : ''}`;
   const b = $('tree-act');
   if (b) b.onclick = () => treeAct(id);
   if (n.kind === 'jewel') bindJewelSocket(id);
@@ -814,6 +872,11 @@ function renderTreeSummary() {
   h += keys.map((n) => `<div class="ts-key" style="color:${n.color}">◆ ${n.name}<br><span>${n.desc}</span></div>`).join('');
   h += nots.map((n) => `<div class="ts-not"><b style="color:${n.color}">${n.name}</b> — ${n.desc}</div>`).join('');
   h += Object.entries(smalls).map(([d, c]) => `<div class="ts-small">${d}${c > 1 ? ` <b>×${c}</b>` : ''}</div>`).join('');
+  const sockets = Object.keys(TREE_NODES).filter((id) => TREE_NODES[id].kind === 'jewel'), open = sockets.filter((id) => M.alloc[id]);
+  h += `<div class="bv-title ts-jewel-h">Jewel Socket ${open.length} / ${sockets.length}</div><div class="ts-jewels">${sockets.map((id) => {
+    const j = M.alloc[id] && M.jewels[id] ? BASES[M.jewels[id].base].jewel : '';
+    return `<span class="ts-jw${M.alloc[id] ? ' open' : ''}${j ? ' jw-' + j : ''}" title="${TREE_NODES[id].branch.name}${j ? ' · ' + M.jewels[id].name : M.alloc[id] ? ' · ว่าง' : ' · ยังไม่ได้จัดสรร'}"></span>`;
+  }).join('')}</div>`;
   $('tree-summary').innerHTML = h;
 }
 function closeAltar() { hide('altar'); buildMenu(); show('menu'); }
@@ -894,11 +957,15 @@ function openInventory() {
   grid.style.width = GRID_W * cell + 'px'; grid.style.height = GRID_H * cell + 'px';
   grid.innerHTML = P.backpack.map((it, i) => {
     const [w, h] = itemSize(it), c = invCmp.get(it), v = c && c.verdict ? VERDICT[c.empty ? 'up' : c.verdict] : null;
-    return `<div class="bag-item r-${it.rarity}${invSel === it ? ' sel' : ''}${v ? ' ' + v[2] : ''}" data-bi="${i}" title="${it.name}${v ? ' — ' + (c.empty ? 'ช่องว่าง' : v[1]) : ''}"
+    return `<div class="bag-item r-${it.rarity}${invSel === it ? ' sel' : ''}${v ? ' ' + v[2] : ''}${invFilterOk(it, c) ? '' : ' dim'}" data-bi="${i}" title="${it.name}${v ? ' — ' + (c.empty ? 'ช่องว่าง' : v[1]) : ''}"
       style="left:${it.gx * cell}px;top:${it.gy * cell}px;width:${w * cell}px;height:${h * cell}px"><img src="${itemIconURL(it)}" alt="" draggable="false">
       ${v ? `<span class="vb ${v[2]}">${v[0]}</span>` : ''}${it.locked ? '<span class="lk">🔒</span>' : ''}</div>`;
   }).join('');
-  $('inv-count').textContent = `(${P.backpack.length} ชิ้น)`;
+  const used = P.backpack.reduce((n, it) => { const [w, h] = itemSize(it); return n + w * h; }, 0);
+  $('inv-count').textContent = `${used} / ${GRID_W * GRID_H} ช่อง · ${P.backpack.length} ชิ้น`;
+  const better = P.backpack.filter((it) => { const c = invCmp.get(it); return c && (c.empty || c.verdict === 'up'); }).length;
+  $('inv-filters').innerHTML = INV_FILTERS.map(([k, l]) => `<button class="chip-f${invFilter === k ? ' on' : ''}" data-filter="${k}">${k === 'up' ? `▲ ดีกว่า ${better}` : l}</button>`).join('');
+  $('inv-filters').querySelectorAll('[data-filter]').forEach((b) => { b.onclick = () => { invFilter = b.dataset.filter; openInventory(); }; });
   // salvage buttons: "worse than what I wear" and "everything" (both skip locked / Unique / Jewel)
   const worse = salvageList('worse'), all = salvageList('all'), sh = (l) => l.reduce((a, it) => a + (SALVAGE_SHARDS[it.rarity] || 0), 0);
   const bw = $('btn-inv-salv-worse'), ba = $('btn-inv-salv-all');
@@ -931,7 +998,15 @@ function openInventory() {
   show('inventory');
 }
 
-let invCmp = new Map(), invConfirm = '';
+let invCmp = new Map(), invConfirm = '', invFilter = 'all', invLastTap = null;
+// bag filter chips: everything, upgrades only, or one kind of gear (others are dimmed in place)
+const INV_FILTERS = [['all', 'ทั้งหมด'], ['up', '▲ ดีกว่า'], ['weapon', 'อาวุธ'], ['armour', 'เกราะ'], ['jewellery', 'เครื่องประดับ'], ['flask', 'ฟลาสก์']];
+const INV_KIND = { weapon: ['weapon', 'offhand'], armour: ['helm', 'body', 'gloves', 'boots'], jewellery: ['ring', 'amulet', 'belt', 'jewel'], flask: ['flask'] };
+function invFilterOk(it, c) {
+  if (invFilter === 'all') return true;
+  if (invFilter === 'up') return !!(c && (c.empty || c.verdict === 'up'));
+  return INV_KIND[invFilter].includes(it.slot);
+}
 // bag items the salvage buttons would destroy
 function salvageList(mode) {
   return G.player.backpack.filter((it) => {
@@ -955,22 +1030,23 @@ function salvageMany(list) {
 // the character's key numbers at a glance (updates as gear changes)
 function quickStatsHtml() {
   const P = G.player, s = statSnapshot(P.equip);
+  const cell = (k, v, cls) => `<div class="qs-cell"><span>${k}</span><b class="${cls || ''}">${v}</b></div>`;
   const res = RES_KEYS.map(([t, n]) => {
     const v = s.res[t], txt = t === 'chaos' && P.mods.ks.ci ? '∞' : Math.round(v * 100) + '%';
-    return `<span class="qs-res${v < 0 ? ' neg' : v >= 0.75 ? ' capped' : ''}" style="--c:${ELEM_COLOR[t]}" title="ต้านทาน${ELEM_TH[t]}">${n} ${txt}</span>`;
+    return `<div class="qs-res${v < 0 ? ' neg' : v >= P.resCap[t] - 0.005 ? ' capped' : ''}" style="--c:${ELEM_COLOR[t]}" title="ต้านทาน${ELEM_TH[t]} · สูงสุด ${Math.round(P.resCap[t] * 100)}%">${n} ${txt}</div>`;
   }).join('');
-  return `<div class="qs-row"><span>❤ <b>${Math.round(s.life)}</b></span>${s.es ? `<span>◇ <b>${Math.round(s.es)}</b> ES</span>` : ''}<span>⚔ <b>${fmtNum(s.dps)}</b> ดาเมจ/วิ</span></div>
-    <div class="qs-row"><span>⛨ ${Math.round(s.armour)}</span><span>➶ หลบ ${pct(evadeChance(P))}</span>${s.block ? `<span>▣ Block ${pct(s.block)}</span>` : ''}<span>➹ ${Math.round(s.move)}</span></div>
-    <div class="qs-row">${res}</div>`;
+  return `<div class="qs-grid">${cell('ชีวิต', Math.round(s.life), 'qs-life')}${cell('ES', Math.round(s.es), 'qs-es')}${cell('DPS', fmtNum(s.dps), 'qs-dps')}${cell('Armour', Math.round(s.armour))}
+    ${cell('หลบ', pct(evadeChance(P)))}${cell('Block', pct(s.block))}${cell('ความเร็ว', Math.round(s.move))}${cell('Evasion', Math.round(s.evasion))}${res}</div>`;
 }
 
 // ▲ / ▼ banner with the exact stat changes
+const VERDICT_HEAD = { up: 'ดีกว่าโดยรวม', down: 'แย่กว่าโดยรวม', side: 'ใกล้เคียงของเดิม' };
 function verdictHtml(it) {
   const c = invCmp.get(it);
   if (!c) return '';
   if (c.blocked) return `<div class="verdict v-side"><b>⛔ ${c.blocked}</b></div>`;
   const [ic, txt, cls] = VERDICT[c.empty ? 'up' : c.verdict];
-  const head = c.empty ? `▲ ช่อง${SLOT_NAME[c.key]}ว่าง — สวมได้เลย` : `${ic} ${txt}`;
+  const head = c.empty ? `▲ ช่อง${SLOT_NAME[c.key]}ว่าง — สวมได้เลย` : `${ic} ${VERDICT_HEAD[c.verdict]}`;
   return `<div class="verdict ${cls}"><b>${head}</b>${c.empty ? '' : ` <span class="muted">(เทียบกับ${SLOT_NAME[c.key]})</span>`}
     <div class="diff">${c.lines.map(([l, t, good]) => `<span class="${good ? 'pos' : 'neg'}">${l} ${t}</span>`).join('') || '<span class="muted">ไม่เปลี่ยนค่าหลัก</span>'}</div></div>`;
 }
@@ -1014,51 +1090,64 @@ function skillSocketsPanelHtml() {
   }).join('') || '<span class="muted">ยังไม่มีสกิล</span>';
 }
 
-// pv = an item under the mouse: preview only (no buttons), otherwise the selected item
+// pv = an item under the mouse: preview only (no buttons), otherwise the selected item.
+// Gear tab: what's worn | what you're looking at | the verdict. Craft tab: the selected item's crafting.
 function renderInvDetail(pv) {
-  const P = G.player, it = pv || invSel, box = $('inv-detail');
+  const P = G.player, it = pv || invSel, box = $('inv-detail'), craftBox = $('inv-craft');
   const w = it && whereIs(it);
   if (!w) {
-    if (!pv) invSel = null;
-    box.innerHTML = `<div class="muted inv-help"><b>วิธีใช้</b><br>• ชี้ / แตะไอเทมเพื่อดูรายละเอียด · <b>ลาก</b>ไปวางที่ตัวละคร ช่องฟลาสก์ หรือกระเป๋า<br>
+    if (!pv) { invSel = null; craftBox.innerHTML = '<div class="muted inv-help">เลือกไอเทมจากตัวละครหรือกระเป๋า แล้วเลือกวิธีคราฟต์ที่นี่</div>'; }
+    box.innerHTML = `<div class="muted inv-help"><b>วิธีใช้</b><br>• ชี้ / แตะไอเทมเพื่อเทียบกับของที่สวมอยู่ · <b>ดับเบิลคลิก</b>เพื่อสวม · หรือ<b>ลาก</b>ไปวางที่ตัวละคร ช่องฟลาสก์ หรือกระเป๋า<br>
       • <span class="v-up-t">▲ เขียว</span> = ดีกว่าที่สวมอยู่ · <span class="v-down-t">▼ แดง</span> = แย่กว่า · <span class="muted">● เทา</span> = ใกล้เคียง (คิดจาก DPS, ชีวิต, ES, ค่าต้านทาน, ป้องกัน)<br>
-      • ปุ่ม ♻ ด้านล่างย่อยของหลายชิ้นในครั้งเดียว (ไม่ย่อย Unique, Jewel และของที่ล็อก 🔒)</div>`;
+      • ปุ่ม ♻ ย่อยของหลายชิ้นในครั้งเดียว (ไม่ย่อย Unique, Jewel และของที่ล็อก 🔒) · แท็บ "คราฟต์" ใช้ Orb กับไอเทมที่เลือก</div>`;
     return;
   }
-  let h = verdictHtml(it);
-  h += itemCardHtml(it, w.equip ? 'สวมใส่อยู่' : w.flask !== undefined ? `ฟลาสก์ช่อง ${w.flask + 1}` : 'ในกระเป๋า');
-  if (pv) { box.innerHTML = h; return; }
-  h += '<div class="inv-actions">';
-  if (it.slot === 'jewel') h += '<span class="muted">Jewel: เก็บเข้า Stash อัตโนมัติเมื่อจบรอบ แล้วใส่ที่ Legacy Tree</span>';
-  else if (w.bag) h += it.slot === 'flask' ? '<button class="btn btn-small" data-act="flask">ใส่ช่องฟลาสก์</button>' : '<button class="btn btn-small" data-act="equip">สวมใส่</button>';
-  else h += '<button class="btn btn-small" data-act="unequip">ถอดเก็บ</button>';
-  if (w.bag) h += `<button class="btn btn-small btn-dim" data-act="lock">${it.locked ? '🔓 ปลดล็อก' : '🔒 ล็อก'}</button>`;
-  h += `<button class="btn btn-small btn-dim" data-act="salvage">ย่อย (+${SALVAGE_SHARDS[it.rarity] || 0} ✦)</button></div>`;
-  // crafting: orbs, essences and the bench, folded away until needed
+  const c = w.bag ? invCmp.get(it) : null, worn = c && !c.blocked && !c.empty ? P.equip[c.key] : null;
+  let h = `<div class="inv-cmp${worn ? ' three' : ''}">`;
+  if (worn) h += `<div class="cmp-col">${itemCardHtml(worn, 'ที่สวมอยู่ · ' + SLOT_NAME[c.key])}</div>`;
+  h += `<div class="cmp-col cmp-focus">${itemCardHtml(it, w.equip ? 'สวมใส่อยู่' : w.flask !== undefined ? `ฟลาสก์ช่อง ${w.flask + 1}` : 'กำลังดู')}</div>`;
+  h += `<div class="cmp-side">${verdictHtml(it)}${resWarnHtml(c)}`;
+  if (!pv) {
+    if (it.slot === 'jewel') h += '<span class="muted">Jewel: เก็บเข้า Stash อัตโนมัติเมื่อจบรอบ แล้วใส่ที่ Legacy Tree</span>';
+    else if (w.bag) h += `<button class="btn cmp-equip" data-act="${it.slot === 'flask' ? 'flask' : 'equip'}">${it.slot === 'flask' ? 'ใส่ช่องฟลาสก์' : 'สวมใส่'} (ดับเบิลคลิก)</button>`;
+    else h += '<button class="btn cmp-equip" data-act="unequip">ถอดเก็บเข้ากระเป๋า</button>';
+    h += `<div class="cmp-minor"><button class="btn btn-small btn-dim" data-act="salvage">ย่อยเป็น Shards (+${SALVAGE_SHARDS[it.rarity] || 0} ✦)</button>${w.bag ? `<button class="btn btn-small btn-dim" data-act="lock">${it.locked ? '🔓 ปลดล็อก' : '🔒 ล็อก'}</button>` : ''}</div>`;
+  }
+  box.innerHTML = h + '</div></div>';
+  if (pv) return;
+  craftBox.innerHTML = craftPanelHtml(it);
+  for (const root of [box, craftBox]) bindInvActions(root, it, w);
+}
+// a red note when wearing this item would drop a capped resistance below its maximum
+function resWarnHtml(c) {
+  if (!c || c.blocked || !c.after) return '';
+  const P = G.player, before = statSnapshot(P.equip);
+  const drops = RES_KEYS.filter(([t]) => before.res[t] >= P.resCap[t] - 0.005 && c.after.res[t] < P.resCap[t] - 0.005)
+    .map(([t, n]) => `ต้าน${n}จะลดเหลือ ${Math.round(c.after.res[t] * 100)}%`);
+  return drops.length ? `<div class="cmp-warn">⚠ ${drops.join(' · ')} (ต่ำกว่าสูงสุด)</div>` : '';
+}
+// orbs, essences and the bench for one item
+function craftPanelHtml(it) {
+  const P = G.player;
   const orbs = Object.entries(CRAFT).filter(([, c]) => c.can(it)), ess = Object.keys(P.essences).filter((k) => P.essences[k] > 0 && essenceCan(k, it));
   const bench = BENCH.filter((b) => benchCan(b, it)), crafted = it.affixes && it.affixes.some((a) => a.crafted);
-  const usable = orbs.filter(([k]) => P.currency[k] > 0).length + ess.length + bench.filter((b) => benchAfford(b, P.currency)).length;
-  if (orbs.length || ess.length || bench.length || crafted) {
-    h += `<details class="craft-box"${G.craftOpen ? ' open' : ''}><summary>🔨 คราฟต์ไอเทมนี้ <span class="muted">(ใช้ได้ตอนนี้ ${usable} อย่าง)</span></summary>`;
-    h += '<div class="inv-actions craft-row">' + orbs.map(([k]) => {
-      const n = P.currency[k] || 0;
-      return `<button class="btn btn-small craft-btn" data-craft="${k}" ${n > 0 ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '').replace("'s", '')} ×${n}</button>`;
-    }).join('') + ess.map((k) =>
-      `<button class="btn btn-small craft-btn" data-ess="${k}" style="--oc:${ESSENCES[k].color}" title="${ESSENCES[k].name}: สร้าง Rare ใหม่ การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')} (Tier 3+)">◆ ${ESSENCES[k].name.replace('Essence of ', '')} ×${P.essences[k]}</button>`).join('') + '</div>';
-    if (bench.length || crafted) {
-      h += '<div class="muted bench-h">Crafting Bench — เพิ่ม mod ได้ 1 อันต่อไอเทม</div><div class="inv-actions craft-row">' +
-        bench.map((b) => `<button class="btn btn-small" data-bench="${BENCH.indexOf(b)}" ${benchAfford(b, P.currency) ? '' : 'disabled'}>${AFFIXES[b.id].t.replace('{v}', b.v)} — ${Object.entries(b.cost).map(([k, n]) => `${CRAFT_ORBS[k].icon}×${n}`).join(' ')}</button>`).join('') +
-        (crafted ? '<button class="btn btn-small btn-dim" data-bench="rm">ลบ mod ที่คราฟต์ (ฟรี)</button>' : '') + '</div>';
-    }
-    h += '</details>';
+  let h = `<div class="craft-view"><div class="cmp-col">${itemCardHtml(it, 'คราฟต์ไอเทมนี้')}</div><div class="craft-actions">`;
+  if (!orbs.length && !ess.length && !bench.length && !crafted) return h + '<div class="muted">ไอเทมนี้คราฟต์ไม่ได้</div></div></div>';
+  h += '<div class="craft-h">Orb &amp; Essence</div><div class="inv-actions craft-row">' + orbs.map(([k]) => {
+    const n = P.currency[k] || 0;
+    return `<button class="btn btn-small craft-btn" data-craft="${k}" ${n > 0 ? '' : 'disabled'} title="${CRAFT_ORBS[k].name}: ${CRAFT_ORBS[k].th}" style="--oc:${CRAFT_ORBS[k].color}">${CRAFT_ORBS[k].icon} ${CRAFT_ORBS[k].name.replace('Orb of ', '').replace(' Orb', '').replace("'s", '')} ×${n}</button>`;
+  }).join('') + ess.map((k) =>
+    `<button class="btn btn-small craft-btn" data-ess="${k}" style="--oc:${ESSENCES[k].color}" title="${ESSENCES[k].name}: สร้าง Rare ใหม่ การันตี ${AFFIXES[ESSENCES[k].mod].t.replace('{v}', '#')} (Tier 3+)">◆ ${ESSENCES[k].name.replace('Essence of ', '')} ×${P.essences[k]}</button>`).join('') + '</div>';
+  if (bench.length || crafted) {
+    h += '<div class="craft-h">Crafting Bench <span class="muted">เพิ่ม mod ได้ 1 อันต่อไอเทม</span></div><div class="inv-actions craft-row">' +
+      bench.map((b) => `<button class="btn btn-small" data-bench="${BENCH.indexOf(b)}" ${benchAfford(b, P.currency) ? '' : 'disabled'}>${AFFIXES[b.id].t.replace('{v}', b.v)} — ${Object.entries(b.cost).map(([k, n]) => `${CRAFT_ORBS[k].icon}×${n}`).join(' ')}</button>`).join('') +
+      (crafted ? '<button class="btn btn-small btn-dim" data-bench="rm">ลบ mod ที่คราฟต์ (ฟรี)</button>' : '') + '</div>';
   }
-  // the item(s) worn in that slot, folded
-  if (w.bag && it.slot !== 'flask' && it.slot !== 'jewel') {
-    const keys = (it.slot === 'ring' ? ['ring', 'ring2'] : [it.slot]).filter((k) => P.equip[k]);
-    if (keys.length) h += `<details class="cmp-eq"><summary>ดูไอเทมที่สวมอยู่ (${keys.map((k) => SLOT_NAME[k]).join(', ')})</summary>${keys.map((k) => itemCardHtml(P.equip[k], 'สวมอยู่: ' + SLOT_NAME[k])).join('')}</details>`;
-  }
-  box.innerHTML = h;
-  box.querySelectorAll('[data-act]').forEach((b) => {
+  return h + '</div></div>';
+}
+function bindInvActions(root, it, w) {
+  const P = G.player;
+  root.querySelectorAll('[data-act]').forEach((b) => {
     b.onclick = () => {
       const a = b.dataset.act;
       if (a === 'equip') invMsg = equipItem(it) || '';
@@ -1069,9 +1158,7 @@ function renderInvDetail(pv) {
       Sfx.play('flask'); openInventory();
     };
   });
-  const cb = box.querySelector('details.craft-box');
-  if (cb) cb.ontoggle = () => { G.craftOpen = cb.open; };
-  box.querySelectorAll('[data-ess]').forEach((b) => {
+  root.querySelectorAll('[data-ess]').forEach((b) => {
     b.onclick = () => {
       const k = b.dataset.ess;
       if (!(P.essences[k] > 0) || !essenceCan(k, it)) return;
@@ -1081,7 +1168,7 @@ function renderInvDetail(pv) {
       openInventory();
     };
   });
-  box.querySelectorAll('[data-bench]').forEach((b) => {
+  root.querySelectorAll('[data-bench]').forEach((b) => {
     b.onclick = () => {
       if (b.dataset.bench === 'rm') it.affixes = it.affixes.filter((a) => !a.crafted);
       else { const B = BENCH[+b.dataset.bench]; if (!benchCan(B, it) || !benchAfford(B, P.currency)) return; benchUse(B, it, P.currency); }
@@ -1089,7 +1176,7 @@ function renderInvDetail(pv) {
       Sfx.play('currency'); openInventory();
     };
   });
-  box.querySelectorAll('[data-craft]').forEach((b) => {
+  root.querySelectorAll('[data-craft]').forEach((b) => {
     b.onclick = () => {
       const k = b.dataset.craft;
       if (!(P.currency[k] > 0) || !CRAFT[k].can(it)) return;
@@ -1134,7 +1221,12 @@ function invPointerUp(ev) {
   const d = invDrag; invDrag = null;
   if (!d) return;
   if (d.ghost) d.ghost.remove();
-  if (!d.moved) { invSel = d.item; openInventory(); return; }
+  if (!d.moved) {
+    const now = performance.now(), dbl = d.from === 'bag' && invLastTap && invLastTap.item === d.item && now - invLastTap.t < 350;
+    invLastTap = dbl ? null : { item: d.item, t: now };
+    if (dbl && d.item.slot !== 'jewel') { invMsg = (d.item.slot === 'flask' ? equipFlask(d.item) : equipItem(d.item)) || ''; Sfx.play('flask'); }
+    invSel = d.item; openInventory(); return;
+  }
   const el = document.elementFromPoint(ev.clientX, ev.clientY);
   const eqEl = el && el.closest('[data-eq]'), flEl = el && el.closest('[data-fl]'), grid = el && el.closest('.bag-grid');
   const P = G.player;
@@ -1165,10 +1257,25 @@ function closeInventory() {
 }
 
 // ---------------- Map Device (Atlas) ----------------
+const MAP_RARITY_NAME = { normal: 'Normal', magic: 'Magic', rare: 'Rare' };
+function mapSummaryHtml(A, qty, mult) {
+  const b = BIOMES[mapCfg.biome], rarity = mapCfg.mods.length ? 'rare' : 'normal';
+  const featured = Object.entries(b.mult || {}).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([k]) => MONSTERS[k] && MONSTERS[k].name).filter(Boolean);
+  const boss = b.boss || BOSSES.filter((x) => x.at && !x.final).slice(0, 2).map((x) => `${x.name} (${fmtTime(x.at)})`).join(' · ');
+  const row = (k, v, cls) => `<span>${k}</span><b class="${cls}">${v}</b>`;
+  const first = !A.done[mapCfg.biome + '_' + mapCfg.tier];
+  return `<div class="map-sum-label">สรุป</div>
+    <div class="ms-name">${b.name}</div><div class="ms-tier">Tier ${mapCfg.tier} · ${MAP_RARITY_NAME[rarity]} Map</div>
+    <div class="ms-grid">${row('ชีวิตมอนสเตอร์', '×' + (tierHp(mapCfg.tier) * (b.hpMul || 1)).toFixed(2), 'ms-hard')}${row('ดาเมจมอนสเตอร์', '×' + tierDmg(mapCfg.tier).toFixed(2), 'ms-hard')}
+      ${row('ค่าต้านทานผู้เล่น', '−' + Math.round(resPenalty(mapCfg.tier) * 100) + '%', 'ms-hard')}${row('Item Quantity', '+' + qty + '%', 'ms-good')}${row('Shards', '×' + mult.toFixed(2), 'ms-good')}</div>
+    <div class="ms-info">บอส: ${boss}${featured.length ? `<br>มอนสเตอร์เด่น: ${featured.join(', ')}` : ''}${first
+      ? `<br><span class="ok">ผ่านครั้งแรก +1 แต้ม Legacy Tree${mapCfg.tier >= A.maxTier && A.maxTier < MAX_MAP_TIER ? ` · ปลดล็อก Tier ${mapCfg.tier + 1}` : ''}</span>` : ''}</div>
+    <div class="ms-foot">${mapCfg.tier > 1 ? `ซื้อแผนที่ ${mapBuyCost(mapCfg.tier)} ✦` : 'Tier 1 เข้าฟรี'}</div>`;
+}
 let mapCls = null, mapCfg = null;
 function openMapDevice(cls) {
   const M = loadMeta(), A = atlasData();
-  if (cls) mapCls = cls;
+  if (cls) { mapCls = cls; try { localStorage.setItem('exile_last_cls', cls.id); } catch (e) { /* storage may be blocked */ } }
   if (!mapCfg) {
     const last = M.lastMap;
     mapCfg = last && BIOMES[last.biome] && biomeOpen(last.biome) && last.tier <= A.maxTier ? { biome: last.biome, tier: last.tier, mods: last.mods.slice() } : { biome: 'graveyard', tier: 1, mods: [] };
@@ -1185,16 +1292,16 @@ function openMapDevice(cls) {
   const minT = BIOMES[mapCfg.biome].minTier;
   let tiers = '';
   for (let t = 1; t <= MAX_MAP_TIER; t++) {
-    const ok = (t <= A.maxTier && t >= minT) || (mapCfg.itemUid && t === mapCfg.tier), done = A.done[mapCfg.biome + '_' + t];
+    const ok = t <= A.maxTier && t >= minT, done = A.done[mapCfg.biome + '_' + t];
     tiers += `<button class="tier-btn${mapCfg.tier === t ? ' sel' : ''}${done ? ' done' : ''}" data-tier="${t}" ${ok ? '' : 'disabled'}>${t}</button>`;
   }
   $('map-tiers').innerHTML = tiers;
   const qty = mapQuantity(mapCfg), mult = mapRewardMult(mapCfg);
   $('map-mods').innerHTML = (mapCfg.mods.length ? mapCfg.mods.map((id) => `<div class="map-mod"><b>${MAP_MODS[id].name}</b> — ${MAP_MODS[id].th} <span class="muted">(+${MAP_MODS[id].qty}%)</span></div>`).join('')
     : '<div class="muted">แผนที่ธรรมดา (Normal) — ไม่มี mod · ใช้ Alchemy เพื่อเพิ่มความยากและรางวัล</div>');
-  $('map-summary').innerHTML = `มอนสเตอร์: ชีวิต ×${(tierHp(mapCfg.tier) * (BIOMES[mapCfg.biome].hpMul || 1)).toFixed(2)} · ดาเมจ ×${tierDmg(mapCfg.tier).toFixed(2)}<br>
-    ค่าต้านทานผู้เล่น -${Math.round(resPenalty(mapCfg.tier) * 100)}% · ${mapCfg.itemUid ? '<span class="ok">ใช้แผนที่จากคลัง</span>' : mapCfg.tier > 1 ? `ซื้อแผนที่ ${mapBuyCost(mapCfg.tier)} ✦` : 'Tier 1 ฟรี'}<br>
-    รางวัล: Item Quantity +${qty}% · Shards ×${mult.toFixed(2)}${A.done[mapCfg.biome + '_' + mapCfg.tier] ? '' : '<br><span class="ok">ยังไม่เคยผ่าน — ชนะเพื่อรับ +1 แต้ม Legacy Tree' + (mapCfg.tier >= A.maxTier && A.maxTier < MAX_MAP_TIER ? ` และปลดล็อก Tier ${mapCfg.tier + 1}` : '') + '</span>'}`;
+  $('map-summary').innerHTML = mapSummaryHtml(A, qty, mult);
+  $('map-summary').style.setProperty('--cc', BIOMES[mapCfg.biome].color);
+  $('map-mods-n').textContent = `${mapCfg.mods.length} / ${mapModCount(mapCfg.tier)}`;
   $('map-atlas').textContent = `Atlas: ผ่านแล้ว ${atlasDoneCount()} แผนที่ · Tier สูงสุด ${A.maxTier} · แต้ม Legacy Tree จาก Atlas +${atlasBonusPoints()}/${ATLAS_POINT_CAP} · ✦ ${M.shards}`;
   $('btn-map-alch').disabled = mapCfg.mods.length > 0;
   $('btn-map-chaos').disabled = !mapCfg.mods.length || M.shards < MAP_REROLL_COST;
@@ -1205,7 +1312,7 @@ function openMapDevice(cls) {
     el.onclick = () => {
       const id = el.dataset.biome;
       if (!biomeOpen(id)) return;
-      mapCfg.itemUid = null; mapCfg.biome = id; mapCfg.tier = Math.max(Math.min(mapCfg.tier, A.maxTier), BIOMES[id].minTier);
+      mapCfg.biome = id; mapCfg.tier = Math.max(Math.min(mapCfg.tier, A.maxTier), BIOMES[id].minTier);
       openMapDevice();
     };
   });
@@ -1214,19 +1321,19 @@ function openMapDevice(cls) {
       const t = +el.dataset.tier;
       // more mods roll on higher tiers: re-roll so the count matches
       if (mapCfg.mods.length && mapModCount(t) !== mapModCount(mapCfg.tier)) mapCfg.mods = rollMapMods(t);
-      mapCfg.itemUid = null; mapCfg.tier = t; openMapDevice();
+      mapCfg.tier = t; openMapDevice();
     };
   });
   show('mapdev');
 }
-function mapAlchemy() { mapCfg.mods = rollMapMods(mapCfg.tier); syncMapItem(); Sfx.play('currency'); openMapDevice(); }
+function mapAlchemy() { mapCfg.mods = rollMapMods(mapCfg.tier); Sfx.play('currency'); openMapDevice(); }
 function mapChaos() {
   const M = loadMeta();
   if (M.shards < MAP_REROLL_COST) return;
   M.shards -= MAP_REROLL_COST; saveMeta();
-  mapCfg.mods = rollMapMods(mapCfg.tier); syncMapItem(); Sfx.play('currency'); openMapDevice();
+  mapCfg.mods = rollMapMods(mapCfg.tier); Sfx.play('currency'); openMapDevice();
 }
-function mapClear() { mapCfg.mods = []; syncMapItem(); openMapDevice(); }
+function mapClear() { mapCfg.mods = []; openMapDevice(); }
 function mapBack() { hide('mapdev'); buildMenu(); show('menu'); }
 
 // skill cards: which weapons the gem needs, and how hard an Attack hits with the one in hand

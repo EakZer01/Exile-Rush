@@ -115,7 +115,7 @@ function rollVault() {
   const f = G.atlasFx, t = G.map.tier, n = 3 + f.vaultExtra;
   const leg = Math.min(0.5, 0.04 + 0.02 * t + 0.01 * G.map.mods.length + f.vaultLuck);
   const heir = runItems(true).some((it) => it.heir);
-  const kinds = { shards: 3, scarab: 3, map: 2, jewel: 2, gemxp: 2, unique: 1.4, heir: heir ? 1.5 : 0 };
+  const kinds = { shards: 3, scarab: 3, jewel: 2, gemxp: 2, unique: 1.4, heir: heir ? 1.5 : 0 };
   const picked = weightedSample(Object.keys(kinds).filter((k) => kinds[k] > 0), Math.min(n, 6), (k) => kinds[k]);
   return picked.map((kind) => {
     const r = Math.random(), rarity = r < leg ? 'legendary' : r < leg + 0.3 ? 'rare' : 'common';
@@ -126,7 +126,6 @@ function vaultCard(kind, rarity) {
   const t = G.map.tier, k = VAULT_RARITY[rarity].k, c = { kind, rarity };
   if (kind === 'shards') { c.n = Math.round((50 + 20 * t) * k); c.label = `${c.n} ✦ Ancient Shards`; }
   else if (kind === 'scarab') { c.ids = Array.from({ length: rarity === 'legendary' ? 3 : rarity === 'rare' ? 2 : 1 }, randomScarab); if (rarity === 'legendary') c.ids[0] = pick(Object.keys(SCARABS).filter((id) => SCARABS[id].rare)); c.label = c.ids.map((id) => SCARABS[id].name).join(' · '); }
-  else if (kind === 'map') { const tier = Math.min(MAX_MAP_TIER, t + (rarity === 'legendary' ? 2 : 1)); c.maps = Array.from({ length: rarity === 'common' ? 1 : 2 }, () => makeMapItem(tier, null, 'rare')); c.label = `แผนที่ Rare T${tier} ×${c.maps.length}`; }
   else if (kind === 'jewel') { c.items = Array.from({ length: rarity === 'legendary' ? 2 : 1 }, () => makeJewel(rarity === 'common' ? 'magic' : 'rare')); c.label = `Jewel ${rarity === 'common' ? 'Magic' : 'Rare'} ×${c.items.length} (เข้า Stash)`; }
   else if (kind === 'gemxp') { const top = G.player.skills.reduce((b, s) => (!b || s.dmgDealt > b.dmgDealt ? s : b), null); c.gem = top.id; c.n = Math.round(40 * k); c.label = `Gem Mastery XP +${c.n} ให้ ${SKILLS[top.id].name}`; }
   else if (kind === 'unique') {
@@ -141,7 +140,6 @@ function claimVault(c) {
   const M = loadMeta();
   if (c.kind === 'shards') M.shards += c.n;
   else if (c.kind === 'scarab') for (const id of c.ids) M.scarabs[id] = (M.scarabs[id] || 0) + 1;
-  else if (c.kind === 'map') { M.maps.push(...c.maps); M.maps.sort((a, b) => b.tier - a.tier); M.maps.length = Math.min(M.maps.length, MAP_ITEM_CAP); }
   else if (c.kind === 'jewel' || c.kind === 'unique') for (const it of c.items) { if (!stashAdd(it)) M.shards += 30; if (it.unique) M.found[it.unique] = true; }
   else if (c.kind === 'gemxp') gemAddXp(c.gem, c.n);
   else if (c.kind === 'heir') for (const it of runItems(true)) if (it.heir) it.heir.xp += c.n;
@@ -163,7 +161,7 @@ function renderVault() {
     };
   });
 }
-const VAULT_ICON = { shards: '✦', scarab: '✲', map: '🗺', jewel: '⬡', gemxp: '💎', unique: '★', heir: '❖' };
+const VAULT_ICON = { shards: '✦', scarab: '✲', jewel: '⬡', gemxp: '💎', unique: '★', heir: '❖' };
 function setVictoryButtons() {
   const off = G.vault && G.vault.pick === null;
   $('btn-vic-leave').classList.toggle('disabled', off); $('btn-vic-endless').classList.toggle('disabled', off);
@@ -244,7 +242,13 @@ function renderMapScarabs() {
   mapScarabs = mapScarabs.filter((id) => (M.scarabs[id] || 0) > 0).slice(0, slots);
   const owned = Object.keys(SCARABS).filter((id) => M.scarabs[id] > 0);
   $('map-scarab-n').textContent = `(ใส่ ${mapScarabs.length}/${slots} ช่อง · ใช้แล้วหมดไป)`;
-  $('map-scarabs').innerHTML = (owned.length ? owned.map((id) => {
+  // the slots first: what goes in this run, empty slots dashed
+  const slotRow = `<div class="scarab-slots">${Array.from({ length: slots }, (_, i) => {
+    const id = mapScarabs[i], s = id && SCARABS[id];
+    return s ? `<button class="scarab-slot on" data-scarab="${id}" style="--cc:${s.color}" title="คลิกเพื่อถอด">${s.name}<span class="muted">${s.th}</span></button>`
+      : '<div class="scarab-slot">+ ใส่ Scarab</div>';
+  }).join('')}</div>`;
+  $('map-scarabs').innerHTML = slotRow + (owned.length ? owned.map((id) => {
     const s = SCARABS[id], on = mapScarabs.includes(id);
     return `<button class="scarab${on ? ' on' : ''}${s.rare ? ' rare' : ''}" data-scarab="${id}" style="--cc:${s.color}" title="${s.th}">✲ <b>${s.name}</b> ×${M.scarabs[id]}<br><span class="muted">${s.th}</span></button>`;
   }).join('') : '<div class="muted">ยังไม่มี Scarab — ดรอปจากบอส / Rare / Breach / Strongbox / Delirium / ห้องรางวัล</div>')
@@ -279,38 +283,99 @@ function voidAtlasHtml(tier) {
   return h;
 }
 
-// ---------------- Altar panels: Gem Mastery, Challenges, Voidstones, Collection ----------------
+// ---------------- Progress pages: Gem Mastery, Challenges, Voidstones, Collection, Cosmetics ----------------
+// (each has its own button on the main menu; the Altar of Legacy keeps only the Legacy Tree)
 let altarTab = 'gems';
+const RECORD_TITLES = { gems: 'Gem Mastery', chal: 'Challenges', void: 'Atlas & Voidstone', coll: 'คลัง Unique', cos: 'Cosmetic' };
+function openRecords(tab) {
+  if (tab && RECORD_TITLES[tab]) altarTab = tab;
+  hide('menu');
+  $('records-title').textContent = RECORD_TITLES[altarTab];
+  $('records-shards').innerHTML = `✦ <b>${loadMeta().shards}</b> Ancient Shards`;
+  renderAltarProgress();
+  show('records');
+}
+function closeRecords() { hide('records'); buildMenu(); show('menu'); }
+// every Unique: found ones named, the rest as ??? with their slot
+function uniquesVaultHtml() {
+  const found = loadMeta().found || {}, ids = Object.keys(UNIQUES);
+  return `<h3 class="altar-h">ค้นพบแล้ว <span class="muted">${ids.filter((u) => found[u]).length}/${ids.length}</span></h3><div class="altar-uniques">${ids.map((u) => found[u]
+    ? `<div class="uq found" title="${UNIQUES[u].lines.join(' · ')}">${UNIQUES[u].name}<br><span class="muted">${SLOT_NAME[UNIQUES[u].slot]} · ${UNIQUES[u].th}</span></div>`
+    : `<div class="uq"><span class="muted">??? · ${SLOT_NAME[UNIQUES[u].slot]}</span></div>`).join('')}</div>`;
+}
 function renderAltarProgress() {
   const box = $('altar-prog');
-  const tabs = [['gems', '💎 Gem Mastery'], ['chal', `🏅 Challenges ${chalCount()}/${CHALLENGES.length}`], ['void', `◈ Voidstone & Atlas`], ['coll', `★ Unique Collection ${foundCount()}/${Object.keys(UNIQUES).length}`], ['cos', '✨ Cosmetic']];
-  let h = `<div class="codex-tabs">${tabs.map(([id, l]) => `<button class="btn btn-small${altarTab === id ? ' sel' : ''}" data-atab="${id}">${l}</button>`).join('')}</div>`;
+  let h = '';
   if (altarTab === 'gems') h += gemMasteryHtml();
   else if (altarTab === 'chal') h += challengesHtml();
   else if (altarTab === 'void') h += voidPanelHtml();
   else if (altarTab === 'cos') h += cosmeticsHtml();
-  else h += collectionHtml();
+  else h += collectionHtml() + uniquesVaultHtml();
   box.innerHTML = h;
-  box.querySelectorAll('[data-atab]').forEach((b) => { b.onclick = () => { altarTab = b.dataset.atab; renderAltarProgress(); }; });
-  box.querySelectorAll('[data-infuse]').forEach((b) => { b.onclick = () => { if (gemInfuse(b.dataset.infuse)) { Sfx.play('currency'); openAltar(); } }; });
+  box.querySelectorAll('[data-infuse]').forEach((b) => { b.onclick = () => { if (gemInfuse(b.dataset.infuse)) { Sfx.play('currency'); openRecords(); } }; });
   bindCosmetics(box);
   box.querySelectorAll('[data-alt]').forEach((b) => { b.onclick = () => { const [id, alt] = b.dataset.alt.split(':'); if (gemSetAlt(id, alt)) { Sfx.play('levelup'); renderAltarProgress(); } }; });
+  // Gem Mastery: pick a gem row to see its qualities (the infuse button inside the row keeps its own action)
+  box.querySelectorAll('[data-gsel]').forEach((r) => {
+    r.onclick = (e) => { if (e.target.closest('[data-infuse]')) return; gemSel = r.dataset.gsel; renderAltarProgress(); };
+    r.onkeydown = (e) => { if (e.target === r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); r.onclick(e); } };
+  });
+  box.querySelectorAll('.gm-alt[data-alt]').forEach((c) => { c.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.onclick(); } }; });
+}
+// mastery milestones along the track: the three alternate qualities, then the +2 level head start
+const GEM_MARKS = () => Object.keys(GEM_ALT_AT).map((a) => ({ at: GEM_ALT_AT[a], key: a, name: ALT_QUALITY[a].name }))
+  .concat({ at: GEM_HEAD_START_AT, key: 'head', name: 'เริ่ม +2 เลเวล' });
+let gemSel = null;
+// xp still needed to reach level `to`, and what infusing all of it would cost
+function gemPathTo(g, to) {
+  let need = -g.xp; for (let l = g.lv; l < to; l++) need += GEM_XP_REQ(l);
+  let lv = g.lv, xp = g.xp, n = 0, cost = 0;
+  while (lv < to) { cost += gemInfuseCost(lv); n++; xp += GEM_INFUSE_XP; while (xp >= GEM_XP_REQ(lv)) { xp -= GEM_XP_REQ(lv); lv++; } }
+  return { need: Math.max(0, need), n, cost };
 }
 function gemMasteryHtml() {
-  const M = loadMeta();
+  const M = loadMeta(), marks = GEM_MARKS(), end = GEM_HEAD_START_AT;
   const ids = Object.keys(SKILLS).filter((id) => !isLocked('gem', id)).sort((a, b) => (gemLv(b) - gemLv(a)) || ((M.gems[b] || {}).xp || 0) - ((M.gems[a] || {}).xp || 0));
-  let h = `<div class="muted">เจมที่ใช้ในรอบได้ XP ตามการฆ่าและดาเมจ · ทุกเลเวล +2% ดาเมจ (หลัง Lv 20: +0.5% ไม่จำกัด) · Lv ${GEM_ALT_AT.anomalous}/${GEM_ALT_AT.divergent}/${GEM_ALT_AT.phantasmal} ปลด Alternate Quality · Lv ${GEM_HEAD_START_AT}: ได้เจมนี้เริ่ม +2 เลเวล · ใช้ Shards เติม XP ได้ไม่จำกัด</div><div class="gm-grid">`;
+  if (!ids.includes(gemSel)) gemSel = ids[0];
+  const pctOf = (lv) => Math.round(Math.min(lv, end) / end * 1000) / 10;
+  const step = Math.round((gemMasteryMore(1) - 1) * 1000) / 10, late = Math.round((gemMasteryMore(21) - gemMasteryMore(20)) * 1000) / 10;
+  let h = `<div class="gm-view"><div class="gm-head"><div><div class="gm-title">Gem Mastery</div>
+      <div class="gm-lead">เจมที่ใช้ในรอบได้ XP ถาวร · ยิ่งเลเวลสูงยิ่งแรง และปลดรางวัลตามเส้นทางด้านล่าง</div></div>
+      <div class="gm-shards">${M.shards} ✦</div></div>
+    <div class="gm-legend">
+      <div class="gm-leg gm-c-step"><span class="gm-leg-dot">+${step}%</span><div><b>ทุกเลเวล</b><span>ดาเมจ +${step}% ต่อเลเวล · หลัง Lv 20 +${late}%</span></div></div>
+      ${marks.map((m) => `<div class="gm-leg gm-c-${m.key}"><span class="gm-leg-dot">${m.at}</span><div><b>Lv ${m.at} ${m.name}</b><span>${m.key === 'head'
+        ? 'ได้เจมนี้ในรอบ เริ่มสูงกว่าปกติ' : `${ALT_QUALITY[m.key].th} · Alternate Quality`}</span></div></div>`).join('')}
+    </div><div class="gm-body"><div class="gm-list">`;
   for (const id of ids) {
-    const g = M.gems[id] || { xp: 0, lv: 0, alt: null }, req = GEM_XP_REQ(g.lv), alts = gemAltsOpen(id), cost = gemInfuseCost(g.lv);
-    h += `<div class="gm-card${g.lv ? '' : ' fresh'}">${skillGemHtml(id, true)} <b>${SKILLS[id].name}</b> <span class="gm-lv">Lv ${g.lv}</span>
-      <div class="bar gm-bar"><div style="width:${(g.xp / req) * 100}%"></div></div><div class="muted">${g.xp}/${req} XP · ดาเมจ +${Math.round((gemMasteryMore(g.lv) - 1) * 1000) / 10}%</div>
-      <div class="gm-alts">${Object.keys(ALT_QUALITY).map((a) => alts.includes(a)
-        ? `<button class="btn btn-small${g.alt === a ? ' sel' : ''}" data-alt="${id}:${a}" title="${altQualityDesc(a, id)}">${ALT_QUALITY[a].name}</button>`
-        : `<span class="gm-lock" title="${altQualityDesc(a, id)}">🔒 ${ALT_QUALITY[a].name} (Lv ${GEM_ALT_AT[a]})</span>`).join('')}</div>
-      ${g.alt ? `<div class="gm-altdesc">${ALT_QUALITY[g.alt].name}: ${altQualityDesc(g.alt, id)}</div>` : ''}
-      <button class="btn btn-small btn-dim" data-infuse="${id}" ${M.shards < cost ? 'disabled' : ''}>เติม +${GEM_INFUSE_XP} XP (${cost} ✦)</button></div>`;
+    const g = M.gems[id] || { xp: 0, lv: 0, alt: null }, req = GEM_XP_REQ(g.lv), cost = gemInfuseCost(g.lv);
+    const next = marks.find((m) => m.at > g.lv);
+    h += `<div class="gm-row${id === gemSel ? ' sel' : ''}${g.lv ? '' : ' fresh'}" data-gsel="${id}" tabindex="0">
+      <div class="gm-gem">${skillGemHtml(id, true)}<div><div class="gm-name">${SKILLS[id].name}</div>
+        <div class="gm-sub">Mastery Lv ${g.lv} · ดาเมจ +${Math.round((gemMasteryMore(g.lv) - 1) * 1000) / 10}%${g.alt ? ` · <span class="gm-c-${g.alt}">${ALT_QUALITY[g.alt].name}</span>` : ''}</div></div></div>
+      <div class="gm-track" style="--p:${pctOf(g.lv + g.xp / req)}%">
+        <div class="gm-next">${next ? `ถัดไป Lv ${next.at} → ${next.name}` : 'ปลดครบทุกรางวัลแล้ว'}</div>
+        ${marks.map((m) => `<span class="gm-pin gm-c-${m.key}${g.lv >= m.at ? ' on' : ''}" style="--x:${pctOf(m.at)}%" title="Lv ${m.at} ${m.name}"></span>`).join('')}
+      </div>
+      <div class="gm-buy"><div class="gm-xp">XP ${g.xp} / ${req}</div>
+        <button class="btn btn-small" data-infuse="${id}" ${M.shards < cost ? 'disabled' : ''}>เติม +${GEM_INFUSE_XP} XP · ${cost} ✦</button></div></div>`;
   }
-  return h + '</div>';
+  h += '</div>';
+  // selected gem: its alternate qualities and how far the next reward is
+  const id = gemSel, g = M.gems[id] || { xp: 0, lv: 0, alt: null }, open = gemAltsOpen(id), next = marks.find((m) => m.at > g.lv);
+  h += `<div class="gm-side"><div class="gm-side-h">เลือก Alternate Quality · ${SKILLS[id].name}</div>
+    <div class="gm-side-lead">เลือกได้ 1 แบบต่อเจม เปลี่ยนหรือถอดได้ทุกเมื่อ ใช้ผลทุกรอบที่ใช้เจมนี้</div>
+    ${Object.keys(ALT_QUALITY).map((a) => {
+      const on = g.alt === a, can = open.includes(a);
+      return `<div class="gm-alt gm-c-${a}${on ? ' on' : ''}${can ? '' : ' locked'}"${can ? ` data-alt="${id}:${a}" tabindex="0"` : ''}>
+        <div class="gm-alt-top"><b>${ALT_QUALITY[a].name}</b>${on ? '<span class="gm-alt-tag">ใช้อยู่</span>' : can ? '<span class="gm-alt-hint">คลิกเพื่อใช้</span>' : `<span class="gm-alt-hint">ปลดที่ Lv ${GEM_ALT_AT[a]}</span>`}</div>
+        <div class="gm-alt-desc">${altQualityDesc(a, id)}</div></div>`;
+    }).join('')}
+    <div class="gm-plan">${next ? (() => { const p = gemPathTo(g, next.at);
+      return `ถัดไปของ ${SKILLS[id].name}: อีก <b>${p.need} XP</b> ถึง Lv ${next.at} → ${next.key === 'head' ? 'เริ่มรอบที่ +2 เลเวล' : 'ปลด ' + next.name}<br>
+        <span>ใช้เจมนี้ในรอบ หรือเติม ${p.n} ครั้ง (${p.cost} ✦)</span>`; })() : `${SKILLS[id].name} ปลดครบทุกรางวัลแล้ว<br><span>ทุกเลเวลยังเพิ่มดาเมจ +${late}%</span>`}</div>
+  </div></div></div>`;
+  return h;
 }
 function challengesHtml() {
   const M = loadMeta(), done = chalCount();

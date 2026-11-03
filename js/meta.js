@@ -7,7 +7,7 @@ let Meta = null;
 
 function freshMeta() {
   return { v: 2, shards: 0, alloc: {}, unlocked: {}, found: {}, atlas: { maxTier: 1, done: {} }, lastMap: null, life: { runs: 0, wins: 0, kills: 0, bosses: 0, time: 0 },
-    stash: [], maps: [], jewels: {}, atlasAlloc: {}, daily: null,
+    stash: [], jewels: {}, atlasAlloc: {}, daily: null,
     scarabs: {}, gems: {}, chal: {}, voids: {}, atlasTiers: {}, winCls: {},
     quests: {}, heat: {}, heatSel: {}, cos: {}, cosSeen: {} };
 }
@@ -199,11 +199,8 @@ function settleRun(r) {
   let atlas = null;
   if (r.win && r.map) atlas = completeMap(r.map);
   M.life.runs++; M.life.kills += r.kills; M.life.bosses += r.bosses; M.life.time += r.time;
-  // maps found during the run (Hardcore deaths lose them) and every jewel picked up
+  // every jewel picked up (Hardcore deaths lose them)
   const keepLoot = !(r.hc && !r.win);
-  if (keepLoot) for (const mp of r.maps || []) M.maps.push(mp);
-  M.maps.sort((a, b) => b.tier - a.tier);
-  if (M.maps.length > MAP_ITEM_CAP) M.maps.length = MAP_ITEM_CAP;
   let jewels = 0;
   if (keepLoot) for (const j of r.jewels || []) if (stashAdd(j)) jewels++;
   if (r.daily) {
@@ -216,7 +213,7 @@ function settleRun(r) {
   const newly = [];
   for (const u of UNLOCKS) if (!M.unlocked[u.id] && u.test(r, M.life)) { M.unlocked[u.id] = true; newly.push(u); }
   saveMeta();
-  return { reward, newly, atlas, jewels, maps: keepLoot ? (r.maps || []).length : 0 };
+  return { reward, newly, atlas, jewels };
 }
 
 function unlockLabel(u) { return u.kind === 'class' ? CLASSES.find((c) => c.id === u.ref).name : SKILLS[u.ref].name; }

@@ -12,7 +12,6 @@ const STRONGBOXES = {
   arcanist:     { name: "Arcanist's Strongbox", th: 'กล่องนักเวท — Orb คราฟต์', color: '#7aa8ff' },
   armourer:     { name: "Armourer's Strongbox", th: 'กล่องช่างเกราะ — ชุดเกราะ Rare', color: '#c8b08a' },
   jeweller:     { name: "Jeweller's Strongbox", th: 'กล่องช่างอัญมณี — แหวน/สร้อย/Jewel', color: '#ffd84a' },
-  cartographer: { name: "Cartographer's Strongbox", th: 'กล่องนักทำแผนที่ — แผนที่', color: '#8ad8a8' },
   gemcutter:    { name: "Gemcutter's Strongbox", th: 'กล่องช่างเจียระไน — เจมสกิล +1 เลเวล', color: '#5ae0c0' },
 };
 
@@ -133,9 +132,6 @@ function strongboxLoot(b) {
     dropItem(x - 30, y, Math.random() < 0.12 ? 'unique' : 'rare', pick(['ring', 'amulet', 'belt']));
     dropJewel(x + 30, y);
     spawnPickup(x, y + 30, 'jeweller3'); spawnPickup(x + 20, y + 30, randomJeweller());
-  } else if (b.kind === 'cartographer') {
-    dropMapItem(x, y, Math.min(MAX_MAP_TIER, G.map.tier + (Math.random() < 0.4 ? 1 : 0)));
-    if (Math.random() < 0.5) dropMapItem(x + 30, y, G.map.tier);
   } else if (b.kind === 'gemcutter') {
     const P = G.player, ok = P.skills.filter((s) => s.level < MAX_GEM_LEVEL);
     if (ok.length) { const s = pick(ok); s.level++; recomputePlayer(); announce('Gemcutter', `${SKILLS[s.id].name} +1 เลเวล (Lv ${s.level})`, '#5ae0c0'); }
@@ -210,7 +206,6 @@ function ritualOffers() {
     { kind: 'cur', cur: 'vaal', n: 1, cost: 35, label: 'Vaal Orb' },
     { kind: 'cur', cur: 'exalt', n: 1, cost: 50, label: 'Exalted Orb' },
     { kind: 'ess', cost: 40, label: 'Essence สุ่ม' },
-    { kind: 'map', tier: Math.min(MAX_MAP_TIER, t + 1), cost: 65, label: `แผนที่ Tier ${Math.min(MAX_MAP_TIER, t + 1)}` },
     { kind: 'jewel', cost: 70, label: 'Jewel สุ่ม' },
     { kind: 'chest', cost: 50, label: 'หีบสมบัติ (เลือกการ์ด)' },
     { kind: 'scarab', cost: 50, label: 'Scarab สุ่ม' },
@@ -229,7 +224,6 @@ function buyRitual(o) {
   else if (o.kind === 'orbs') for (let i = 0; i < o.n; i++) spawnPickup(x + rand(-40, 40), y, randomCraftOrb());
   else if (o.kind === 'cur') P.currency[o.cur] = (P.currency[o.cur] || 0) + o.n;
   else if (o.kind === 'ess') spawnPickup(x, y, 'essence', { ess: pick(Object.keys(ESSENCES)) });
-  else if (o.kind === 'map') dropMapItem(x, y, o.tier);
   else if (o.kind === 'jewel') dropJewel(x, y);
   else if (o.kind === 'chest') G.pendingChests++;
   return true;
@@ -272,8 +266,7 @@ function endDelirium(D) {
     const r = Math.random();
     if (r < 0.35) spawnPickup(x, y, randomCraftOrb());
     else if (r < 0.55) dropItem(x, y, Math.random() < 0.1 ? 'unique' : 'rare');
-    else if (r < 0.7) dropJewel(x, y);
-    else if (r < 0.82) dropMapItem(x, y, Math.min(MAX_MAP_TIER, G.map.tier + 1));
+    else if (r < 0.76) dropJewel(x, y);
     else spawnPickup(x, y, 'chest');
   }
   maybeScarab(P.x, P.y - 60, 0.4);
@@ -348,10 +341,11 @@ function drawDeliriumFog(ctx, W, H) {
 function drawLeagueHUD(ctx, W, H, y0) {
   const L = G.league;
   if (!L) return y0;
-  ctx.textAlign = 'center'; ctx.font = '700 15px Cinzel, serif';
-  for (const R of L.rituals) if (R.state === 'active') { ctx.fillStyle = '#ff7a6a'; ctx.fillText(`RITUAL ${Math.max(0, R.t).toFixed(1)}s · Tribute ${Math.floor(L.tribute)}`, W / 2, y0); y0 += 20; }
+  ctx.textAlign = 'center'; ctx.font = '700 16px Cinzel, serif'; hudSpacing(ctx, 1);
+  for (const R of L.rituals) if (R.state === 'active') { hudText(ctx, `RITUAL ${Math.max(0, R.t).toFixed(1)}s · Tribute ${Math.floor(L.tribute)}`, W / 2, y0, '#ff7a6a'); y0 += 20; }
   const D = L.deli;
-  if (D.state === 'active') { ctx.fillStyle = '#e8eef8'; ctx.fillText(`DELIRIUM ${Math.round(deliP() * 100)}% · ☠ ${D.kills}`, W / 2, y0); y0 += 20; }
+  if (D.state === 'active') { hudText(ctx, `DELIRIUM ${Math.round(deliP() * 100)}% · ☠ ${D.kills}`, W / 2, y0, '#e8eef8'); y0 += 20; }
+  hudSpacing(ctx, 0);
   const targets = L.boxes.filter((b) => b.state === 'closed').map((b) => [b.x, b.y, STRONGBOXES[b.kind].color])
     .concat(L.rituals.filter((R) => R.state === 'placed').map((R) => [R.x, R.y, '#ff5a5a']))
     .concat(D.state === 'placed' ? [[D.x, D.y, '#e8eef8']] : [])

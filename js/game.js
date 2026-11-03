@@ -104,7 +104,7 @@ function resize() {
 function startGame(cls, map) {
   G.craft = { nodes: [], corpses: [], blades: [] };
   G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), scarabs: (map.scarabs || []).slice(), heat: Object.assign({}, map.heat) } : Object.assign({}, DEFAULT_MAP, { mods: [], scarabs: [], heat: {} });
-  G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.runMaps = []; G.runScarabs = []; G.vault = null;
+  G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.runScarabs = []; G.vault = null;
   if (!G.daily) restoreRandom();
   G.mapFx = mapFx(G.map);
   G.atlasFx = atlasFx();
@@ -275,7 +275,9 @@ function setupTouch() {
   G.releaseTouch = () => { id = null; lastTap = 0; inp.joy = null; inp.joyOrigin = null; };
   c.addEventListener('touchstart', (e) => {
     Sfx.init();
-    const t = e.changedTouches[0];
+    const t = e.changedTouches[0], dr = G.dashRect;
+    // the DASH button handles its own tap and must not start the joystick
+    if (dr && t.clientX >= dr.x && t.clientX <= dr.x + dr.w && t.clientY >= dr.y && t.clientY <= dr.y + dr.h) { e.preventDefault(); return; }
     const now = performance.now();
     if (now - lastTap < 280) inp.dash = true; // double tap = dash
     lastTap = now;
@@ -297,6 +299,8 @@ function setupTouch() {
     const t = e.changedTouches[0];
     for (const r of G.flaskRects || []) if (t.clientX >= r.x - 4 && t.clientX <= r.x + r.w + 4 && t.clientY >= r.y - 14 && t.clientY <= r.y + r.h) inp['flask' + r.i] = true;
     // tap the skill bar to unleash Vaal skills
+    const dr = G.dashRect;
+    if (dr && t.clientX >= dr.x && t.clientX <= dr.x + dr.w && t.clientY >= dr.y && t.clientY <= dr.y + dr.h) { inp.dash = true; return; }
     const lr = G.lvlRect;
     if (lr && t.clientX >= lr.x && t.clientX <= lr.x + lr.w && t.clientY >= lr.y && t.clientY <= lr.y + lr.h) { inp.levelUp = true; return; }
     const bg = G.bagRect;
@@ -325,6 +329,8 @@ function init() {
   $('btn-reroll').onclick = reroll;
   $('btn-flicker').onclick = () => { toggleFlicker(); $('btn-flicker').blur(); };
   $('btn-altar').onclick = () => { Sfx.init(); openAltar(); };
+  for (const [id, tab] of [['btn-gems', 'gems'], ['btn-chal', 'chal'], ['btn-atlas', 'void'], ['btn-uniques', 'coll'], ['btn-cosmetic', 'cos']]) $(id).onclick = () => { Sfx.init(); openRecords(tab); };
+  $('btn-records-back').onclick = closeRecords;
   $('btn-codex').onclick = () => { Sfx.init(); openCodex(); };
   $('btn-codex-close').onclick = closeCodex;
   $('btn-settings').onclick = () => { Sfx.init(); openSettings('menu'); };

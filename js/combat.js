@@ -349,7 +349,7 @@ for (const [id, def] of Object.entries(JEWELLERS)) PICKUPS[id] = { ...def, craft
 function spawnPickup(x, y, kind, extra) { G.pickups.push(Object.assign({ x, y, kind, t: 0 }, extra)); }
 const pickupDef = (it) => (it.kind === 'essence' ? { name: ESSENCES[it.ess].name, color: ESSENCES[it.ess].color, icon: '◆' }
   : it.kind === 'scarab' ? { name: SCARABS[it.scarab].name, color: SCARABS[it.scarab].color, icon: '✲' }
-  : it.kind === 'map' ? { name: `แผนที่ T${it.map.tier}`, color: RARITY_COLOR[it.map.rarity], icon: '▦' } : PICKUPS[it.kind]);
+  : PICKUPS[it.kind]);
 
 // Crimson Bleed: a bleeding corpse bursts for half of the bleed it had left
 let _burstBudget = 40, _burstT = 0;

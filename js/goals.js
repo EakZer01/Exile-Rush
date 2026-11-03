@@ -174,6 +174,6 @@ function renderMenuGoals() {
       <span class="goal-ico">${g.icon}</span><div class="goal-body"><div>${g.text}</div><div class="muted">${g.sub}</div>
       ${g.p !== null && g.p !== undefined ? `<div class="bar goal-bar"><div style="width:${Math.round(clamp(g.p, 0, 1) * 100)}%"></div></div>` : ''}</div></div>`).join('')}` : '';
   box.querySelectorAll('[data-go]').forEach((el) => {
-    el.onclick = () => { Sfx.init(); if (el.dataset.go !== 'tree') altarTab = el.dataset.go; openAltar(); if (el.dataset.go !== 'tree') $('altar-prog').scrollIntoView(); };
+    el.onclick = () => { Sfx.init(); if (el.dataset.go === 'tree') openAltar(); else openRecords(el.dataset.go); };
   });
 }

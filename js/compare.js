@@ -74,8 +74,8 @@ function compareItem(it) {
       const w = BASES[it.base].w, oh = BASES[P.equip.offhand.base];
       if ((oh.quiver && w.type !== 'bow') || (!oh.quiver && w.hands === 2)) eq.offhand = null;
     }
-    const d = diffSnap(_cmpBase, statSnapshot(eq));
-    if (!best || d.score > best.score) best = Object.assign(d, { key: k, empty: !P.equip[k] });
+    const after = statSnapshot(eq), d = diffSnap(_cmpBase, after);
+    if (!best || d.score > best.score) best = Object.assign(d, { key: k, empty: !P.equip[k], after });
   }
   return best || { blocked: canEquip(it, it.slot === 'ring' ? 'ring' : it.slot) };
 }

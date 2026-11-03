@@ -86,15 +86,6 @@ function mapQuantity(cfg) { return cfg.mods.reduce((a, id) => a + MAP_MODS[id].q
 function mapRewardMult(cfg) { return tierReward(cfg.tier) * (1 + mapQuantity(cfg) / 100); }
 function mapLabel(cfg) { return `${BIOMES[cfg.biome].name} · T${cfg.tier}`; }
 
-// ---------------- map items: dropped in runs, kept between runs ----------------
-const MAP_ITEM_CAP = 40;
-function makeMapItem(tier, biome, rarity) {
-  tier = Math.max(1, Math.min(MAX_MAP_TIER, tier));
-  biome = biome || pick(Object.keys(BIOMES).filter((b) => BIOMES[b].minTier <= tier));
-  rarity = rarity || weightedSample(['normal', 'magic', 'rare'], 1, (r) => ({ normal: 45, magic: 35, rare: 20 })[r])[0];
-  const mods = rarity === 'rare' ? rollMapMods(tier) : rarity === 'magic' ? shuffle(Object.keys(MAP_MODS)).slice(0, randi(1, 2)) : [];
-  return { uid: uid(), kind: 'map', biome, tier, rarity, mods, name: BIOMES[biome].name + ' Map' };
-}
 // the cost to make a map without owning one (only tiers you've reached)
 const mapBuyCost = (tier) => (tier <= 1 ? 0 : 8 * tier);
 
@@ -122,12 +113,12 @@ const ATLAS_TREE = [
     { d: 'Breach เกิดบ่อยขึ้น 20%', a(f) { f.breachRate *= 1.2; } },
     { n: 'Rift Hoard', d: 'รางวัล Breach เพิ่ม 50%', a(f) { f.breachLoot *= 1.5; } }] },
   { id: 'carto', name: 'Cartography', color: '#8ad8a8', icon: '▦', nodes: [
-    { d: 'ดรอปแผนที่เพิ่มขึ้น 35%', a(f) { f.mapDrop *= 1.35; } },
-    { d: 'ดรอปแผนที่เพิ่มขึ้น 35% · ไอเทมดรอปเพิ่ม 5%', a(f) { f.mapDrop *= 1.35; f.itemQty *= 1.05; } },
+    { d: 'ไอเทมดรอปเพิ่ม 8%', a(f) { f.itemQty *= 1.08; } },
+    { d: 'Shards เพิ่ม 5% · ไอเทมดรอปเพิ่ม 5%', a(f) { f.shardMul *= 1.05; f.itemQty *= 1.05; } },
     { n: 'Wanderer', d: 'เก็บของเข้า Stash ได้ +1 ชิ้น · พกเข้ารอบได้ +1 ชิ้น · ไอเทมดรอปเพิ่ม 10%', a(f) { f.stashAdd += 1; f.itemQty *= 1.1; } }] },
 ];
 const ATLAS_FX_DEFAULT = { boxRate: 1, boxBonus: false, essRate: 1, essDouble: false, tribute: 1, ritualExtra: false, deliDur: 1, deliReward: 1, deliTwice: false,
-  breachRate: 1, breachLoot: 1, mapDrop: 1, itemQty: 1, stashAdd: 0,
+  breachRate: 1, breachLoot: 1, itemQty: 1, stashAdd: 0,
   // endgame: scarabs, voidstones, collection and challenge bonuses
   uniqueMul: 1, srcUnique: 1, srcBossSure: false, shardMul: 1, scarabDrop: 1, vaultExtra: 0, vaultLuck: 0, scarabSlots: 2 };
 const DEFAULT_MAP = { biome: 'graveyard', tier: 1, mods: [] };

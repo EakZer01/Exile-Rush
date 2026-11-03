@@ -85,7 +85,6 @@ const SCARABS = {
   essence:   { name: 'Essence Scarab', th: 'Essence เกิดบ่อยขึ้น 70% · บางตัวมี Essence 2 อัน', color: '#c0a0ff', w: 10, a(f) { f.essRate *= 1.7; f.essDouble = true; } },
   ritual:    { name: 'Ritual Scarab', th: 'Tribute +40% · มี Ritual ครั้งที่ 3', color: '#ff5a5a', w: 9, a(f) { f.tribute *= 1.4; f.ritualExtra = true; } },
   delirium:  { name: 'Delirium Scarab', th: 'หมอก Delirium นานขึ้น 30% · รางวัล +40%', color: '#e8eef8', w: 9, a(f) { f.deliDur *= 1.3; f.deliReward *= 1.4; } },
-  carto:     { name: 'Cartography Scarab', th: 'ดรอปแผนที่ ×2', color: '#8ad8a8', w: 9, a(f) { f.mapDrop *= 2; } },
   gilded:    { name: 'Gilded Scarab', th: 'ไอเทมดรอป +25% · Shards +15%', color: '#ffd84a', w: 7, a(f) { f.itemQty *= 1.25; f.shardMul *= 1.15; } },
   elite:     { name: 'Scarab of Elites', th: 'มอนสเตอร์ Rare บ่อยขึ้น 50% (ยากขึ้น) · Scarab ดรอป ×2', color: '#ff9a5a', w: 6, a(f) { f.scarabDrop *= 2; }, map(fx) { fx.rareRate *= 1.5; } },
   reliquary: { name: 'Reliquary Scarab', th: 'โอกาส Unique ×2 · Unique เฉพาะแหล่งบ่อยขึ้น 50%', color: '#e8883a', w: 3, rare: true, a(f) { f.uniqueMul *= 2; f.srcUnique *= 1.5; } },
