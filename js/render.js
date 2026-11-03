@@ -513,6 +513,39 @@ function drawEnemyOverlay(ctx, e, P) {
     ctx.drawImage(glowSprite('#c060ff', r * 1.3), x - r * 1.3, y - r * 1.3);
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   }
+  // ---- deep-tier monster overlays ----
+  if (e.carapaceMax) {
+    // the shell: a full arc when intact, cracking away as hits eat it
+    const k = e.carapaceHp / e.carapaceMax;
+    ctx.strokeStyle = hexA('#8ab89a', 0.5 + 0.4 * k); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(x, y, r * 1.18, -Math.PI * 0.85, -Math.PI * 0.85 + TAU * (0.25 + 0.75 * k)); ctx.stroke();
+    if (k < 1) { ctx.strokeStyle = hexA('#24402c', 0.85); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r * 1.18, -Math.PI * 0.85 + TAU * (0.25 + 0.75 * k) + 0.15, -Math.PI * 0.85 + TAU * 0.98); ctx.stroke(); }
+  }
+  if ((e.enrageStack || 0) > 0 && (e.enrageUntil || 0) > G.time) {
+    const heat = Math.min(1, (e.enrageMul || 1) - 1);
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.35 + 0.35 * heat;
+    ctx.drawImage(glowSprite('#ff5a2a', r * 1.4), x - r * 1.4, y - r * 1.4);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  }
+  if (mech(e, 'vortex')) {
+    // the well: a slowly rotating spiral ring at pull range
+    const V = mech(e, 'vortex');
+    ctx.strokeStyle = hexA('#b060ff', 0.25 + 0.12 * Math.sin(G.time * 4 + e.id)); ctx.lineWidth = 1.5;
+    ctx.setLineDash([14, 10]);
+    ctx.beginPath(); ctx.arc(x, y, V.r, G.time * 0.7 + e.id, G.time * 0.7 + e.id + TAU); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (mech(e, 'drain') && (e.drGlow || 0) > G.time - 0.4) {
+    ctx.strokeStyle = hexA('#c0a0ff', 0.6); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, (mech(e, 'drain')).r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = hexA('#e0d0ff', 0.4); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(x, y, (mech(e, 'drain')).r * 0.94, 0, TAU); ctx.stroke();
+  }
+  if (e.unstoppable && !e.bossDef) {
+    ctx.strokeStyle = hexA('#c8d0da', 0.5 + Math.sin(G.time * 6 + e.id) * 0.15); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, r * 1.3, -0.6, 0.6); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, r * 1.3, Math.PI - 0.6, Math.PI + 0.6); ctx.stroke();
+  }
   if (e.curse && e.curse.t > G.time) {
     ctx.strokeStyle = e.curse.type === 'ele' ? '#c8a0ff' : e.curse.type === 'vuln' ? '#ff6a5a' : '#9a5aff';
     ctx.globalAlpha = 0.7; ctx.lineWidth = 1.5;
@@ -658,6 +691,18 @@ function hazardPath(ctx, h, k) {
   } else ctx.arc(h.x, h.y, h.r * k, 0, TAU);
 }
 function drawHazard(ctx, h, p, burst) {
+  if (h.mine) {
+    // proximity mine: a blinking pod while arming, a pulsing red disc once armed
+    const armed = h.t >= h.arm, blink = armed && Math.sin(G.time * 12) > 0;
+    ctx.fillStyle = hexA(armed ? '#ff3a2a' : h.color, armed ? (blink ? 0.5 : 0.22) : 0.14);
+    ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (armed ? 0.85 : 0.6), 0, TAU); ctx.fill();
+    ctx.strokeStyle = hexA(armed ? '#ff5a4a' : h.color, armed ? 0.9 : 0.5); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (armed ? 0.95 : 0.6), 0, TAU); ctx.stroke();
+    ctx.fillStyle = hexA('#2a1008', 0.9);
+    ctx.beginPath(); ctx.arc(h.x, h.y, 5, 0, TAU); ctx.fill();
+    if (!armed) { ctx.fillStyle = hexA('#ffd84a', 0.9); ctx.beginPath(); ctx.arc(h.x, h.y - 8, 2.5, 0, TAU); ctx.fill(); }
+    return;
+  }
   ctx.strokeStyle = hexA(h.color, burst ? 0.9 * (1 - p) : 0.85); ctx.lineWidth = h.ghost ? 1.5 : 2.5;
   if (h.ghost) ctx.setLineDash([10, 8]);
   hazardPath(ctx, h, 1); ctx.stroke();

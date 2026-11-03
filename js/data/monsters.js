@@ -46,6 +46,31 @@ const MONSTERS = {
   broodmother: { name: 'Carrion Broodmother', hp: 110, speed: 40, dmg: 12, r: 20, xp: 6, color: '#7a6a3a', shape: 'square',
               brood: { n: 6, type: 'scuttler' } },
   scuttler: { name: 'Carrion Scuttler', hp: 6, speed: 135, dmg: 5, r: 8, xp: 0.5, color: '#a08a50', shape: 'tri', flutter: true, scale: 0.75, noWave: true },
+  // ---- deep-tier monsters: each one breaks a habit ----
+  // its shell eats the first few hits — burst it or switch targets
+  carapace: { name: 'Carapace Creeper', hp: 55, speed: 52, dmg: 11, r: 15, xp: 3, color: '#4a7a5a', shape: 'square',
+              carapace: { hits: 3, regen: 6 } },
+  // the more you hit it, the faster and harder it gets
+  enrage:   { name: 'Ashen Ravager', hp: 48, speed: 54, dmg: 13, r: 14, xp: 3, color: '#b04020', shape: 'tri', elem: 'fire', scale: 0.95,
+              enrage: { speed: 0.02, dmg: 0.015, cap: 2 } },
+  // drags you toward it while the pack closes in
+  vortex:   { name: 'Void Maw', hp: 60, speed: 44, dmg: 10, r: 16, xp: 4, color: '#5a3a9a', shape: 'circle', elem: 'chaos', scale: 1.1,
+              vortex: { r: 260, pull: 70 } },
+  // draws a lightning sightline, then fires a heavy beam down it
+  rail:     { name: 'Storm Bearer', hp: 50, speed: 40, dmg: 20, r: 14, xp: 5, color: '#c8b83a', shape: 'diamond', elem: 'lightning',
+              rail: { range: 520, cd: 5, warn: 1.1, len: 640, speed: 380 } },
+  // rooted, very tough, endlessly spawns a swarm — kill it first
+  nest:     { name: 'Flesh Nest', hp: 320, speed: 0, dmg: 0, r: 22, xp: 12, color: '#9a6a4a', shape: 'circle', scale: 1.2,
+              stationary: true, nest: { cd: 3.5, n: 2, type: 'scuttler' } },
+  // bleeds your life while you stand near it
+  drainer:  { name: 'Soul Leech', hp: 65, speed: 58, dmg: 8, r: 14, xp: 5, color: '#c0a0ff', shape: 'tri', elem: 'chaos',
+              drain: { r: 200, dps: 0.06 } },
+  // cannot be stopped: immune to ailments and knockback — dodge or burst
+  juggernaut: { name: 'Iron Juggernaut', hp: 300, speed: 30, dmg: 26, r: 24, xp: 10, color: '#5a6a7a', shape: 'square',
+              unstoppable: true },
+  // plants proximity mines behind itself as it walks
+  minelayer: { name: 'Doom Sapper', hp: 58, speed: 50, dmg: 10, r: 14, xp: 5, color: '#d08a2a', shape: 'diamond', elem: 'fire',
+              mines: { cd: 4, fuse: 1.2, boomR: 85 } },
 };
 // Codex text for every monster
 const MONSTER_TH = {
@@ -60,20 +85,28 @@ const MONSTER_TH = {
   guardian: 'สร้างเกราะให้มอนสเตอร์รอบตัว รับดาเมจแค่ครึ่งเดียว (วงสีฟ้า) — ฆ่าก่อน',
   stalker: 'หายตัวแล้วโผล่ข้างหลังคุณ — ระวังเวลายืนนิ่ง',
   broodmother: 'ตายแล้วแตกเป็นฝูง Scuttler 6 ตัว', scuttler: 'ลูกแมลงตัวเล็ก วิ่งเร็วมาก',
+  carapace: 'เกราะแข็งกัน 3 ฮิตแรก (มีรอยแตก) — ตีจนแตกแล้วเลือดจะลดลงปกติ กลับมาอีกครั้งถ้าปล่อยไว้',
+  enrage: 'ยิ่งโดนตียิ่งเร็วและแรงขึ้น (ออร่าแดง) — ตัดสินใจให้ไว: ตีให้ตายในไม่กี่วินาที หรือหลบผ่านไป',
+  vortex: 'ดูดคุณเข้าหามันช้าๆ ในวงกว้าง — อย่าให้ฝูงตามมาด้วย',
+  rail: 'เล็งเส้นสายฟ้ายาว 1 วิ แล้วยิงบีมทะลุ — ออกจากเส้นทันที',
+  nest: 'รังฝังตัวกับพื้น ปล่อยลูกฝูงเรื่อยๆ และเลือดหนามาก — มาถึงไหนฆ่าทิ้งเลย',
+  drainer: 'ระบายชีวิตของคุณเป็น % ต่อวินาทีในวง (เขียว) — ออกจากวงก่อนจะโดนเกราะเลือดเกาะ',
+  juggernaut: 'หยุดไม่ได้: ต้านทุกสถานะ ดันไม่ได้ เดินตรงๆ มาหา — เตรียมที่วิ่งหนี',
+  minelayer: 'วางกับดักระเบิดตามทางที่มันเดินผ่าน — จำที่วางแล้วอ้อม',
 };
 
 // wave table: from minute `t`, these monster weights apply
 const WAVES = [
   { t: 0,  w: { zombie: 6, skeleton: 3 } },
   { t: 1,  w: { zombie: 5, skeleton: 4, bat: 3 } },
-  { t: 2.5, w: { zombie: 4, skeleton: 4, bat: 3, archer: 2, charger: 0.8 } },
-  { t: 3,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, ghoul: 1.5, charger: 1, stalker: 0.6 } },
-  { t: 4,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, brute: 1.5, volatile: 1, ghoul: 1.5, charger: 1, bloater: 0.8, necromancer: 0.5, stalker: 0.8 } },
-  { t: 6,  w: { skeleton: 3, bat: 4, archer: 2, brute: 2, volatile: 2, wraith: 2, ghoul: 2, spitter: 1, charger: 1.2, bloater: 1, mortar: 0.8, stalker: 1.2, broodmother: 0.6, necromancer: 0.6 } },
-  { t: 8,  w: { skeleton: 2, bat: 3, archer: 2, brute: 2, volatile: 2, wraith: 3, cultist: 1, ghoul: 2, spitter: 1.5, shaman: 0.8, charger: 1.5, bloater: 1.2, mortar: 1, stalker: 1.5, broodmother: 0.8, guardian: 0.5, necromancer: 0.7 } },
-  { t: 11, w: { bat: 3, archer: 2, brute: 3, volatile: 2, wraith: 4, cultist: 2, golem: 0.6, ghoul: 2, spitter: 2, shaman: 1, charger: 1.8, bloater: 1.5, mortar: 1.3, stalker: 2, broodmother: 1, guardian: 0.8, necromancer: 0.9 } },
-  { t: 14, w: { bat: 3, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1, ghoul: 2.5, spitter: 2, shaman: 1.2, charger: 2, bloater: 1.8, mortar: 1.6, stalker: 2.4, broodmother: 1.2, guardian: 1, necromancer: 1 } },
-  { t: 17, w: { bat: 4, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1.5, ghoul: 3, spitter: 2.5, shaman: 1.5, charger: 2.4, bloater: 2, mortar: 2, stalker: 2.8, broodmother: 1.5, guardian: 1.2, necromancer: 1.2 } },
+  { t: 2.5, w: { zombie: 4, skeleton: 4, bat: 3, archer: 2, charger: 0.8, carapace: 0.6 } },
+  { t: 3,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, ghoul: 1.5, charger: 1, stalker: 0.6, carapace: 0.8, enrage: 0.6 } },
+  { t: 4,  w: { zombie: 3, skeleton: 4, bat: 3, archer: 2, brute: 1.5, volatile: 1, ghoul: 1.5, charger: 1, bloater: 0.8, necromancer: 0.5, stalker: 0.8, carapace: 0.8, enrage: 0.8, vortex: 0.5, minelayer: 0.5 } },
+  { t: 6,  w: { skeleton: 3, bat: 4, archer: 2, brute: 2, volatile: 2, wraith: 2, ghoul: 2, spitter: 1, charger: 1.2, bloater: 1, mortar: 0.8, stalker: 1.2, broodmother: 0.6, necromancer: 0.6, carapace: 1, enrage: 1, vortex: 0.8, rail: 0.6, drainer: 0.5, minelayer: 0.8, juggernaut: 0.4, nest: 0.4 } },
+  { t: 8,  w: { skeleton: 2, bat: 3, archer: 2, brute: 2, volatile: 2, wraith: 3, cultist: 1, ghoul: 2, spitter: 1.5, shaman: 0.8, charger: 1.5, bloater: 1.2, mortar: 1, stalker: 1.5, broodmother: 0.8, guardian: 0.5, necromancer: 0.7, carapace: 1, enrage: 1.2, vortex: 1, rail: 0.8, drainer: 0.8, minelayer: 1, juggernaut: 0.6, nest: 0.6 } },
+  { t: 11, w: { bat: 3, archer: 2, brute: 3, volatile: 2, wraith: 4, cultist: 2, golem: 0.6, ghoul: 2, spitter: 2, shaman: 1, charger: 1.8, bloater: 1.5, mortar: 1.3, stalker: 2, broodmother: 1, guardian: 0.8, necromancer: 0.9, carapace: 1, enrage: 1.4, vortex: 1.2, rail: 1.1, drainer: 1.2, minelayer: 1.2, juggernaut: 0.9, nest: 0.9 } },
+  { t: 14, w: { bat: 3, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1, ghoul: 2.5, spitter: 2, shaman: 1.2, charger: 2, bloater: 1.8, mortar: 1.6, stalker: 2.4, broodmother: 1.2, guardian: 1, necromancer: 1, carapace: 1, enrage: 1.6, vortex: 1.4, rail: 1.4, drainer: 1.5, minelayer: 1.4, juggernaut: 1.2, nest: 1.1 } },
+  { t: 17, w: { bat: 4, brute: 3, volatile: 3, wraith: 4, cultist: 3, golem: 1.5, ghoul: 3, spitter: 2.5, shaman: 1.5, charger: 2.4, bloater: 2, mortar: 2, stalker: 2.8, broodmother: 1.5, guardian: 1.2, necromancer: 1.2, carapace: 1, enrage: 1.8, vortex: 1.6, rail: 1.7, drainer: 1.8, minelayer: 1.6, juggernaut: 1.5, nest: 1.3 } },
 ];
 
 // The run lasts 15 minutes, but monsters scale on "difficulty minutes":
@@ -132,6 +165,11 @@ function bossVariant(i, o) { return Object.assign({}, BOSSES[i], o); }
 // Pinnacle boss: replaces the final boss on Tier 8+ maps
 const PINNACLE = bossVariant(3, { id: 'sovereign_crown', name: 'The Hollow Crown', th: 'มงกุฎกลวง — จ้าวแห่ง Atlas',
   hp: 450000, dmg: 64, r: 60, color: '#6a5a1a', glow: '#ffd84a', ptype: 'fire', summon: 'shaman', phases: [0.75, 0.5, 0.25], pinnacle: true });
+// Uber Pinnacle: replaces The Hollow Crown on Tier 13+ — four phases, full pattern list
+const UBER_CROWN = bossVariant(3, { id: 'hollow_king', name: 'The Hollow King, Awakened', th: 'ราชาห้วงว่างผนึกรื้อ — Uber Pinnacle',
+  hp: 1400000, dmg: 84, r: 66, color: '#7a2a1a', glow: '#ff5a5a', ptype: 'chaos', summon: 'guardian',
+  phases: [0.8, 0.6, 0.4, 0.2], pinnacle: true, uber: true,
+  patterns: ['spiral', 'strike', 'ring', 'radial', 'charge', 'beam', 'donut', 'meteor'] });
 
 const RUN_LENGTH = 900; // seconds — final boss spawns at 15:00, then Endgame (optional)
 

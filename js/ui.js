@@ -1280,6 +1280,8 @@ function openMapDevice(cls) {
     const last = M.lastMap;
     mapCfg = last && BIOMES[last.biome] && biomeOpen(last.biome) && last.tier <= A.maxTier ? { biome: last.biome, tier: last.tier, mods: last.mods.slice() } : { biome: 'graveyard', tier: 1, mods: [] };
   }
+  // deep-tier maps force their mechanics on top of whatever the player rolled
+  mapCfg.forced = forcedMods(mapCfg.tier, mapCfg.biome);
   hide('menu');
   $('map-class').textContent = `${mapCls.name} — เลือกแผนที่`;
   $('map-biomes').innerHTML = Object.entries(BIOMES).map(([id, b]) => {
@@ -1297,11 +1299,14 @@ function openMapDevice(cls) {
   }
   $('map-tiers').innerHTML = tiers;
   const qty = mapQuantity(mapCfg), mult = mapRewardMult(mapCfg);
-  $('map-mods').innerHTML = (mapCfg.mods.length ? mapCfg.mods.map((id) => `<div class="map-mod"><b>${MAP_MODS[id].name}</b> — ${MAP_MODS[id].th} <span class="muted">(+${MAP_MODS[id].qty}%)</span></div>`).join('')
-    : '<div class="muted">แผนที่ธรรมดา (Normal) — ไม่มี mod · ใช้ Alchemy เพื่อเพิ่มความยากและรางวัล</div>');
+  const rolled = mapCfg.mods.map((id) => `<div class="map-mod"><b>${MAP_MODS[id].name}</b> — ${MAP_MODS[id].th} <span class="muted">(+${MAP_MODS[id].qty}%)</span></div>`).join('');
+  const forced = mapCfg.forced.map((id) => `<div class="map-mod map-forced"><b>${MAP_MODS[id].name}</b> — ${MAP_MODS[id].th} <span class="muted">(+${MAP_MODS[id].qty}%)</span></div>`).join('');
+  $('map-mods').innerHTML = (rolled || forced ? rolled + forced
+    : '<div class="muted">แผนที่ธรรมดา (Normal) — ไม่มี mod · ใช้ Alchemy เพื่อเพิ่มความยากและรางวัล</div>')
+    + (mapCfg.forced.length ? `<div class="muted" style="margin-top:6px">Tier ${mapCfg.tier} บังคับ mod ลึก ${mapCfg.forced.length} อัน (ขอบแดง) — มากับแผนที่ ลบไม่ได้</div>` : '');
   $('map-summary').innerHTML = mapSummaryHtml(A, qty, mult);
   $('map-summary').style.setProperty('--cc', BIOMES[mapCfg.biome].color);
-  $('map-mods-n').textContent = `${mapCfg.mods.length} / ${mapModCount(mapCfg.tier)}`;
+  $('map-mods-n').textContent = `${mapCfg.mods.length}${mapCfg.forced.length ? ' + ' + mapCfg.forced.length + ' บังคับ' : ''} / ${mapModCount(mapCfg.tier)}`;
   $('map-atlas').textContent = `Atlas: ผ่านแล้ว ${atlasDoneCount()} แผนที่ · Tier สูงสุด ${A.maxTier} · แต้ม Legacy Tree จาก Atlas +${atlasBonusPoints()}/${ATLAS_POINT_CAP} · ✦ ${M.shards}`;
   $('btn-map-alch').disabled = mapCfg.mods.length > 0;
   $('btn-map-chaos').disabled = !mapCfg.mods.length || M.shards < MAP_REROLL_COST;

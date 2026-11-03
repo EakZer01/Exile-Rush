@@ -1,5 +1,18 @@
 # Changelog
 
+## Browser build 55 — 2026-11-04
+
+เนื้อหาลึกสำหรับผู้เล่นที่จบ Tier 10: แผนที่ Tier 15, mod ลึก 8 อัน, มอนสเตอร์ใหม่ 8 ชนิดและ Uber Pinnacle
+
+- **แผนที่ Tier 1–15** (เดิม 10): สูตรสเกลชันขึ้นหลัง Tier 10 (HP ถึง ×5.1, ดาเมจ ×2.27 ที่ T15) · **ค่าต้านทานถูกกด -75% ที่ Tier 13+** (เดิม cap -60%) · Atlas Point cap 15 → 20 · ราคาแผนที่สูงสุด 120 ✦
+- **Tier 11+ บังคับ mod ลึก**: T11–12 สุ่ม 1 อัน, T13–15 สุ่ม 2 อัน จาก pool ใหม่เท่านั้น (seeded ต่อ biome+tier — แผนที่เดิมได้ mod เดิม) แสดงขอบแดงแยกบน Map Device
+- **Map Mods ใหม่ 8 อัน** (รวม 26): Chitin (มอนสเตอร์ 25% เกราะกัน 3 ฮิต), Furious (25% โกรธแค้นเมื่อโดนตี), Gravity Well (15% ดูดผู้เล่น), Unstoppable (15% ต้านสถานะ+ดันไม่ได้), Overcharged (Rare มี mod +1), Warband (Rare มีผู้ติดตาม +4), Minefield (18% ตายทิ้งกับดัก), Chill Wind (เดินช้า 10% แลก XP +25%)
+- **มอนสเตอร์ใหม่ 8 ชนิด** (pixel art วาดใหม่ทั้งหมด, เข้ารอบตั้งแต่นาที 2.5–8 ตามชนิด): Carapace Creeper (เกราะกัน 3 ฮิต กลับมาใหม่เมื่อปล่อยไว้), Ashen Ravager (โกรธแค้นจากการถูกตี คูณสูงสุด ×2), Void Maw (ดูดผู้เล่นในวง 260), Storm Bearer (เล็งเส้นสายฟ้า 1.1 วิ แล้วยิงบีมทะลุ), Flesh Nest (ฝังตัว เลือด 320 ปล่อย Scuttler เรื่อยๆ), Soul Leech (ระบายชีวิต 6%/วิ และฟื้นตัวเอง), Iron Juggernaut (HP 300 ต้านทุกสถานะ ดันไม่ได้), Doom Sapper (วางกับดักระเบิดที่แอร์แล้วระเบิดเมื่อเข้าใกล้)
+- **Uber Pinnacle** — The Hollow King, Awakened แทน The Hollow Crown ตั้งแต่ Tier 13: HP 1.4M × tier scaling, 4 ฟาเซส, ลายท่าครบ 8 แบบ เรียก Guardian · ฆ่าได้การันตีดรอป Unique ประจำ Pinnacle
+- **Challenge ใหม่**: "ก้นบึ้งนรก" — ชนะแผนที่ Tier 15 (+500 ✦)
+- ทุกพื้นที่ปรับมอนสเตอร์เด่นให้มอนสเตอร์ใหม่เข้าฉาก (Ashen: Ravager/Sapper · Frozen: Creeper/Bearer · Marsh: Nest/Leech · Void: Maw/Bearer/Juggernaut)
+- **เพิ่มชุดทดสอบ** 9 กรณี (สูตร tier, mapFx + forced mods, มอนสเตอร์ครบ art/codex/waves, carapace กัน-หัก-ฟื้น, Furious stack/decay, กับดักแอร์-ระเบิด, Uber Crown ตาม tier, deep mods roll ลงมอนสเตอร์)
+
 ## Browser build 54 — 2026-11-04
 
 ระบบการแข่งขันข้ามรอบและเป้าหมายระยะยาวของ Endgame: Leaderboard, Weekly Challenge และรางวัล Echo milestone

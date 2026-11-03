@@ -42,6 +42,16 @@ function situationalMore(e, inst) {
 function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (e.dead) return 0;
   if (e.immuneT > G.time) { if (Math.random() < 0.05) addText(e.x, e.y - e.r - 10, 'IMMUNE', '#c8c8c8', 0.8); return 0; }
+  // Carapace Creeper / Chitin mod: the shell eats the first few hits (DoTs slip past it)
+  if (e.carapaceHp > 0) {
+    e.carapaceHp--;
+    e.carapaceHitT = G.time + (e.def.carapace ? e.def.carapace.regen : 6);
+    e.flash = 0.07; emit('phys', e.x, e.y, 2);
+    addText(e.x + rand(-6, 6), e.y - e.r - 8, 'กัน', '#7ab8ff', 0.7);
+    return 0;
+  }
+  // Furious / Furious mod: taking hits builds speed and damage for a while
+  if (e.enrageFx) { e.enrageStack = Math.min(99, (e.enrageStack || 0) + 1); e.enrageUntil = G.time + 3; }
   const P = G.player, ks = P.mods.ks;
   let crit = false;
   if (!ks.resolute && !s.noCrit) {
@@ -114,7 +124,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
 
   // knockback
   const knock = (s.knock || 0) + (crit ? s.critKnock || 0 : 0);
-  if (knock && !isBoss(e) && fromX !== undefined) {
+  if (knock && !isBoss(e) && !e.unstoppable && fromX !== undefined) {
     const a = Math.atan2(e.y - fromY, e.x - fromX);
     const k = knock * (14 / e.r);
     e.kx += Math.cos(a) * k * 3; e.ky += Math.sin(a) * k * 3;
@@ -199,8 +209,12 @@ function killEnemy(e, inst) {
   // experience
   // the run is shorter than its difficulty curve, so experience is scaled to match
   const minute = gameMin();
-  const xpv = e.xp * (1 + minute * 0.09) * GAME_PACE;
+  const xpv = e.xp * (1 + minute * 0.09) * GAME_PACE * (G.mapFx.xpMul || 1);
   spawnOrb(e.x, e.y, xpv);
+  // Minefield mod: some corpses leave an armed proximity mine behind
+  if (G.mapFx.deathMineAdd && e.rarity < 3 && Math.random() < G.mapFx.deathMineAdd && G.hazards.length < 80) {
+    addHazard(e.x, e.y, 80, 1.2, e.dmg * 1.2, '#ff9a3a', 'กับดัก (Minefield)', 'fire', { mine: true, arm: 1.2 });
+  }
 
   // loot
   // crafting orbs

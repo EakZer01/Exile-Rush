@@ -6,9 +6,9 @@
 //  Clearing a map (killing the final boss) unlocks the next tier, and
 //  every new biome+tier cleared adds a Legacy Tree point.
 // ============================================================
-const MAX_MAP_TIER = 10;
+const MAX_MAP_TIER = 15;
 const ARENA = 2200;                   // the map is a square from -ARENA to +ARENA
-const ATLAS_POINT_CAP = 15;           // max bonus Legacy Tree points from the Atlas
+const ATLAS_POINT_CAP = 20;           // max bonus Legacy Tree points from the Atlas
 const MAP_REROLL_COST = 3;            // Ancient Shards to reroll mods
 
 // tint: multiplied over ground/props · dark: colour of the night layer
@@ -17,25 +17,27 @@ const BIOMES = {
   graveyard: { name: 'Cursed Graveyard', th: 'สุสานต้องสาป', color: '#c8a860', minTier: 1, tint: null, dark: '6,4,12',
     desc: 'ดินแดนเริ่มต้น มอนสเตอร์ผสมทุกชนิด', mult: {}, add: {} },
   ashen: { name: 'Ashen Wastes', th: 'ทุ่งเถ้าถ่าน', color: '#ff7a3a', minTier: 1, tint: '#ffb08a', dark: '18,4,2',
-    desc: 'แผ่นดินไหม้เกรียม Volatile, Brute และ Ash Ghoul ชุกชุม', mult: { volatile: 2.5, brute: 1.4, ghoul: 1.6, mortar: 2, charger: 1.5 }, add: { volatile: 1.5, mortar: 0.8 },
+    desc: 'แผ่นดินไหม้เกรียม Volatile, Brute และ Ash Ghoul ชุกชุม', mult: { volatile: 2.5, brute: 1.4, ghoul: 1.6, mortar: 2, charger: 1.5, enrage: 1.8, minelayer: 1.5 }, add: { volatile: 1.5, mortar: 0.8, enrage: 0.6 },
     boss: 'Cinder Colossus (7:30)', bosses: { 1: bossVariant(1, { id: 'colossus_cinder', name: 'Cinder Colossus', th: 'ยักษ์ถ่านเพลิง', color: '#b8401a', glow: '#ff8a3a', ptype: 'fire', summon: 'volatile' }) } },
   frozen: { name: 'Frozen Hollow', th: 'โพรงน้ำแข็ง', color: '#8ad8ff', minTier: 2, tint: '#b8d8ff', dark: '2,8,18',
-    desc: 'หุบเขาเยือกแข็ง Frost Wraith ออกล่าตั้งแต่ต้น', mult: { wraith: 2.2, skeleton: 1.4, stalker: 1.6, guardian: 1.5 }, add: { wraith: 2, stalker: 0.8 },
+    desc: 'หุบเขาเยือกแข็ง Frost Wraith ออกล่าตั้งแต่ต้น', mult: { wraith: 2.2, skeleton: 1.4, stalker: 1.6, guardian: 1.5, carapace: 1.6, rail: 1.5 }, add: { wraith: 2, stalker: 0.8, carapace: 0.6 },
     boss: 'Rime Herald (11:15)', bosses: { 2: bossVariant(2, { id: 'herald_rime', name: 'Rime Herald', th: 'ผู้ประกาศน้ำค้างแข็ง', color: '#3a8ab8', glow: '#a8ecff', ptype: 'cold', summon: 'wraith' }) } },
   marsh: { name: 'Toxic Marsh', th: 'บึงพิษ', color: '#8fdc4a', minTier: 3, tint: '#b8e09a', dark: '4,12,4',
-    desc: 'หนองน้ำเน่า ซากศพ Bile Spitter และ Cultist เต็มไปหมด', mult: { zombie: 2, cultist: 1.5, spitter: 2, bloater: 2.2, broodmother: 2, necromancer: 1.6 }, add: { cultist: 0.6, spitter: 1, bloater: 1 },
+    desc: 'หนองน้ำเน่า ซากศพ Bile Spitter และ Cultist เต็มไปหมด', mult: { zombie: 2, cultist: 1.5, spitter: 2, bloater: 2.2, broodmother: 2, necromancer: 1.6, nest: 1.8, drainer: 1.6 }, add: { cultist: 0.6, spitter: 1, bloater: 1, drainer: 0.6 },
     boss: 'Bog Leviathan (7:30)', bosses: { 1: bossVariant(1, { id: 'colossus_bog', name: 'Bog Leviathan', th: 'อสูรบึงเน่า', color: '#4a7a2a', glow: '#a8f060', ptype: 'chaos', summon: 'spitter' }) } },
   void: { name: 'Void Sanctum', th: 'วิหารความว่างเปล่า', color: '#b060ff', minTier: 5, tint: '#c8a8ff', dark: '10,2,18', hpMul: 1.15,
-    desc: 'ใจกลางความมืด มอนสเตอร์แข็งแกร่งขึ้น 15% · Golem และ Bone Shaman ปรากฏเร็ว', mult: { cultist: 2, golem: 2, shaman: 1.6, stalker: 2, guardian: 1.8, necromancer: 1.6 }, add: { golem: 0.6, cultist: 1, shaman: 0.8, stalker: 1, guardian: 0.5 },
+    desc: 'ใจกลางความมืด มอนสเตอร์แข็งแกร่งขึ้น 15% · Golem และ Bone Shaman ปรากฏเร็ว', mult: { cultist: 2, golem: 2, shaman: 1.6, stalker: 2, guardian: 1.8, necromancer: 1.6, rail: 1.8, vortex: 1.8, juggernaut: 1.7, drainer: 1.5 }, add: { golem: 0.6, cultist: 1, shaman: 0.8, stalker: 1, guardian: 0.5, juggernaut: 0.5 },
     boss: 'Herald of the Void (11:15)', bosses: { 2: bossVariant(2, { id: 'herald_void', name: 'Herald of the Void', th: 'ผู้ประกาศความว่างเปล่า', color: '#4a1a7a', glow: '#c070ff', ptype: 'chaos', summon: 'shaman' }) } },
 };
 
-// tier scaling (tier 1 = the base game)
-const tierHp = (t) => 1 + 0.25 * (t - 1);
-const tierDmg = (t) => 1 + 0.08 * (t - 1);
+// tier scaling (tier 1 = the base game). Above tier 10 the curve steepens:
+// the deep tiers are meant to be a wall, not a gentle slope.
+const tierHp = (t) => 1 + 0.25 * (t - 1) + Math.max(0, t - 10) * 0.12;
+const tierDmg = (t) => 1 + 0.08 * (t - 1) + Math.max(0, t - 10) * 0.03;
 const tierReward = (t) => 1 + 0.15 * (t - 1);
-// resistance penalty: -8% per tier above 1 (Tier 8 = -56%), gear has to make it up
-const resPenalty = (t) => Math.min(0.6, 0.08 * (t - 1));
+// resistance penalty: -8% per tier above 1, capped at -60% — but tier 13+
+// (Uber Crown territory) pushes the cap to -75%
+const resPenalty = (t) => Math.min(t >= 13 ? 0.75 : 0.6, 0.08 * (t - 1));
 
 // fx keys are combined by mapFx(): numbers multiply (or add for *Add), booleans OR
 const MAP_MODS = {
@@ -57,22 +59,45 @@ const MAP_MODS = {
   h_shrine:  { name: 'Desecrated', th: 'ไม่มีศาลเจ้า (Shrine) เกิด', qty: 6, fx: { noShrine: true } },
   p_maxres:  { name: 'Smothering', th: 'ผู้เล่นค่าต้านทานสูงสุด -10%', qty: 10, fx: { pMaxRes: 0.1 } },
   m_elem:    { name: 'Elemental Fury', th: 'มอนสเตอร์กายภาพครึ่งหนึ่งโจมตีเป็นธาตุแทน', qty: 10, fx: { eleConvert: true } },
+  // ---- deep-tier mods (tier 11+ maps always force some of these) ----
+  m_shielded: { name: 'Chitin', th: 'มอนสเตอร์ 25% มีเกราะแข็งกัน 3 ฮิต', qty: 12, fx: { chitinousAdd: 0.25 } },
+  m_enrage:  { name: 'Furious', th: 'มอนสเตอร์ 25% โกรธแค้นเมื่อถูกตี (เร็วและแรงขึ้น)', qty: 12, fx: { enrageAdd: 0.25 } },
+  m_vortex:  { name: 'Gravity Well', th: 'มอนสเตอร์ 15% ดูดผู้เล่นเข้าหา', qty: 12, fx: { vortexAdd: 0.15 } },
+  m_juggernaut: { name: 'Unstoppable', th: 'มอนสเตอร์ 15% หยุดไม่ได้ — ต้านทุกสถานะและดันไม่ได้', qty: 12, fx: { juggernautAdd: 0.15 } },
+  m_overload: { name: 'Overcharged', th: 'มอนสเตอร์ Rare มี mod เพิ่ม 1 อัน', qty: 10, fx: { rareModAdd: 1 } },
+  m_elite:   { name: 'Warband', th: 'มอนสเตอร์ Rare มีผู้ติดตามเพิ่ม 4 ตัว', qty: 10, fx: { rareEscortAdd: 4 } },
+  m_mines:   { name: 'Minefield', th: 'มอนสเตอร์ 18% ตายแล้วทิ้งกับดักระเบิด', qty: 15, fx: { deathMineAdd: 0.18 } },
+  h_chill:   { name: 'Chill Wind', th: 'ลมหนาว: ผู้เล่นเดินช้าลง 10% · XP ที่ได้ +25%', qty: 20, fx: { pSlowAdd: 0.1, xpMul: 1.25 } },
 };
 
 const MAP_FX_DEFAULT = {
   monHp: 1, monDmg: 1, monSpeed: 1, spawn: 1, rareRate: 1, magicRate: 1, eleResAdd: 0, physResAdd: 0, deathBoomAdd: 0,
   bossHp: 1, bossDmg: 1, pRegen: 1, pFlask: 1, pLife: 1, hazard: false, darkAdd: 0, noShrine: false, pMaxRes: 0, eleConvert: false,
   pChoicesLess: 0,
+  chitinousAdd: 0, enrageAdd: 0, vortexAdd: 0, juggernautAdd: 0, rareModAdd: 0, rareEscortAdd: 0, deathMineAdd: 0, pSlowAdd: 0, xpMul: 1,
 };
 
-// mods rolled by "Alchemy": 3 at tier 1–3, 4 at tier 4–7, 5 at tier 8+
+// mods rolled by "Alchemy": 3 at tier 1–3, 4 at tier 4–7, 5 at tier 8–11, 6 at tier 12+
 const mapModCount = (tier) => 3 + Math.floor(tier / 4);
+
+// deep-tier maps always force some of the new mechanics on top of the rolled mods
+const DEEP_MODS = ['m_shielded', 'm_enrage', 'm_vortex', 'm_juggernaut', 'm_overload', 'm_elite', 'm_mines', 'h_chill'];
+function forcedMods(tier, biome) {
+  const n = tier >= 13 ? 2 : tier >= 11 ? 1 : 0;
+  if (!n) return [];
+  const r = mulberry32((biome ? biome.length : 0) * 7919 + tier * 104729);
+  const pool = DEEP_MODS.slice(), out = [];
+  while (out.length < n && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  return out;
+}
+// every mod of a map: the ones the player rolled plus the deep-tier forced ones
+const allMapMods = (cfg) => cfg.mods.concat(cfg.forced || []);
 
 function rollMapMods(tier) { return shuffle(Object.keys(MAP_MODS)).slice(0, mapModCount(tier)); }
 
 function mapFx(cfg) {
   const fx = Object.assign({}, MAP_FX_DEFAULT);
-  for (const id of cfg.mods) {
+  for (const id of allMapMods(cfg)) {
     for (const [k, v] of Object.entries(MAP_MODS[id].fx)) {
       if (typeof v === 'boolean') fx[k] = fx[k] || v;
       else if (k.endsWith('Add') || k === 'pMaxRes') fx[k] += v;
@@ -82,7 +107,7 @@ function mapFx(cfg) {
   return fx;
 }
 // total item quantity bonus (%) and the shard/item multiplier of a map
-function mapQuantity(cfg) { return cfg.mods.reduce((a, id) => a + MAP_MODS[id].qty, 0); }
+function mapQuantity(cfg) { return allMapMods(cfg).reduce((a, id) => a + MAP_MODS[id].qty, 0); }
 function mapRewardMult(cfg) { return tierReward(cfg.tier) * (1 + mapQuantity(cfg) / 100); }
 function mapLabel(cfg) { return `${BIOMES[cfg.biome].name} · T${cfg.tier}`; }
 

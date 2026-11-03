@@ -43,6 +43,14 @@ const GORE = {
   stalker:  { chunk: '#9050d0', blood: '#4a1a7a', decal: null },
   broodmother: { chunk: '#7a6a3a', blood: '#5a4a10', decal: '#3a300a' },
   scuttler: { chunk: '#a08a50', blood: '#5a4a10', decal: null },
+  carapace: { chunk: '#4a7a5a', blood: '#6a9a7a', decal: 'rubble' },
+  enrage:   { chunk: '#b04020', blood: '#7a0a0a', decal: 'scorch' },
+  vortex:   { chunk: '#5a3a9a', blood: '#4a1a7a', decal: null },
+  rail:     { chunk: '#c8b83a', blood: '#8a7a20', decal: null },
+  nest:     { chunk: '#9a6a4a', blood: '#c87a8a', decal: '#3a2a1a' },
+  drainer:  { chunk: '#c0a0ff', blood: '#6a3aa0', decal: null },
+  juggernaut: { chunk: '#5a6a7a', blood: '#3a4652', decal: 'rubble' },
+  minelayer: { chunk: '#d08a2a', blood: '#ff9a3a', decal: 'scorch' },
 };
 
 const _parts = [];

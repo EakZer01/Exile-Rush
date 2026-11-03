@@ -155,6 +155,7 @@ const CHALLENGES = [
   { id: 'win3', name: 'นักสำรวจ', desc: 'ชนะแผนที่ Tier 3 ขึ้นไป', shards: 60, test: (r) => r.win && r.tier >= 3 },
   { id: 'win6', name: 'ผู้พิชิต', desc: 'ชนะแผนที่ Tier 6 ขึ้นไป', shards: 120, test: (r) => r.win && r.tier >= 6 },
   { id: 'win10', name: 'สุดขอบแผนที่', desc: 'ชนะแผนที่ Tier 10', shards: 250, test: (r) => r.win && r.tier >= 10 },
+  { id: 'win15', name: 'ก้นบึ้งนรก', desc: 'ชนะแผนที่ Tier 15', shards: 500, test: (r) => r.win && r.tier >= 15 },
   { id: 'crown', name: 'ปลงพระชนม์', desc: 'โค่น The Hollow Crown', shards: 200, test: (r) => r.pinnacle },
   { id: 'mods5', name: 'ท้าทายโชคชะตา', desc: 'ชนะแผนที่ที่มี mod 5 อันขึ้นไป', shards: 120, test: (r) => r.win && r.mods >= 5 },
   { id: 'hc', name: 'ชีวิตเดียว', desc: 'ชนะแผนที่ใน Hardcore', shards: 150, test: (r) => r.win && r.hc },

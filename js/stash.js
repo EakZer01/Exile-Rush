@@ -132,7 +132,7 @@ function mapStartPaid() {
   M.shards -= cost;
   const loadout = [...mapLoadout].sort((a, b) => b - a).map((i) => M.stash.splice(i, 1)[0]).filter(Boolean);
   mapLoadout = new Set();
-  const cfg = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice(), hc: mapHC, loadout, scarabs: spendMapScarabs(), heat: corruptionOpen() ? Object.assign({}, M.heatSel) : {} };
+  const cfg = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice(), forced: (mapCfg.forced || []).slice(), hc: mapHC, loadout, scarabs: spendMapScarabs(), heat: corruptionOpen() ? Object.assign({}, M.heatSel) : {} };
   M.lastMap = { biome: cfg.biome, tier: cfg.tier, mods: cfg.mods.slice() };
   saveMeta();
   hide('mapdev');

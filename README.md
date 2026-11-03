@@ -127,14 +127,17 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
   - คืนแต้มฟรี: คลิกโหนดปลายทางเพื่อคืนทีละโหนด หรือกด "คืนแต้มทั้งหมด"
   - คลาส Templar / Shadow / Duelist / Scion และเจม Caustic Arrow / Raging Spirit / Firestorm / Righteous Fire เริ่มแบบล็อก ปลดล็อกได้ด้วยการทำเงื่อนไขในเกม หรือซื้อด้วย Shards
   - ข้อมูลถาวรเก็บใน localStorage ของเบราว์เซอร์ (`exile_meta`) ถ้าเคยเล่นมาก่อน สถิติดีที่สุดเดิมจะปลดล็อกของที่เข้าเงื่อนไขให้อัตโนมัติ
-- มอนสเตอร์ 20 ชนิด Normal / Magic / Rare (มี mod สุ่ม) แต่ละแบบต้องรับมือต่างกัน (ดูได้ใน Codex แท็บ "มอนสเตอร์"):
+- มอนสเตอร์ 28 ชนิด Normal / Magic / Rare (มี mod สุ่ม) แต่ละแบบต้องรับมือต่างกัน (ดูได้ใน Codex แท็บ "มอนสเตอร์"):
   - **Ash Ghoul** กระโจนใส่ · **Bile Spitter** พ่นแอ่งพิษ · **Bone Shaman** บัฟพวกเดียวกัน
   - **Grave Caller** อัญเชิญโครงกระดูกแล้วหนี · **Bristleback Charger** พุ่งชาร์จเป็นเส้นตรง (มีเส้นเตือน) · **Plague Bloater** ตายแล้วแตกเป็นแอ่งพิษใหญ่
   - **Ember Mortar** ยิงกระสุนครกลงตรงที่คุณกำลังจะเดินไป · **Aegis Sentinel** สร้างเกราะให้มอนสเตอร์รอบตัว (รับดาเมจครึ่งเดียว) · **Void Stalker** วาร์ปมาโผล่ข้างหลัง · **Carrion Broodmother** ตายแล้วแตกเป็นฝูง Scuttler
-  - แต่ละพื้นที่มีมอนสเตอร์เด่นต่างกัน (Ashen: Mortar/Charger · Frozen: Stalker/Sentinel · Marsh: Bloater/Broodmother/Grave Caller · Void: Stalker/Sentinel)
+  - **มอนสเตอร์ลึก (Tier 11+)**: **Carapace Creeper** เกราะกัน 3 ฮิต · **Ashen Ravager** ยิ่งโดนตียิ่งเร็ว/แรง · **Void Maw** ดูดคุณเข้าหา · **Storm Bearer** เล็งเส้นสายฟ้าแล้วยิงบีม · **Flesh Nest** รังฝังพื้นปล่อยฝูงเรื่อยๆ · **Soul Leech** ระบายชีวิตเป็น %/วิ · **Iron Juggernaut** ต้านสถานะ-ดันไม่ได้ · **Doom Sapper** วางกับดักระเบิด
+  - แต่ละพื้นที่มีมอนสเตอร์เด่นต่างกัน (Ashen: Mortar/Charger/Ravager · Frozen: Stalker/Sentinel/Creeper · Marsh: Bloater/Broodmother/Nest · Void: Stalker/Sentinel/Maw/Bearer/Juggernaut)
 - **หนึ่งรอบยาว 15 นาที**: บอส 4 ตัว (3:45, 7:30, 11:15, 15:00) โค่นบอสสุดท้ายเพื่อชนะ · บอสมี **Phase**: ที่ 66% และ 33% จะอมตะชั่วครู่และเรียกลูกน้อง
   - บอสประจำพื้นที่: Cinder Colossus (Ashen), Rime Herald (Frozen), Bog Leviathan (Marsh), Herald of the Void (Void)
   - **Pinnacle Boss** — The Hollow Crown แทนบอสสุดท้ายใน Tier 8 ขึ้นไป (โบนัส +250 ✦)
+  - **Uber Pinnacle** — The Hollow King, Awakened แทนที่ใน Tier 13 ขึ้นไป: 4 ฟาเซส ลายท่าครบ และการันตีดรอป Unique ประจำ Pinnacle
+- **แผนที่ Tier 1–15** (เดิม 10): Tier 11+ คือเนื้อหาลึก — **บังคับ mod ลึก 1–2 อัน** (ขอบแดงบน Map Device: Chitin, Furious, Gravity Well, Unstoppable, Overcharged, Warband, Minefield, Chill Wind), ค่าต้านทานถูกกดถึง -75% ที่ T13+ · Tier 12+ ได้ 6 mods อัตโนมัติ · ราคา/รางวัลสูงขึ้นตามเส้นโค้งใหม่
 - **Endgame ∞**: ชนะแล้วเลือกได้ว่าจะออกจากแผนที่ หรืออยู่ต่อใน Endgame — มอนสเตอร์แข็งขึ้นไม่สิ้นสุด, **Echo บอส** มาทุก 100 วิ (แต่ละตัวแข็งกว่าเดิม 40% ดรอปแผนที่ Tier ถัดไป, Orb และอาจได้ Unique) · ได้ +15 ✦ ต่อนาทีและ +40 ✦ ต่อ Echo · ตายใน Endgame ยังนับว่าชนะ
 - **Breach** (league mechanic): รอยแยกสีม่วงปรากฏเป็นระยะ เดินเข้าไปเพื่อเปิด ฆ่ามอนสเตอร์ Breach ให้มากที่สุดก่อนวงปิด รางวัลตามจำนวนที่ฆ่า (Orb คราฟต์, หีบ, ไอเทม Rare/Unique)
 - **ความยาก**: มอนสเตอร์แข็งและแรงขึ้นมากช่วงท้ายเกม · Keystone เลือกได้สูงสุด 3 อันต่อรอบ

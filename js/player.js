@@ -98,7 +98,7 @@ function recomputePlayer() {
   const pen = resPenalty(G.map.tier), capE = 0.75 + m.maxRes - fx.pMaxRes;
   P.resRaw = { fire: m.resFire - pen, cold: m.resCold - pen, lightning: m.resLight - pen, chaos: m.resChaos - pen };
   P.resCap = { fire: capE, cold: capE, lightning: capE, chaos: 0.75 + m.maxResChaos - fx.pMaxRes };
-  P.moveSpeed = 200 * (1 + m.moveInc) * m.moveMore;
+  P.moveSpeed = 200 * (1 + m.moveInc) * m.moveMore * (1 - (fx.pSlowAdd || 0));   // Chill Wind map mod
   P.pickupR = 90 * (1 + m.pickupInc);
   for (const inst of P.skills) inst.st = buildSkillStats(inst, P);
 }

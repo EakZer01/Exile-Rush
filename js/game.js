@@ -103,7 +103,7 @@ function resize() {
 
 function startGame(cls, map) {
   G.craft = { nodes: [], corpses: [], blades: [] };
-  G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), scarabs: (map.scarabs || []).slice(), heat: Object.assign({}, map.heat) } : Object.assign({}, DEFAULT_MAP, { mods: [], scarabs: [], heat: {} });
+  G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), forced: (map.forced || []).slice(), scarabs: (map.scarabs || []).slice(), heat: Object.assign({}, map.heat) } : Object.assign({}, DEFAULT_MAP, { mods: [], forced: [], scarabs: [], heat: {} });
   G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.weekly = (map && map.weekly) || 0; G.runScarabs = []; G.vault = null;
   if (!G.daily && !G.weekly) restoreRandom();
   G.mapFx = mapFx(G.map);

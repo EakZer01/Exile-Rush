@@ -25,16 +25,31 @@ function makeEnemy(type, x, y, rarity) {
   if (fx.physResAdd) e.res.physical = fx.physResAdd;
   if (fx.deathBoomAdd && Math.random() < fx.deathBoomAdd) e.deathBoom = true;
   if (fx.eleConvert && e.elem === 'physical' && Math.random() < 0.5) e.elem = pick(['fire', 'cold', 'lightning']);
+  // deep-tier monsters always carry their own mechanic; the deep map mods share them with the rest
+  if (d.carapace) e.carapaceHp = e.carapaceMax = d.carapace.hits;
+  else if (fx.chitinousAdd && Math.random() < fx.chitinousAdd) e.carapaceHp = e.carapaceMax = 3;
+  if (d.enrage) e.enrageFx = d.enrage;
+  else if (fx.enrageAdd && Math.random() < fx.enrageAdd) e.enrageFx = { speed: 0.012, dmg: 0.01, cap: 1.6 };
+  if (fx.vortexAdd && !d.vortex && Math.random() < fx.vortexAdd) e.vortexFx = { r: 240, pull: 55 };
+  if (fx.juggernautAdd && !d.unstoppable && Math.random() < fx.juggernautAdd) e.unstoppable = true;
+  if (e.unstoppable || d.unstoppable) { e.unstoppable = true; e.ailImmune = true; }
   if (rarity === 1) {
     addMod(e, pick(MAGIC_MODS));
   } else if (rarity === 2) {
     e.name = rareName();
-    const keys = shuffle(Object.keys(MONSTER_MODS)).slice(0, randi(2, 3) + (min > 9 ? 1 : 0));
+    const keys = shuffle(Object.keys(MONSTER_MODS)).slice(0, randi(2, 3) + (min > 9 ? 1 : 0) + (fx.rareModAdd || 0));
     for (const k of keys) addMod(e, k);
   }
   return e;
 }
 function addMod(e, k) { e.mods.push(k); MONSTER_MODS[k].apply(e); }
+// the mechanics a monster runs: its own def flags first, then the deep-mod rolls
+function mech(e, k) {
+  if (e.def[k]) return e.def[k];
+  if (k === 'vortex') return e.vortexFx;
+  if (k === 'enrage') return e.enrageFx;
+  return null;
+}
 
 const MAX_ENEMIES = 520;
 function spawnEnemy(type, x, y, rarity) {
@@ -106,7 +121,7 @@ function updateSpawner(dt) {
     S.rareT = rand(23, 32) / fx.rareRate;
     const [x, y] = spawnPoint(30);
     const e = spawnEnemy(waveType(), x, y, 2);
-    for (let i = 0; i < 4; i++) spawnEnemy(e.type, x + rand(-50, 50), y + rand(-50, 50), 0);
+    for (let i = 0; i < 4 + (fx.rareEscortAdd || 0); i++) spawnEnemy(e.type, x + rand(-50, 50), y + rand(-50, 50), 0);
     announce('มอนสเตอร์ Rare ปรากฏตัว!', e.name, '#ffd84a');
   }
   // horde ring
@@ -144,6 +159,7 @@ function updateSpawner(dt) {
 
 function bossForSlot(i) {
   if (!BOSSES[i]) return null;
+  if (i === BOSSES.length - 1 && G.map.tier >= 13) return UBER_CROWN;   // the deep-tier Uber Pinnacle
   if (i === BOSSES.length - 1 && G.map.tier >= 8) return PINNACLE;
   const B = BIOMES[G.map.biome];
   return (B.bosses && B.bosses[i]) || BOSSES[i];
@@ -188,6 +204,8 @@ function bossDefeated(e) {
   G.stats.bosses++;
   if (G.bossRef === e) G.bossRef = null;
   if (e.bossDef.pinnacle) G.stats.pinnacle = true;
+  // the Uber Crown always pays its own pinnacle-source unique
+  if (e.bossDef.uber) dropSourceUnique(e.x + rand(-40, 40), e.y + rand(-40, 40), 'pinnacle');
   rollBossUniques(e);
   if (e.final) { G.victoryT = 2.5; announce('ชัยชนะ!', `คุณโค่น ${e.name} ได้แล้ว`, '#ffd84a'); }
   else if (e.bossDef.echo) {
@@ -240,6 +258,8 @@ function updateEnemies(dt) {
     if (e.contactCd > 0) e.contactCd -= dt;
     if (e.fuse) { e.fuse -= dt; if (e.fuse <= 0) { killEnemy(e, null); continue; } }
     if (e.regen) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.regen * dt);
+    // Carapace regrows after being left alone for a while
+    if (e.carapaceMax && e.carapaceHp < e.carapaceMax && (e.carapaceHitT || 0) < G.time) e.carapaceHp = e.carapaceMax;
 
     const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy) || 1;
 
@@ -252,7 +272,44 @@ function updateEnemies(dt) {
     const buffed = e.buffT > G.time;
     let spd = e.speed * (1 - (e.chill.t > 0 ? e.chill.eff : 0)) * (buffed ? 1.3 : 1);
     if (e.freeze > 0 || e.fuse) spd = 0;
+    if (e.def.stationary) spd = 0;
+    if (e.unstoppable) { e.kx = 0; e.ky = 0; }   // cannot be knocked around
     let mx = dx / d, my = dy / d;
+
+    // Void Maw: drags the player toward it while it lives (frozen maws pull weakly)
+    const V = mech(e, 'vortex');
+    if (V) {
+      if (d < V.r && d > 24 && !P.dead) {
+        const pull = V.pull * (e.rarity === 2 ? 1.3 : 1) * (e.freeze > 0 ? 0.5 : 1);
+        P.x += ((e.x - P.x) / d) * pull * dt; P.y += ((e.y - P.y) / d) * pull * dt;
+        if (Math.random() < 0.05) emit('wisp', P.x + rand(-10, 10), P.y + rand(-10, 10), 1);
+      }
+    }
+    // Soul Leech: bleeds the player inside its radius and heals itself
+    const L = mech(e, 'drain');
+    if (L) {
+      if (d < L.r && !P.dead) {
+        e.drTick = (e.drTick || 0) + dt;
+        if (e.drTick >= 0.5) {
+          e.drTick -= 0.5;
+          const amt = P.maxLife * L.dps * 0.5;
+          P.life = Math.max(0, P.life - amt);
+          e.hp = Math.min(e.maxHp, e.hp + amt * 0.5);
+          e.drGlow = G.time + 0.6;
+          emit('wisp', P.x + rand(-8, 8), P.y + rand(-8, 8), 2);
+          if (P.life <= 0 && !P.dead) { P.dead = true; P.killedBy = e.name || e.def.name; P.killedElem = 'chaos'; }
+        }
+      }
+    }
+    // Furious: taking hits builds speed and damage for a while
+    if (e.enrageFx) {
+      if ((e.enrageUntil || 0) < G.time) e.enrageStack = 0;
+      if ((e.enrageStack || 0) > 0) {
+        e.enrageMul = Math.min(e.enrageFx.cap, 1 + (e.enrageFx.speed + e.enrageFx.dmg) * e.enrageStack);
+        spd *= e.enrageMul;
+        if (Math.random() < 0.12) emit('ember', e.x, e.y - 6, 1);
+      }
+    }
     if (e.def.leap && e.freeze <= 0) {
       // Ash Ghoul: crouch, then pounce in a straight line
       const L = e.def.leap;
@@ -331,6 +388,44 @@ function updateEnemies(dt) {
           emit('wisp', e.x, e.y, 8);
         }
       }
+      if (D.rail) {
+        // Storm Bearer: paint a lightning sightline, then fire a heavy beam down it
+        const R = D.rail;
+        e.railCd = (e.railCd === undefined ? rand(1.5, R.cd) : e.railCd) - dt;
+        if (e.railS === 'aim') {
+          spd = 0; e.railT -= dt;
+          if (e.railT <= 0) {
+            e.railS = null; e.railCd = R.cd * rand(0.85, 1.2);
+            if (G.hazards.length < 80) addHazard(e.x, e.y, e.r * 0.7, 0.01, e.dmg * 1.6, '#fff27a', e.name || D.name, 'lightning', { shape: 'line', a: e.railA, len: R.len });
+            Sfx.play('boom'); G.shake = Math.max(G.shake, 2);
+          }
+        } else if (e.railCd <= 0 && d < R.range && d > 120) {
+          e.railS = 'aim'; e.railT = R.warn; e.railA = Math.atan2(my, mx);
+          if (G.hazards.length < 80) addHazard(e.x, e.y, 3, R.warn, 0, '#fff27a', '', 'lightning', { shape: 'line', a: e.railA, len: R.len, ghost: true });
+        }
+      }
+      if (D.nest) {
+        // Flesh Nest: rooted, endlessly spawns a swarm
+        const N = D.nest;
+        e.nestT = (e.nestT === undefined ? rand(1, N.cd) : e.nestT) - dt;
+        if (e.nestT <= 0 && G.enemies.length < MAX_ENEMIES - 10) {
+          e.nestT = N.cd * rand(0.85, 1.15);
+          for (let k = 0; k < N.n; k++) {
+            const a = rand(0, TAU), m = spawnEnemy(N.type, e.x + Math.cos(a) * 34, e.y + Math.sin(a) * 34, 0);
+            m.xp *= 0.3; emit('bubble', m.x, m.y, 4);
+          }
+          addEffect({ kind: 'ring', x: e.x, y: e.y, r: 52, t: 0, dur: 0.4, color: '#c88a5a' });
+        }
+      }
+      if (D.mines) {
+        // Doom Sapper: plants proximity mines behind itself
+        const M = D.mines;
+        e.mnT = (e.mnT === undefined ? rand(1, M.cd) : e.mnT) - dt;
+        if (e.mnT <= 0 && d < 500 && G.hazards.length < 80) {
+          e.mnT = M.cd * rand(0.85, 1.15);
+          addHazard(e.x + rand(-18, 18), e.y + rand(-18, 18), M.boomR, M.fuse, e.dmg * 1.5, '#ff9a3a', e.name || D.name, 'fire', { mine: true, arm: M.fuse });
+        }
+      }
     }
     if (e.rarity === 3) {
       const r = updateBoss(e, dt, d, mx, my);
@@ -342,7 +437,7 @@ function updateEnemies(dt) {
       if (e.rcd <= 0 && d < R.range * 1.15 && e.freeze <= 0) {
         e.rcd = R.cd * rand(0.85, 1.15);
         const a = Math.atan2(dy, dx), n = R.burst || 1;
-        const dmg = R.dmg * dmgScale(gameMin()) * endDmg() * tierDmg(G.map.tier) * G.mapFx.monDmg * (e.rarity === 2 ? 1.5 : 1) * (buffed ? 1.2 : 1);
+        const dmg = R.dmg * dmgScale(gameMin()) * endDmg() * tierDmg(G.map.tier) * G.mapFx.monDmg * (e.rarity === 2 ? 1.5 : 1) * (buffed ? 1.2 : 1) * (e.enrageMul || 1);
         for (let i = 0; i < n; i++) enemyShoot(e.x, e.y, a + (i - (n - 1) / 2) * 0.18, R.speed, dmg, e.elem === e.def.elem || !e.def.elem && e.elem === 'physical' ? R.color : ELEM_COLOR[e.elem], R.pool ? d : 0, e.elem);
       }
     }
@@ -370,9 +465,9 @@ function updateEnemies(dt) {
 
     // contact
     const cr = e.r + P.r - 2;
-    if (d < cr && e.contactCd <= 0 && e.freeze <= 0) {
+    if (d < cr && e.dmg > 0 && e.contactCd <= 0 && e.freeze <= 0) {
       if (e.def.explode && e.rarity < 3) { if (!e.fuse) e.fuse = 0.55; continue; }
-      hurtPlayer(e.dmg * (buffed ? 1.2 : 1) * (e.chS === 'go' ? 1.5 : 1), e.name || e.def.name, 'phys', e.elem);
+      hurtPlayer(e.dmg * (e.enrageMul || 1) * (buffed ? 1.2 : 1) * (e.chS === 'go' ? 1.5 : 1), e.name || e.def.name, 'phys', e.elem);
       e.contactCd = e.rarity === 3 ? 0.6 : 0.8;
     }
   }
@@ -521,6 +616,18 @@ function updateHazards(dt) {
   for (let i = G.hazards.length - 1; i >= 0; i--) {
     const h = G.hazards[i];
     h.t += dt;
+    if (h.mine) {
+      // Doom Sapper / Minefield: dormant while arming, then explodes when the player steps in
+      if (h.t < h.arm) continue;
+      const rr = h.r * 0.9;
+      if (dist2(h.x, h.y, P.x, P.y) < rr * rr) {
+        hurtPlayer(h.dmg, h.src || 'กับดักระเบิด', 'area', h.elem);
+        addEffect({ kind: 'boom', x: h.x, y: h.y, r: h.r, t: 0, dur: 0.3, color: h.color });
+        fxExplosion(h.x, h.y, h.r, h.elem);
+        G.hazards.splice(i, 1);
+      }
+      continue;
+    }
     if (h.follow && h.t < h.warn - 0.45) { h.x += (P.x - h.x) * Math.min(1, dt * 2.2); h.y += (P.y - h.y) * Math.min(1, dt * 2.2); }
     if (h.ghost && h.t >= h.warn) { G.hazards.splice(i, 1); continue; }
     if (h.t >= h.warn) {
