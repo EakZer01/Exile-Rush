@@ -102,12 +102,14 @@ function resize() {
 }
 
 function startGame(cls, map) {
-  G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), scarabs: (map.scarabs || []).slice() } : Object.assign({}, DEFAULT_MAP, { mods: [], scarabs: [] });
+  G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), scarabs: (map.scarabs || []).slice(), heat: Object.assign({}, map.heat) } : Object.assign({}, DEFAULT_MAP, { mods: [], scarabs: [], heat: {} });
   G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.runMaps = []; G.runScarabs = []; G.vault = null;
   if (!G.daily) restoreRandom();
   G.mapFx = mapFx(G.map);
   G.atlasFx = atlasFx();
   applyMapBonuses(G.atlasFx, G.mapFx, G.map);
+  G.heat = applyCorruption(G.atlasFx, G.mapFx, G.map.heat);
+  G.cos = runCosmetics();
   G.lastMap = G.map;
   G.mapHazT = 4;
   resetBreach();
@@ -339,13 +341,7 @@ function init() {
   $('btn-vic-endless').onclick = startEndgame;
   $('btn-inv-close').onclick = closeInventory;
   $('btn-quit').onclick = () => { hide('pause'); G.state = 'menu'; G.player = null; buildMenu(); show('menu'); };
-  // retrying a bought / dropped map sends you back to the Map Device (maps are consumed)
-  $('btn-retry').onclick = () => {
-    hide('gameover');
-    if (G.daily) startDaily();
-    else if (G.lastMap.tier > 1 || G.hc) { G.state = 'menu'; G.player = null; openMapDevice(G.lastClass); }
-    else startGame(G.lastClass, G.lastMap);
-  };
+  $('btn-retry').onclick = retryRun;
   $('btn-stash').onclick = () => { Sfx.init(); stashView = null; openStash(); };
   $('btn-stash-close').onclick = closeStash;
   $('btn-daily').onclick = () => { Sfx.init(); startDaily(); };
@@ -356,6 +352,15 @@ function init() {
   requestAnimationFrame(frame);
 }
 window.addEventListener('load', init);
+
+// retrying a bought / dropped map sends you back to the Map Device (maps are consumed)
+function retryRun() {
+  hide('gameover');
+  if (G.daily) startDaily();
+  else if (G.lastMap.tier > 1 || G.hc) { G.state = 'menu'; G.player = null; openMapDevice(G.lastClass); }
+  // scarabs were spent on the first try: a quick retry runs without them
+  else startGame(G.lastClass, Object.assign({}, G.lastMap, { scarabs: [] }));
+}
 
 // ---- after the final boss: leave with the win, or stay for the Endgame ----
 function openVictory() {

@@ -237,6 +237,7 @@ function useSkillJeweller(inst, id) {
   if (!['inventory', 'paused'].includes(G.state) || jewellerBlockReason(inst, id)) return false;
   G.player.currency[id]--;
   inst.sockets = JEWELLERS[id].sockets;
+  G.stats.jeweller = true;
   recomputePlayer();
   return true;
 }

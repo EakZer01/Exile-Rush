@@ -58,6 +58,10 @@
 - **Challenges 24 ข้อ** (Altar → Challenges): ทำสำเร็จได้ Shards · ทุก 4 ข้อได้โบนัสถาวร (ช่อง Scarab, Stash +1, Shards +10%, การ์ดห้องรางวัล +1, ดาเมจ/ชีวิต, Unique บ่อยขึ้น)
 - **Unique Collection**: ค้นพบครบ 5/10/15/20/25/30/40 ชิ้นได้โบนัสถาวร
 - **Voidstone 4 อัน**: โค่น The Hollow Crown, ผ่านครบทุกพื้นที่ใน Tier 6+, โค่น Echo รวม 10 ตัว, ชนะ Tier 8+ ใน Hardcore · แต่ละอันทำให้แผนที่ Tier 6 ขึ้นไปมอนสเตอร์แข็งขึ้นแต่ไอเทม/Unique/Shards/Scarab เพิ่มขึ้น · **Atlas Completion**: ผ่านครบทุกพื้นที่ใน Tier เดียวกัน = +1 แต้ม Atlas Tree + 2 Scarab
+- **🎯 เป้าหมายถัดไป** (เมนูหลัก): แสดง 4 อย่างที่ใกล้สำเร็จที่สุด — ภารกิจปัจจุบัน, เจมที่ใกล้ปลด Alternate Quality, Challenge, Unique Collection, Corruption, Legacy Tree, ของที่ปลดล็อกได้ · กดเพื่อไปหน้าที่เกี่ยวข้อง
+- **📜 ภารกิจผู้เริ่มต้น 10 ข้อ** (ทำทีละข้อ): โค่นบอสแรก → เลือก Ascendancy → จัดสรร Legacy Tree → ใช้ Jeweller → ปลด Mastery → ชนะแผนที่ → ใช้ Scarab → ชนะ T3 → เลือก Alternate Quality → ชนะด้วย Corruption 3 · ให้ Shards, Scarab และฉายา
+- **☠ Corruption** (ปลดหลังชนะครั้งแรก, ที่ Map Device): เลือกความโหดเอง 10 แบบ (มอนสเตอร์ชีวิต/ดาเมจ/ความเร็ว/จำนวน, Rare บ่อยขึ้น, ฟลาสก์น้อยลง, ฟื้นฟูน้อยลง, บอสแข็งขึ้น, ค่าต้านทานสูงสุดลดลง, การ์ดให้เลือกน้อยลง) · แต่ละแต้ม: Shards +6%, Unique +4%, ไอเทม +3%, ห้องรางวัลระดับตำนานบ่อยขึ้น · 10 / 20 แต้มได้การ์ดห้องรางวัลเพิ่ม · บันทึกสถิติชนะสูงสุดของแต่ละคลาส
+- **✨ Cosmetic** (Altar → Cosmetic): ออร่า 5 แบบ, รอยเท้า 5 แบบ, ฉายา 7 แบบ ปลดจาก Corruption, Challenge, Voidstone, Hardcore, Unique Collection และภารกิจ · ไม่เพิ่มพลัง · ฉายาและ Corruption แสดงมุมซ้ายบนระหว่างเล่น
 - **Stash (เก็บของข้ามรอบ)**: จบรอบเลือกไอเทมเก็บได้ (ตาย 2 ชิ้น, ชนะ 4 ชิ้น) Jewel เก็บอัตโนมัติ · ที่ Map Device เลือกพกของจาก Stash เข้ารอบได้ 2 ชิ้น (จ่าย Shards ตามความหายาก) · ดู/ย่อยของได้ที่ปุ่ม 📦 Stash ในเมนูหลัก
 - **Jewel**: Crimson / Viridian / Cobalt ดรอปจากบอส, Rare, Strongbox, Ritual, Delirium ใส่ใน **Jewel Socket 6 ช่องบน Legacy Tree** (ช่องละสาย) เพื่อรับ mod ทุกรอบ
 - **Atlas / Map Device**: หลังเลือกคลาสจะเข้าหน้า Map Device เพื่อเลือกแผนที่
@@ -105,6 +109,7 @@
 | `js/data/runtree.js` | สาย Passive ระหว่างรอบ และ Mastery ของแต่ละสาย |
 | `js/data/endgame.js` | แหล่งดรอป Unique + Unique เปลี่ยนบิว, Scarab, Gem Mastery / Alternate Quality, Heirloom, ห้องรางวัล, Challenges, Unique Collection, Voidstone |
 | `js/progression.js` | ระบบข้ามรอบข้างต้นตอนเล่นจริง: ดรอป Scarab/Unique ตามแหล่ง, สรุปจบรอบ, หน้า Altar และ Scarab ที่ Map Device |
+| `js/data/goals.js` · `js/goals.js` | ภารกิจผู้เริ่มต้น, Corruption, Cosmetic (ข้อมูล · ระบบ) และ "เป้าหมายถัดไป" ที่เมนูหลัก |
 | `js/stash.js` | แผนที่/Jewel ที่ดรอป, Stash, ของที่พกเข้ารอบ, Atlas Tree, Jewel Socket, Daily Challenge |
 | `js/settings.js` | ตั้งค่า (บันทึกถาวร), เพลงประกอบแบบสังเคราะห์, ลดคุณภาพอัตโนมัติ, Tips |
 | `js/codex.js` | หน้า Codex, คอมโบแนะนำ, หน้าตั้งค่า |

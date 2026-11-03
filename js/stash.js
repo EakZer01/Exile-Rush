@@ -130,6 +130,7 @@ function renderMapExtras() {
   $('btn-map-start').disabled = M.shards < cost;
   $('map-atlas').textContent = `Atlas: ผ่านแล้ว ${atlasDoneCount()} แผนที่ · Tier สูงสุด ${A.maxTier} · แต้ม Legacy Tree จาก Atlas +${atlasBonusPoints()}/${ATLAS_POINT_CAP} · แต้ม Atlas Tree ${atlasUsed()}/${atlasPoints()} · ✦ ${M.shards}`;
   renderMapScarabs();
+  renderMapCorruption();
   $('map-atlas').innerHTML += '<br>' + voidAtlasHtml(mapCfg.tier);
   renderAtlasTree();
 }
@@ -161,7 +162,7 @@ function mapStartPaid() {
   if (mapCfg.itemUid) M.maps = M.maps.filter((m) => m.uid !== mapCfg.itemUid);
   const loadout = [...mapLoadout].sort((a, b) => b - a).map((i) => M.stash.splice(i, 1)[0]).filter(Boolean);
   mapLoadout = new Set();
-  const cfg = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice(), hc: mapHC, loadout, scarabs: spendMapScarabs() };
+  const cfg = { biome: mapCfg.biome, tier: mapCfg.tier, mods: mapCfg.mods.slice(), hc: mapHC, loadout, scarabs: spendMapScarabs(), heat: corruptionOpen() ? Object.assign({}, M.heatSel) : {} };
   M.lastMap = { biome: cfg.biome, tier: cfg.tier, mods: cfg.mods.slice() };
   mapCfg.itemUid = null;
   saveMeta();

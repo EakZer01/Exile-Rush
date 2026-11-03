@@ -55,6 +55,8 @@ function buildMenu() {
     el.onclick = () => { Sfx.init(); if (lock) openAltar(); else openMapDevice(c); };
     list.appendChild(el);
   }
+  questCheck(null);
+  renderMenuGoals();
   $('meta-shards').innerHTML = `✦ Ancient Shards: <b>${M.shards}</b>`;
   const best = loadBest();
   $('best-run').innerHTML = (best ? `สถิติดีที่สุด: รอด <b>${fmtTime(best.time)}</b> · Lv ${best.level} · ฆ่า ${best.kills} (${best.cls})${best.win ? ' · <span class="win">ชนะ!</span>' : ''}<br>` : '') + dailyMenuHtml();
@@ -299,7 +301,7 @@ function evoUseHtml(supId) {
   return hits.length ? `<div class="card-note evo-hint">✦ ใช้วิวัฒน์ ${hits.map((i) => SKILLS[i.id].name).join(', ')} ได้</div>` : '';
 }
 
-function choiceCount(isChest) { return (isChest ? 4 : 3) + G.player.mods.extraChoices; }
+function choiceCount(isChest) { return Math.max(2, (isChest ? 4 : 3) + G.player.mods.extraChoices); }
 const newSkillLevel = () => Math.min(10, 1 + Math.floor(G.player.level / 5));
 // a rare monster's chest: a small reward right away, no pause
 function openChestInstant(x, y) {
@@ -648,7 +650,7 @@ function showGameOver(win) {
   if (!win) Sfx.play('death');
   const P = G.player;
   const endT = G.endless ? G.time - G.endStart : 0;
-  $('over-title').textContent = G.endless ? `Endgame จบแล้ว — รอดเพิ่ม ${fmtTime(endT)} · Echo ${G.stats.echoes || 0}` : win ? 'ชัยชนะ! คุณรอดจากดินแดนต้องสาป' : 'คุณตายแล้ว';
+  $('over-title').textContent = (G.heat ? `☠${G.heat} · ` : '') + (G.endless ? `Endgame จบแล้ว — รอดเพิ่ม ${fmtTime(endT)} · Echo ${G.stats.echoes || 0}` : win ? 'ชัยชนะ! คุณรอดจากดินแดนต้องสาป' : 'คุณตายแล้ว');
   $('over-title').className = 'panel-title ' + (win ? 'win' : 'dead');
   const rec = { time: G.time, level: P.level, kills: G.stats.kills, cls: P.asc ? ASCENDANCY[P.asc].name : P.cls.name, win };
   if (!G.daily) saveBest(rec);
@@ -661,7 +663,7 @@ function showGameOver(win) {
     const jewels = P.backpack.filter((it) => it.slot === 'jewel');
     const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle,
       hc: G.hc, daily: G.daily, maps: G.runMaps, jewels, endless: endT, echoes: G.stats.echoes || 0, shardMul: G.atlasFx.shardMul }, rec));
-    const prog = settleProgression(win, endT);
+    const prog = settleProgression(win, endT), goals = settleGoals(prog.r);
     metaHtml = `<div class="over-meta"><div class="over-shards">+${res.reward.total} ✦ Ancient Shards</div>
       <div class="muted">${res.reward.parts.filter((p) => p[1] !== 0).map((p) => `${p[0]} ${p[1] > 0 ? '+' : ''}${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
       ${res.maps || res.jewels ? `<div class="over-unlock">🗺 ได้แผนที่ ${res.maps} ใบ${res.jewels ? ` · ⬡ Jewel ${res.jewels} ชิ้นเข้า Stash` : ''}</div>` : ''}
@@ -669,7 +671,7 @@ function showGameOver(win) {
       ${res.atlas ? `<div class="over-unlock">🗺 ผ่านแผนที่ ${mapLabel(G.map)}${res.atlas.first ? ' ครั้งแรก! (+1 แต้ม Legacy Tree)' : ''}${res.atlas.tierUp ? ` · ปลดล็อก Tier ${res.atlas.maxTier}` : ''}</div>` : ''}
       ${res.newly.map((u) => `<div class="over-unlock">🔓 ปลดล็อก${u.kind === 'class' ? 'คลาส' : 'เจม'}: <b>${unlockLabel(u)}</b></div>`).join('')}
       ${G.vault && G.vault.pick !== null ? `<div class="over-unlock">🗝 ห้องรางวัล: <b>${G.vault.cards[G.vault.pick].label}</b></div>` : ''}
-      ${progressionSummaryHtml(prog)}</div>`;
+      ${progressionSummaryHtml(prog)}${goalsSummaryHtml(goals)}</div>`;
   }
   $('over-stats').innerHTML = `<div class="over-summary">
       ⏱ รอด <b>${fmtTime(G.time)}</b> · Lv <b>${P.level}</b> · ☠ ฆ่า <b>${G.stats.kills}</b> · บอส <b>${G.stats.bosses}</b> · ดาเมจรวม <b>${fmtNum(G.stats.dmg)}</b>

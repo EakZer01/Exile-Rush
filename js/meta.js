@@ -8,7 +8,8 @@ let Meta = null;
 function freshMeta() {
   return { v: 2, shards: 0, alloc: {}, unlocked: {}, found: {}, atlas: { maxTier: 1, done: {} }, lastMap: null, life: { runs: 0, wins: 0, kills: 0, bosses: 0, time: 0 },
     stash: [], maps: [], jewels: {}, atlasAlloc: {}, daily: null,
-    scarabs: {}, gems: {}, chal: {}, voids: {}, atlasTiers: {}, winCls: {} };
+    scarabs: {}, gems: {}, chal: {}, voids: {}, atlasTiers: {}, winCls: {},
+    quests: {}, heat: {}, heatSel: {}, cos: {}, cosSeen: {} };
 }
 
 function loadMeta() {

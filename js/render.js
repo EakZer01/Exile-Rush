@@ -556,6 +556,7 @@ function drawPlayer(ctx, P) {
     ctx.drawImage(glowSprite(c, 28), x - 28, y - 28);
     ctx.globalCompositeOperation = 'source-over';
   }
+  drawCosmeticAura(ctx, P);
   // facing & walk cycle
   if (Math.abs(Math.cos(P.facing)) > 0.2) P._faceLeft = Math.cos(P.facing) < 0;
   const moving = Math.hypot(P.vx, P.vy) > 10;
@@ -807,6 +808,10 @@ function drawHUD(ctx, W, H, P) {
   ctx.textAlign = 'left'; ctx.fillStyle = '#e8d8a8';
   ctx.font = '700 15px Cinzel, serif';
   ctx.fillText('Lv ' + P.level, 10, 32);
+  if ((G.cos && G.cos.title) || G.heat) {
+    ctx.font = '600 11px Sarabun, sans-serif'; ctx.fillStyle = '#e8c870';
+    ctx.fillText([G.cos && G.cos.title ? `「${G.cos.title.name}」` : '', G.heat ? `☠${G.heat}` : ''].filter(Boolean).join(' '), 10, 47);
+  }
   if (P.asc) {
     const a = ASCENDANCY[P.asc];
     ctx.font = '700 12px Cinzel, serif'; ctx.fillStyle = a.color;

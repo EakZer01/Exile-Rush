@@ -473,3 +473,21 @@ details.bench summary { cursor: pointer; color: #d8c8a0; }
 .coll-src { margin: 8px 0; }
 
 .cur-ico { width: 18px; height: 18px; vertical-align: -4px; }
+
+/* ---- goals: next goals, corruption, cosmetics ---- */
+.menu-goals { margin: 14px auto 0; max-width: 720px; text-align: left; }
+.goals-h { color: var(--gold-hi); font-weight: 700; margin-bottom: 6px; }
+.goal { display: flex; gap: 10px; align-items: flex-start; background: rgba(20, 15, 10, 0.75); border: 1px solid #3a2e1e; border-radius: 4px; padding: 6px 10px; margin-bottom: 5px; font-size: 14px; }
+.goal.link { cursor: pointer; } .goal.link:hover { border-color: #8a6a3a; }
+.goal-ico { font-size: 18px; width: 22px; text-align: center; }
+.goal-body { flex: 1; min-width: 0; }
+.goal-bar { width: 100%; margin-top: 4px; }
+.heat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; margin-bottom: 6px; }
+.heat-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #14100b; border: 1px solid #3a2e1e; padding: 5px 8px; border-radius: 4px; font-size: 13px; }
+.heat-row.on { border-color: #a03030; background: #1e0e0c; }
+.heat-ctl { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.cos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.cos { background: #14100b; border: 1px solid #3a2e1e; color: #e8dcc0; text-align: left; padding: 6px 8px; border-radius: 4px; cursor: pointer; font: inherit; }
+.cos.on { border-color: var(--cc); box-shadow: 0 0 10px color-mix(in srgb, var(--cc) 40%, transparent); }
+.cos.locked { opacity: 0.55; cursor: default; }
+.cos-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--cc); box-shadow: 0 0 6px var(--cc); }

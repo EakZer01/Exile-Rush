@@ -174,3 +174,46 @@ test('Herald of Ash spreads Ignite from burning corpses; Herald of Thunder strik
   g2.run(`I7.supports = []; recomputePlayer(); const s1 = foe(150, 0), s2 = foe(-150, 0), far = foe(800, 0); s1.shock.t = 5; s1.shock.eff = 0.2; T8 = [s1, s2, far]; I7.timer = 0; step(2);`);
   assert.deepEqual(Array.from(g2.run('T8.map(e => e.hp < 1e9)')), [true, false, false]);
 });
+
+test('beginner quests complete in order and pay out', () => {
+  const { run } = game();
+  run(`const M = loadMeta(); M.shards = 0; startGame(CLASSES[0]); G.time = 300; G.stats.bosses = 1; G.player.asc = 'x';`);
+  run(`const o = settleProgression(false, 0); Q1 = settleGoals(o.r).quests.map(q => q.id);`);
+  assert.deepEqual(Array.from(run('Q1')), ['boss1', 'asc']);
+  assert.equal(run('loadMeta().shards'), 80);
+  assert.equal(run('currentQuest(loadMeta()).id'), 'tree');
+  run(`loadMeta().alloc.anything = 12; questCheck(null);`);
+  assert.equal(run('currentQuest(loadMeta()).id'), 'jeweller');
+});
+
+test('Corruption makes the map harder, pays more and records the best per class', () => {
+  const { run } = game();
+  run(`const M = loadMeta(); M.life.wins = 1; startGame(CLASSES[0], { biome: 'graveyard', tier: 2, mods: [], heat: { bloated: 2, tyrant: 1, restraint: 1 } });`);
+  assert.equal(run('G.heat'), 7);
+  assert.equal(run('G.mapFx.monHp.toFixed(2)'), '1.40');
+  assert.equal(run('G.atlasFx.shardMul.toFixed(2)'), '1.42');
+  assert.equal(run('choiceCount(false)'), 2);
+  run(`G.time = 900; const o = settleProgression(true, 0); settleGoals(o.r);`);
+  assert.equal(run('loadMeta().heat.witch'), 7);
+  assert.equal(run('heatBest(loadMeta())'), 7);
+});
+
+test('quick retry never reuses spent Scarabs', () => {
+  const { run } = game();
+  run(`startGame(CLASSES[0], { biome: 'graveyard', tier: 1, mods: [], scarabs: ['breach'] }); G.state = 'over'; retryRun();`);
+  assert.equal(run('G.map.scarabs.length'), 0);
+  assert.equal(run('G.atlasFx.breachRate'), 1);
+});
+
+test('next goals and cosmetics render, and cosmetics only equip when unlocked', () => {
+  const { run } = game();
+  assert.ok(run('nextGoals().length') >= 2);
+  assert.equal(run('nextGoals()[0].pin'), true);
+  assert.equal(run(`cosmeticToggle('aura_gold')`), false);
+  run(`loadMeta().heat.witch = 15;`);
+  assert.equal(run(`cosmeticToggle('aura_gold')`), true);
+  run(`startGame(CLASSES[0]);`);
+  assert.equal(run('G.cos.aura.name'), COSMETICS_NAME());
+  function COSMETICS_NAME() { return run(`COSMETICS.aura_gold.name`); }
+  run(`renderMenuGoals(); altarTab = 'cos'; renderAltarProgress();`);
+});

@@ -62,6 +62,7 @@ const MAP_MODS = {
 const MAP_FX_DEFAULT = {
   monHp: 1, monDmg: 1, monSpeed: 1, spawn: 1, rareRate: 1, magicRate: 1, eleResAdd: 0, physResAdd: 0, deathBoomAdd: 0,
   bossHp: 1, bossDmg: 1, pRegen: 1, pFlask: 1, pLife: 1, hazard: false, darkAdd: 0, noShrine: false, pMaxRes: 0, eleConvert: false,
+  pChoicesLess: 0,
 };
 
 // mods rolled by "Alchemy": 3 at tier 1–3, 4 at tier 4–7, 5 at tier 8+

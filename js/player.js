@@ -68,6 +68,7 @@ function buildPlayerMods(equip) {
   for (const slot of ITEM_SLOTS) if (equip[slot]) applyItem(equip[slot], m);
   const fx = G.mapFx;
   m.lifeMore *= fx.pLife; m.regen *= fx.pRegen; m.leechCap *= fx.pRegen; m.flaskGainMore *= fx.pFlask;
+  m.extraChoices -= fx.pChoicesLess;
   return m;
 }
 
@@ -139,6 +140,7 @@ function updatePlayer(dt) {
   inp.dash = false;
 
   updateFlasks(dt);
+  cosmeticTrail(P, dt);
   // Energy Shield recharges after 2 s without taking damage
   if (P.esDelay > 0) P.esDelay -= dt;
   else if (P.es < P.maxES) P.es = Math.min(P.maxES, P.es + P.maxES * 0.25 * (1 + P.mods.esRechargeInc) * dt);

@@ -212,7 +212,9 @@ function settleProgression(win, endT) {
   const r = { win, tier: G.map.tier, mods: G.map.mods.length, hc: G.hc, daily: !!G.daily, ci: !!P.keystones.chaos_inoculation,
     skills: P.skills.length, keystones: Object.keys(P.keystones).length, endless: endT, echoes: G.stats.echoes || 0,
     masteries: P.masteries.length, evolved: P.skills.filter((s) => s.evo).length, awakened: P.skills.reduce((a, s) => a + s.awakened.length, 0),
-    kills: G.stats.kills, level: P.level, breaches: G.stats.breaches || 0, scarabs: (G.map.scarabs || []).length, pinnacle: !!G.stats.pinnacle, heirMax };
+    kills: G.stats.kills, level: P.level, breaches: G.stats.breaches || 0, scarabs: (G.map.scarabs || []).length, pinnacle: !!G.stats.pinnacle, heirMax,
+    bosses: G.stats.bosses, asc: !!P.asc, jeweller: !!G.stats.jeweller, heat: G.heat || 0, cls: P.cls.id };
+  out.r = r;
   const before = chalCount();
   for (const c of CHALLENGES) if (!M.chal[c.id] && c.test(r, M)) { M.chal[c.id] = true; M.shards += c.shards; out.chal.push(c); }
   out.milestones = CHAL_MILESTONES.filter((b) => b.n > before && b.n <= chalCount());
@@ -281,15 +283,17 @@ function voidAtlasHtml(tier) {
 let altarTab = 'gems';
 function renderAltarProgress() {
   const box = $('altar-prog');
-  const tabs = [['gems', '💎 Gem Mastery'], ['chal', `🏅 Challenges ${chalCount()}/${CHALLENGES.length}`], ['void', `◈ Voidstone & Atlas`], ['coll', `★ Unique Collection ${foundCount()}/${Object.keys(UNIQUES).length}`]];
+  const tabs = [['gems', '💎 Gem Mastery'], ['chal', `🏅 Challenges ${chalCount()}/${CHALLENGES.length}`], ['void', `◈ Voidstone & Atlas`], ['coll', `★ Unique Collection ${foundCount()}/${Object.keys(UNIQUES).length}`], ['cos', '✨ Cosmetic']];
   let h = `<div class="codex-tabs">${tabs.map(([id, l]) => `<button class="btn btn-small${altarTab === id ? ' sel' : ''}" data-atab="${id}">${l}</button>`).join('')}</div>`;
   if (altarTab === 'gems') h += gemMasteryHtml();
   else if (altarTab === 'chal') h += challengesHtml();
   else if (altarTab === 'void') h += voidPanelHtml();
+  else if (altarTab === 'cos') h += cosmeticsHtml();
   else h += collectionHtml();
   box.innerHTML = h;
   box.querySelectorAll('[data-atab]').forEach((b) => { b.onclick = () => { altarTab = b.dataset.atab; renderAltarProgress(); }; });
   box.querySelectorAll('[data-infuse]').forEach((b) => { b.onclick = () => { if (gemInfuse(b.dataset.infuse)) { Sfx.play('currency'); openAltar(); } }; });
+  bindCosmetics(box);
   box.querySelectorAll('[data-alt]').forEach((b) => { b.onclick = () => { const [id, alt] = b.dataset.alt.split(':'); if (gemSetAlt(id, alt)) { Sfx.play('levelup'); renderAltarProgress(); } }; });
 }
 function gemMasteryHtml() {
