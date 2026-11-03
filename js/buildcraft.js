@@ -5,6 +5,7 @@ function craftLive(i){return G.player.skills.includes(i)&&i.st&&!i.st.disabled;}
 function craftNode(n){const a=craftState().nodes;if(a.length>=96)a.shift();a.push(n);return n;}
 function craftMark(list,x,y,ttl){if(list.length>=48)list.shift();list.push({x,y,ttl});}
 function craftBurst(i,s,x,y,r,k=1){
+ reactionImpact(i,s,x,y,r,s.hitTotal*k);
  for(const e of enemiesInRadius(x,y,r,[]))hitEnemy(e,s,i,k,x,y);
  addEffect({kind:'ring',x,y,r,t:0,dur:0.3,color:s.color});
 }
@@ -15,9 +16,9 @@ function craftTarget(s){return nearestEnemy(G.player.x,G.player.y,s.range||500);
 function craftTriggerTarget(i){
  const list=G.player.skills,at=list.indexOf(i);
  const chosen=list.find(t=>t.uid===i.triggerPick);
- const valid=t=>t&&t!==i&&t.st&&!t.st.disabled&&t.st.tags.has('Spell')&&!t.st.tags.has('Minion')&&!t.st.tags.has('Channelling')&&!t.st.triggerMode&&!t.st.delivery&&['projectile','nova','chain','ground','cone','slam','buildcraft'].includes(t.st.behavior)&&!['relic','corpses','blades'].includes(t.st.mode);
+ const valid=t=>(i.st.triggerMode!=='mjolner'||t&&t.st&&t.st.tags.has('Lightning'))&&t&&t!==i&&t.st&&!t.st.disabled&&t.st.tags.has('Spell')&&!t.st.tags.has('Minion')&&!t.st.tags.has('Channelling')&&!t.st.triggerMode&&!t.st.delivery&&['projectile','nova','chain','ground','cone','slam','buildcraft'].includes(t.st.behavior)&&!['relic','corpses','blades'].includes(t.st.mode);
  if(valid(chosen))return chosen;
- for(let n=1;n<list.length;n++){const t=list[(at+n)%list.length],s=t.st;if(s&&!s.disabled&&s.tags.has('Spell')&&!s.tags.has('Minion')&&!s.tags.has('Channelling')&&!s.triggerMode&&!s.delivery&&['projectile','nova','chain','ground','cone','slam','buildcraft'].includes(s.behavior)&&!['relic','corpses','blades'].includes(s.mode))return t;}
+ for(let n=1;n<list.length;n++){const t=list[(at+n)%list.length],s=t.st;if(s&&(i.st.triggerMode!=='mjolner'||s.tags.has('Lightning'))&&!s.disabled&&s.tags.has('Spell')&&!s.tags.has('Minion')&&!s.tags.has('Channelling')&&!s.triggerMode&&!s.delivery&&['projectile','nova','chain','ground','cone','slam','buildcraft'].includes(s.behavior)&&!['relic','corpses','blades'].includes(s.mode))return t;}
  return null;
 }
 function craftTrigger(i,x,y){const t=craftTriggerTarget(i);if(!t||G.time<(i.rt.triggerAt||0))return; i.rt.triggerAt=G.time+(i.st.triggerMode==='sling'?0.9:i.st.triggerMode==='channel'?0.8:0.5);craftOrigin(x,y,()=>castSkill(t,craftSecondary(t.st,0.7)));}
@@ -165,6 +166,9 @@ COMBOS.push({name:'Blade Engine',parts:['bladefall','blade_blast','inc_aoe'],des
 
 // Conduit needs Shock (lightning hits), Holy Relic needs your Attacks: never offer them as a dead card
 function craftSkillUsable(id,p){
+ if(id==='tempest_bell')return p.skills.some(i=>i.st&&!i.st.disabled&&i.st.tags.has('Attack'));
+ if(id==='herald_of_plague')return p.skills.some(i=>i.st&&!i.st.disabled&&i.st.poison>0);
+ if(id==='magnetic_salvo')return p.skills.some(i=>i.id==='storm_rain'&&i.st&&!i.st.disabled);
  if(id==='lightning_conduit')return p.skills.some(i=>i.st&&!i.st.disabled&&(i.st.tags.has('Lightning')||i.st.hit&&i.st.hit.lightning>0));
  if(id==='holy_relic')return p.skills.some(i=>i.st&&!i.st.disabled&&i.st.tags.has('Attack'));
  return true;

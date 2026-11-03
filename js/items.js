@@ -244,6 +244,7 @@ function useSkillJeweller(inst, id) {
 function activeSupports(inst, p = G.player) {
   const so = skillSockets(inst), active = [], inactive = [], slots = Array(so.cap).fill(null), reasons = {};
   const tags = new Set(SKILLS[inst.id].tags), candidates = [], seen = new Set(), enabled = new Set();
+  if (p && p.mods && p.mods.ks.voltaxic && tags.has('Lightning')) tags.add('Chaos');
   for (const [index, sid] of inst.supports.entries()) {
     if (index >= so.cap) { inactive.push(sid); reasons[sid] = 'ช่อง Support ไม่พอ · ใช้ Jeweller เพิ่มช่อง'; continue; }
     if (!SUPPORTS[sid] || seen.has(sid)) { inactive.push(sid); reasons[sid] = 'เจมไม่ถูกต้องหรือใส่ซ้ำ'; continue; }
@@ -260,6 +261,7 @@ function activeSupports(inst, p = G.player) {
       if ((sup.req.length && !sup.req.some((t) => tags.has(t))) || sup.excl.some((t) => tags.has(t)) || sup.conflicts.some((s) => enabled.has(s))) continue;
       enabled.add(sid); changed = true;
       for (const tag of sup.addTags) tags.add(tag);
+      if (p && p.mods && p.mods.ks.voltaxic && tags.has('Lightning')) tags.add('Chaos');
     }
     if (!changed) break;
   }

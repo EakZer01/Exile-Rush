@@ -70,7 +70,7 @@ function renderCodexBody() {
   }
   if (codexTab === 'skills') {
     for (const id in SKILLS) {
-      const d = SKILLS[id], ev = EVOLUTIONS[id];
+      const d = SKILLS[id], ev = d.itemOnly ? null : EVOLUTIONS[id];
       if (codexFilter && !d.tags.includes(codexFilter)) continue;
       if (!codexMatch(d.name, d.th, d.desc, d.tags.join(' '))) continue;
       const lock = isLocked('gem', id) ? UNLOCKS.find((u) => u.ref === id) : null;

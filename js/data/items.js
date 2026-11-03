@@ -456,6 +456,7 @@ function itemProps(it) {
   const loc = Object.assign({}, it.unique ? UNIQUES[it.unique].local : null);
   for (const a of it.affixes) if (AFFIXES[a.id] && AFFIXES[a.id].local) loc[a.id] = (loc[a.id] || 0) + a.v;
   const out = {};
+  if (it.unique === 'mjolner') out.lightningCaster = true;
   if (b.def) {
     const k = defScale(it.ilvl) * (1 + ((loc.ldef || 0) + q) / 100);
     for (const d of ['ar', 'ev', 'es']) if (b.def[d]) out[d] = Math.round(b.def[d] * k);

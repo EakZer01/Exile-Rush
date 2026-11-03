@@ -445,6 +445,7 @@ function updateEnemies(dt) {
 
     if (e.maimUntil > G.time) spd *= isBoss(e) ? 0.85 : 0.7;
     if (e.winterSlowUntil > G.time) spd *= isBoss(e) ? 0.9 : 0.8;
+    const oldX = e.x, oldY = e.y;
     e.x = clampArena(e.x + mx * spd * dt + e.kx * dt, e.r);
     e.y = clampArena(e.y + my * spd * dt + e.ky * dt, e.r);
     const kd = Math.exp(-9 * dt); e.kx *= kd; e.ky *= kd;
@@ -462,6 +463,8 @@ function updateEnemies(dt) {
         if (++pushed > 5) break;
       }
     }
+
+    reactionBlockEnemy(e, oldX, oldY, dt);
 
     // contact
     const cr = e.r + P.r - 2;

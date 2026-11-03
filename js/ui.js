@@ -181,7 +181,7 @@ function regularChoices(n) {
   const P = G.player, owned = new Set(P.skills.map((s) => s.id));
   const cats = { skill: [], level: [], support: [], passive: [], keystone: [] };
   // new gems must work with the weapon in hand (universal gems always do)
-  if (P.skills.length < skillCapacity(P)) for (const id in SKILLS) if (!owned.has(id) && !G.banned.has(id) && !isLocked('gem', id) && skillWeaponOk(id, P.weapon) && craftSkillUsable(id, P)) cats.skill.push({ type: 'skill', id });
+  if (P.skills.length < skillCapacity(P)) for (const id in SKILLS) if (!SKILLS[id].itemOnly && !owned.has(id) && !G.banned.has(id) && !isLocked('gem', id) && skillWeaponOk(id, P.weapon) && craftSkillUsable(id, P)) cats.skill.push({ type: 'skill', id });
   for (const inst of P.skills) if (inst.level < MAX_GEM_LEVEL) cats.level.push({ type: 'level', inst });
   for (const id in SUPPORTS) {
     if (P.skills.some((inst) => canSocketSupport(id, inst))) cats.support.push({ type: 'support', id });
@@ -591,6 +591,7 @@ function buildViewHtml(final) {
         <span>ดาเมจรวม ${fmtNum(inst.dmgDealt)} (${Math.round((inst.dmgDealt / total) * 100)}%) · ฆ่า ${inst.kills}</span><span>Hit เฉลี่ยรวมคริ ${fmtNum(avgHit(s))}</span></div>
     </div>`;
   }
+  h += archetypeGrantedHtml();
   h += '</div><div class="bv-side">';
   // resistances as bars: the light line is this character's maximum, red when below it
   h += '<div class="bv-box bv-res"><div class="bv-title">ค่าต้านทาน</div>' + RES_KEYS.map(([t, n]) => {

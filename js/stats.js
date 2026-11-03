@@ -16,6 +16,7 @@ function newSkillInstance(id) {
 function skillTags(inst, p = G.player) {
   const set = new Set(SKILLS[inst.id].tags);
   for (const sid of activeSupports(inst, p).active) for (const t of SUPPORTS[sid].addTags) set.add(t);
+  if (p && p.mods && p.mods.ks.voltaxic && set.has('Lightning')) set.add('Chaos');
   return set;
 }
 
@@ -40,12 +41,12 @@ function supportBlockReason(supId, inst, ignoreSockets) {
   return '';
 }
 
-function buildSkillStats(inst, p) {
+function buildSkillStats(inst, p, damageTypes) {
   const def = SKILLS[inst.id], b = def.base, m = p.mods;
   const tags = skillTags(inst, p);
   const s = {
     id: inst.id, uid: inst.uid, behavior: def.behavior, tags, color: def.color, core: def.core,
-    dmg: b.dmg, types: Object.assign({}, b.types),
+    dmg: b.dmg, types: Object.assign({}, damageTypes || b.types),
     added: { physical: 0, fire: 0, cold: 0, lightning: 0, chaos: 0 },
     cd: b.cd || 0, proj: b.proj || 0, speed: b.speed || 0, life: b.life || 0, size: b.size || 6,
     spread: b.spread !== undefined ? b.spread : 0.2, pierce: b.pierce || 0, chain: b.chain || 0, fork: !!b.fork,
@@ -67,6 +68,7 @@ function buildSkillStats(inst, p) {
   const lvl = inst.level + m.gemLevel;
   if (def.scale) def.scale(s, lvl);
   s.dmg *= 1 + 0.16 * (lvl - 1);
+  if (s.archetype === 'rite') s.dmg += p.maxLife * 0.06 + p.maxES * 0.03;
   if (inst.evo) EVOLUTIONS[inst.id].apply(s);
   // Attack skills hit with the equipped weapon (≈1× for a starter weapon)
   if (tags.has('Attack') && p && p.equip) {
@@ -109,7 +111,7 @@ function buildSkillStats(inst, p) {
   s.durInc += m.durInc; s.projSpeedInc += m.projSpeedInc; s.leech += m.leech; s.minionSpeed += m.minionSpeed;
 
   // ascendancy modifiers
-  if (s.behavior === 'projectile' || s.rangedMinion) { s.proj += m.projAdd; s.pierce += m.pierceAdd; }
+  if (s.behavior === 'projectile' || s.rangedMinion || s.projectileEmitter) { s.proj += m.projAdd; s.pierce += m.pierceAdd; }
   if (tags.has('Projectile') || tags.has('Chaining')) s.chain += m.chainAdd;
   if (tags.has('Minion')) { s.maxCount += m.minionCount; s.more *= m.moreMinion; s.leech += m.minionLeech; }
   s.ignite += m.igniteAdd; s.shock += m.shockAdd; s.poison += m.poisonAdd;
@@ -143,7 +145,7 @@ function buildSkillStats(inst, p) {
   const raw = {};
   for (const t of DMG_TYPES) raw[t] = (s.types[t] || 0) * s.dmg + s.added[t] * s.dmg;
   // Convert before increases; Brutality still removes all non-physical damage.
-  for (const [from, to, fraction] of [['cold', 'fire', s.convertCold], ['physical', 'lightning', s.convertPhys]]) {
+  for (const [from, to, fraction] of [['cold', 'fire', s.convertCold], ['physical', 'lightning', s.convertPhys], ['lightning', 'chaos', s.convertLightning]]) {
     if (fraction) { const v = raw[from] * fraction; raw[from] -= v; raw[to] += v; }
   }
   if (s.brutality) for (const t of DMG_TYPES) if (t !== 'physical') raw[t] = 0;
@@ -151,6 +153,7 @@ function buildSkillStats(inst, p) {
     let sum = 0; for (const t of DMG_TYPES) { sum += raw[t]; raw[t] = 0; }
     raw.fire = sum;
   }
+  if (m.ks.prototype) for (const t of DMG_TYPES) if (t !== 'lightning') raw[t] = 0;
   s.hit = {}; s.hitTotal = 0;
   for (const t of DMG_TYPES) {
     if (raw[t] <= 0) continue;
@@ -219,6 +222,8 @@ function describeStats(s) {
   if (s.duration) out.push('ระยะเวลา: ' + s.durFinal.toFixed(1) + 's');
   if (s.behavior !== 'aura') out.push('คริ: ' + pct(s.critChance) + ' ×' + s.critMulti.toFixed(2));
   if (s.echo) out.push((s.behavior === 'flicker' ? 'ฟันซ้ำ ณ จุดวาร์ป: +' : 'ร่ายซ้ำ: +') + s.echo);
+  if (s.archetype) out.push(SKILLS[s.id].desc);
+  if (s.communion) out.push('Communion คิดจำนวนมินเนียนที่มีอายุเหลือเกิน 2 วิตอน Hit');
   if (s.mode) out.push(SKILLS[s.id].desc);
   if (s.triggerMode && G.player) {
     const inst = G.player.skills.find(i => i.uid === s.uid), target = inst && craftTriggerTarget(inst);

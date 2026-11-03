@@ -70,6 +70,10 @@ function updateSkills(dt) {
 function castSkill(inst, s) {
   if (s.fistWar && !s.proc && G.time >= (inst.rt.fistAt || 0)) { inst.rt.fistAt = G.time + 2.5; s = { ...scaledStats(s, 1.8), radius: s.radius * 1.35, fistWar: false }; }
   if (s.anchoredOrbit) inst.rt.orbitAnchor = { x: G.player.x, y: G.player.y };
+  const archetype = archetypeCast(inst, s);
+  if (archetype !== null) return archetype;
+  const reaction = reactionCast(inst, s);
+  if (reaction !== null) return reaction;
   const crafted = castBuildcraft(inst, s);
   if (crafted !== null) return crafted;
   const P = G.player;
@@ -212,7 +216,9 @@ function updateProjectiles(dt) {
         p.vx = Math.cos(p.a) * sp; p.vy = Math.sin(p.a) * sp;
       }
     }
+    const oldX = p.x, oldY = p.y;
     p.x += p.vx * dt; p.y += p.vy * dt;
+    reactionProjectile(p, oldX, oldY);
     fxTrail(p);
     if (p.s.zap) zapAround(p, dt);
 

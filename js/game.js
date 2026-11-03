@@ -102,6 +102,8 @@ function resize() {
 }
 
 function startGame(cls, map) {
+  G.reactions = null;
+  G.archetypes = null;
   G.craft = { nodes: [], corpses: [], blades: [] };
   G.map = map ? { biome: map.biome, tier: map.tier, mods: map.mods.slice(), forced: (map.forced || []).slice(), scarabs: (map.scarabs || []).slice(), heat: Object.assign({}, map.heat) } : Object.assign({}, DEFAULT_MAP, { mods: [], forced: [], scarabs: [], heat: {} });
   G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.weekly = (map && map.weekly) || 0; G.runScarabs = []; G.vault = null;
@@ -134,7 +136,7 @@ function startGame(cls, map) {
   // Scion's random start must be a skill that deals damage on its own (not a Herald)
   // and that works with the class's starting weapon
   const startW = BASES[START_WEAPON[cls.id] || 'rusted_sword'].w.type;
-  const startId = cls.start || pick(Object.keys(SKILLS).filter((id) => !['shield_crush','shield_throw','holy_relic','lightning_conduit','detonate_dead','volatile_dead','cremation'].includes(id) && !isLocked('gem', id) && SKILLS[id].behavior !== 'herald'
+  const startId = cls.start || pick(Object.keys(SKILLS).filter((id) => !SKILLS[id].itemOnly && !['tempest_bell','herald_of_plague','magnetic_salvo','shield_crush','shield_throw','holy_relic','lightning_conduit','detonate_dead','volatile_dead','cremation'].includes(id) && !isLocked('gem', id) && SKILLS[id].behavior !== 'herald'
     && (!SKILLS[id].weapons || SKILLS[id].weapons.includes(startW))));
   P.skills.push(newSkillInstance(startId));
   P.skills[0].level += gemStartBonus(startId);
@@ -175,6 +177,8 @@ function update(dt) {
   updateSpawner(dt);
   updateSkills(dt);
   updateBuildcraft(dt);
+  updateReactions(dt);
+  updateArchetypes(dt);
   updateProjectiles(dt);
   updateBowEntities(dt);
   updateNovas(dt);

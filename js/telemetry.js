@@ -27,6 +27,8 @@ function statsPlayerId() {
 function runRecord(win) {
   const P = G.player;
   const skills = P.skills.map((s) => ({ id: s.id, lv: s.level, evo: !!s.evo, sup: s.supports.slice(), dmg: Math.round(s.dmgDealt) }));
+  const granted = G.archetypes && G.archetypes.ice;
+  if (granted && granted.dmgDealt > 0) skills.push({ id: granted.id, lv: granted.level, evo: false, sup: [], dmg: Math.round(granted.dmgDealt) });
   const main = skills.slice().sort((a, b) => b.dmg - a.dmg)[0];
   return {
     build: GAME_BUILD, player: statsPlayerId(), cls: P.cls.id, asc_class: P.asc || null,

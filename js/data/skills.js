@@ -457,6 +457,7 @@ const SKILL_WEAPONS = {
 for (const id in SKILL_WEAPONS) SKILLS[id].weapons = SKILL_WEAPONS[id];
 // w = itemProps of the held weapon (or null when unarmed)
 function skillWeaponOk(id, w) {
+  if (w && w.lightningCaster && SKILLS[id].tags.includes('Spell') && SKILLS[id].tags.includes('Lightning') && !SKILLS[id].tags.includes('Minion')) return true;
   const ws = SKILLS[id].weapons;
   return !ws || (!!w && ws.includes(w.wtype));
 }

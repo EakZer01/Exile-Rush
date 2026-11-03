@@ -159,6 +159,8 @@ function render() {
   for (const e of G.enemies) if (inView(e.x, e.y, e.r + 30)) drawEnemy(ctx, e, P);
   drawPlayer(ctx, P);
   drawBuildcraft(ctx);
+  drawReactions(ctx);
+  drawArchetypes(ctx);
   ctx.imageSmoothingEnabled = true;
 
   // Ballista totems and Mirage Archers

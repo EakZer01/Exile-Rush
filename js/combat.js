@@ -62,6 +62,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   if (s.bloodlust && e.bleeds.length) m *= 1.6;
   if (inst && s.traumaSupport) m *= 1 + (inst.rt.trauma || 0) * 0.1;
   if (inst && s.rageSupport && G.time - (inst.rt.rageAt || 0) < 2) m *= 1 + (inst.rt.rage || 0) * 0.06;
+  if (s.communion && !s.tags.has('Minion')) m *= 1 + Math.min(8, G.minions.filter(n => n.t > 2 && !n.craftPhantasm && !n.inst.st.disabled).length) * 0.06;
   if (crit) m *= s.critMulti;
   else if (ks.nonCritLess) m *= 0.85;
   if (e.shock.t > 0) m *= 1 + e.shock.eff;
@@ -77,8 +78,10 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
   const eeType = ks.ee && e.ee && e.ee.t > G.time ? e.ee.type : null;
   let total = 0, fire = 0, cold = 0, light = 0, chaos = 0, phys = 0, mainType = 'physical', mainAmt = 0;
   for (const t in s.hit) {
+    // Secondary procs can construct their own damage types after stat compilation.
+    if (ks.prototype && t !== 'lightning') continue;
     // penetration and Elemental Weakness lower resistance (not below -50%)
-    let res = e.res[t] - (s.pen ? s.pen[t] || 0 : 0);
+    let res = (ks.prototype && t === 'lightning' && dist2(e.x, e.y, P.x, P.y) < 220 ** 2 ? effRes(P, 'lightning') : e.res[t]) - (s.pen ? s.pen[t] || 0 : 0);
     let k = 1;
     if (curse) {
       if (curse.type === 'ele' && ELE[t]) res -= curse.eff;
@@ -109,7 +112,7 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
         e.freeze = Math.max(e.freeze, boss ? 0.2 : 0.7);
       }
     }
-    if (light > 0 && (crit || Math.random() < s.shock)) {
+    if ((light > 0 || s.chaosCanShock && chaos > 0) && (crit || Math.random() < s.shock)) {
       e.shock.eff = Math.min(0.5, (boss ? 0.15 : 0.25) * (s.shockEff || 1)); e.shock.t = 3 * s.ailmentDur;
     }
     if (chaos > 0 && Math.random() < s.poison) {
@@ -156,7 +159,12 @@ function hitEnemy(e, s, inst, mult, fromX, fromY) {
     addText(e.x, e.y - e.r - 10, 'CULL', '#ff4040', 1.1);
     dealDamage(e, e.hp + 1, inst, false, mainType, true);
   }
-  if (total > 0) buildcraftHit(e, s, inst, crit);
+  if (total > 0) {
+    reactionImpact(inst, s, e.x, e.y, 30, total);
+    reactionOnHit(e, s, inst);
+    archetypeAfterHit(e, s, inst);
+    buildcraftHit(e, s, inst, crit);
+  }
   return total;
 }
 
@@ -195,6 +203,7 @@ function dotDamage(e, amount, inst, color, ail) {
 function killEnemy(e, inst) {
   if (e.dead) return;
   e.dead = true;
+  archetypeOnKill(e, inst);
   craftMark(craftState().corpses, e.x, e.y, 10);
   G.stats.kills++;
   if (inst) inst.kills++;
@@ -307,6 +316,7 @@ function hurtPlayer(amount, src, kind, elem) {
   }
   let d = amount * P.mods.dmgTaken;
   if (elem === 'physical') { if (kind !== 'area') d *= 1 - armourReduction(effArmour(P), d); }
+  else if (elem === 'lightning' && ks.prototype && kind !== 'area') d *= 1 - armourReduction(effArmour(P), d);
   else d *= 1 - effRes(P, elem);
   if (G.buffs.resistance > 0) d *= 0.4;
   if (ks.minionGuard && G.minions.length >= 3) d *= 0.85;

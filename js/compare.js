@@ -18,7 +18,7 @@ function statSnapshot(equip) {
     chaos: m.ks.ci ? 1 : Math.min(0.75 + m.maxResChaos - fx.pMaxRes, m.resChaos - pen),
   };
   // damage index: every skill's average hit (crits included) per second
-  const fake = { mods: m, equip, weapon: equip.weapon ? itemProps(equip.weapon) : null };
+  const fake = { mods: m, equip, maxLife: life, maxES: es, weapon: equip.weapon ? itemProps(equip.weapon) : null };
   let dps = 0;
   for (const inst of P.skills) {
     const s = buildSkillStats(inst, fake);
