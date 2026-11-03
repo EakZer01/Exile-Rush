@@ -676,6 +676,7 @@ function showGameOver(win) {
     const res = settleRun(Object.assign({ bosses: G.stats.bosses, salvage: G.stats.salvage, map: G.map, pinnacle: !!G.stats.pinnacle,
       hc: G.hc, daily: G.daily, maps: G.runMaps, jewels, endless: endT, echoes: G.stats.echoes || 0, shardMul: G.atlasFx.shardMul }, rec));
     const prog = settleProgression(win, endT), goals = settleGoals(prog.r);
+    sendRunStats(win);
     metaHtml = `<div class="over-meta"><div class="over-shards">+${res.reward.total} ✦ Ancient Shards</div>
       <div class="muted">${res.reward.parts.filter((p) => p[1] !== 0).map((p) => `${p[0]} ${p[1] > 0 ? '+' : ''}${p[1]}`).concat(`รวมมี ${Meta.shards} ✦`).join(' · ')}</div>
       ${res.maps || res.jewels ? `<div class="over-unlock">🗺 ได้แผนที่ ${res.maps} ใบ${res.jewels ? ` · ⬡ Jewel ${res.jewels} ชิ้นเข้า Stash` : ''}</div>` : ''}

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สถิติผู้เล่น — Exile Survivors</title>
+<style>
+  :root { --bg: #0e0b08; --panel: #17120c; --line: #3a2e1e; --text: #e8dcc0; --muted: #9a8c70; --gold: #e8c870;
+    --good: #e0604a; --bad: #5a9ad8; --ok: #6a8a5a; --bar: #8a6a3a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Sarabun, 'Segoe UI', Tahoma, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { color: var(--gold); font-size: 24px; margin: 0 0 4px; }
+  h2 { color: var(--gold); font-size: 18px; margin: 28px 0 8px; }
+  a { color: var(--gold); }
+  .muted { color: var(--muted); }
+  .bar-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+  select, label.chk { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: inherit; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+  .tile b { display: block; font-size: 24px; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .note { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-top: 12px; font-size: 14px; }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #241c12; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th { background: var(--panel); color: var(--muted); font-weight: 600; position: sticky; top: 0; }
+  td:first-child, th:first-child { text-align: left; }
+  tr:last-child td { border-bottom: 0; }
+  .prog { display: inline-flex; align-items: center; gap: 6px; }
+  .prog i { display: inline-block; height: 8px; background: var(--bar); border-radius: 2px; }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 13px; border: 1px solid currentColor; }
+  .chip.op { color: var(--good); } .chip.weak { color: var(--bad); } .chip.ok { color: var(--ok); } .chip.few { color: var(--muted); }
+  .hist { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+  .hist div { flex: 1; background: var(--bar); border-radius: 2px 2px 0 0; min-height: 1px; position: relative; }
+  .hist-x { display: flex; gap: 3px; padding: 0 8px; font-size: 11px; color: var(--muted); }
+  .hist-x span { flex: 1; text-align: center; }
+  #msg { margin-top: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>📊 สถิติผู้เล่น</h1>
+  <div class="muted">ผลของทุกรอบที่ผู้เล่นส่งมา (ไม่ระบุตัวตน) · ใช้หาบิวด์ที่แรงหรืออ่อนเกินไป · <a href="./">กลับไปเล่น</a></div>
+
+  <div class="bar-row">
+    <select id="f-build"></select>
+    <select id="f-tier">
+      <option value="all">ทุก Tier</option><option value="1">Tier 1</option><option value="2-5">Tier 2–5</option><option value="6-99">Tier 6+</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="f-daily" checked> ไม่รวม Daily</label>
+    <label class="chk"><input type="checkbox" id="f-heat"> เฉพาะไม่มี Corruption</label>
+  </div>
+
+  <div id="msg" class="muted">กำลังโหลด…</div>
+  <div id="out" hidden>
+    <div class="tiles" id="tiles"></div>
+    <div class="note">
+      <b>คะแนนความคืบหน้า</b> = เวลาที่รอด ÷ 15 นาที (ชนะ = 100%) ใช้แทนอัตราชนะเพราะข้อมูลแม่นกว่าเมื่อจำนวนรอบน้อย ·
+      <span class="chip op">แรงเกิน</span> / <span class="chip weak">อ่อนเกิน</span> จะขึ้นเฉพาะเมื่อห่างจากค่าเฉลี่ยของทุกรอบ (<span id="avg"></span>) อย่างชัดเจนทางสถิติ ·
+      <span class="chip few">ข้อมูลน้อย</span> = ไม่ถึง 8 รอบ ยังสรุปไม่ได้ · ดูคอลัมน์ "ผู้เล่น" ด้วย ถ้ามาจากคนเดียวอาจเป็นฝีมือคนเล่นมากกว่าบิวด์
+    </div>
+    <h2>คลาส</h2><div class="scroll" id="t-cls"></div>
+    <h2>Ascendancy</h2><div class="scroll" id="t-asc"></div>
+    <h2>สกิลหลัก (สกิลที่ทำดาเมจมากสุดของรอบ)</h2><div class="scroll" id="t-skill"></div>
+    <h2>Support ที่ใส่ในสกิลหลัก</h2><div class="scroll" id="t-sup"></div>
+    <h2>Keystone</h2><div class="scroll" id="t-ks"></div>
+    <h2>อาวุธตอนจบรอบ</h2><div class="scroll" id="t-wpn"></div>
+    <h2>ตายเพราะอะไรบ่อยที่สุด</h2><div class="scroll" id="t-kill"></div>
+    <h2>ตายตอนนาทีที่เท่าไร</h2><div class="hist" id="hist"></div><div class="hist-x" id="hist-x"></div>
+  </div>
+</main>
+<script src="js/stats-config.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const COLS = 'build,player,cls,asc_class,result,time_s,level,tier,heat,daily,killer,main_skill,weapon,skills,keystones';
+const RUN_LEN = 900;
+const pretty = (id) => String(id || '—').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const pct = (v) => Math.round(v * 100) + '%';
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let RUNS = [];
+
+async function load() {
+  if (!STATS_CONFIG.url || !STATS_CONFIG.key) { $('msg').textContent = 'ยังไม่ได้ตั้งค่าฐานข้อมูล (js/stats-config.js)'; return; }
+  const base = STATS_CONFIG.url.replace(/\/$/, '') + '/rest/v1/runs?select=' + COLS + '&order=id.desc';
+  const headers = { apikey: STATS_CONFIG.key, Authorization: 'Bearer ' + STATS_CONFIG.key };
+  try {
+    for (let from = 0; from < 20000; from += 1000) {
+      const res = await fetch(base, { headers: Object.assign({ Range: `${from}-${from + 999}` }, headers) });
+      if (!res.ok) throw new Error(res.status + ' ' + (await res.text()).slice(0, 120));
+      const page = await res.json();
+      RUNS = RUNS.concat(page);
+      if (page.length < 1000) break;
+    }
+  } catch (e) { $('msg').textContent = 'โหลดข้อมูลไม่สำเร็จ: ' + e.message; return; }
+  const builds = [...new Set(RUNS.map((r) => r.build))].sort((a, b) => b - a);
+  $('f-build').innerHTML = `<option value="all">ทุกเวอร์ชัน</option>` + builds.map((b, i) => `<option value="${b}"${i === 0 ? ' selected' : ''}>Build ${b}${i === 0 ? ' (ล่าสุด)' : ''}</option>`).join('');
+  for (const id of ['f-build', 'f-tier', 'f-daily', 'f-heat']) $(id).onchange = render;
+  render();
+}
+
+function filtered() {
+  const b = $('f-build').value, t = $('f-tier').value;
+  const [t0, t1] = t === 'all' ? [0, 99] : t.includes('-') ? t.split('-').map(Number) : [+t, +t];
+  return RUNS.filter((r) => (b === 'all' || r.build === +b) && r.tier >= t0 && r.tier <= t1
+    && !($('f-daily').checked && r.daily) && !($('f-heat').checked && r.heat > 0));
+}
+const progress = (r) => (r.result !== 'dead' ? 1 : Math.min(1, r.time_s / RUN_LEN));
+
+// group runs by key(r) (which may return several keys) and judge each group against the overall mean
+function groupTable(runs, key, mean, opts = {}) {
+  const g = new Map();
+  for (const r of runs) for (const k of [].concat(key(r)).filter(Boolean)) {
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(r);
+  }
+  const rows = [...g.entries()].map(([k, rs]) => {
+    const ps = rs.map(progress), n = ps.length, m = ps.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.max(0.15, Math.sqrt(ps.reduce((a, p) => a + (p - m) ** 2, 0) / Math.max(1, n - 1)));
+    const se = sd / Math.sqrt(n);
+    const verdict = n < 8 ? 'few' : m - 1.96 * se > mean + 0.05 ? 'op' : m + 1.96 * se < mean - 0.05 ? 'weak' : 'ok';
+    return { k, n, players: new Set(rs.map((r) => r.player)).size, win: rs.filter((r) => r.result !== 'dead').length / n, m,
+      lv: rs.reduce((a, r) => a + r.level, 0) / n, verdict };
+  }).sort((a, b) => b.m - a.m || b.n - a.n);
+  if (!rows.length) return '<div class="muted" style="padding:10px">ยังไม่มีข้อมูล</div>';
+  const label = { op: 'แรงเกิน', weak: 'อ่อนเกิน', ok: 'ปกติ', few: 'ข้อมูลน้อย' };
+  return `<table><thead><tr><th>${opts.head || 'ชื่อ'}</th><th>รอบ</th><th>ผู้เล่น</th><th>ชนะ</th><th>คืบหน้าเฉลี่ย</th><th>Lv เฉลี่ย</th><th>ผล</th></tr></thead><tbody>` +
+    rows.map((r) => `<tr><td>${esc(opts.name ? opts.name(r.k) : pretty(r.k))}</td><td>${r.n}</td><td>${r.players}</td><td>${pct(r.win)}</td>
+      <td><span class="prog"><i style="width:${Math.round(r.m * 90)}px"></i>${pct(r.m)}</span></td><td>${r.lv.toFixed(0)}</td>
+      <td><span class="chip ${r.verdict}">${label[r.verdict]}</span></td></tr>`).join('') + '</tbody></table>';
+}
+
+function countTable(rows, head) {
+  if (!rows.length) return '<div class="muted" style="padding:10px">ยังไม่มีข้อมูล</div>';
+  const max = rows[0][1];
+  return `<table><thead><tr><th>${head}</th><th>ครั้ง</th><th></th></tr></thead><tbody>` +
+    rows.map(([k, n]) => `<tr><td>${esc(k)}</td><td>${n}</td><td style="text-align:left"><span class="prog"><i style="width:${Math.round(n / max * 160)}px"></i></span></td></tr>`).join('') + '</tbody></table>';
+}
+
+function render() {
+  const runs = filtered();
+  $('msg').hidden = runs.length > 0;
+  $('out').hidden = runs.length === 0;
+  if (!runs.length) { $('msg').textContent = RUNS.length ? 'ไม่มีรอบที่ตรงกับตัวกรองนี้' : 'ยังไม่มีใครส่งสถิติมา — ลองเล่นให้จบสักรอบ'; return; }
+  const mean = runs.reduce((a, r) => a + progress(r), 0) / runs.length;
+  const wins = runs.filter((r) => r.result !== 'dead').length;
+  $('tiles').innerHTML = [['รอบทั้งหมด', runs.length], ['ผู้เล่น', new Set(runs.map((r) => r.player)).size], ['อัตราชนะ', pct(wins / runs.length)],
+    ['คืบหน้าเฉลี่ย', pct(mean)], ['รอดเฉลี่ย', Math.round(runs.reduce((a, r) => a + r.time_s, 0) / runs.length / 60) + ' นาที']]
+    .map(([t, v]) => `<div class="tile"><span class="muted">${t}</span><b>${v}</b></div>`).join('');
+  $('avg').textContent = pct(mean);
+  $('t-cls').innerHTML = groupTable(runs, (r) => r.cls, mean, { head: 'คลาส' });
+  $('t-asc').innerHTML = groupTable(runs, (r) => r.asc_class, mean, { head: 'Ascendancy' });
+  $('t-skill').innerHTML = groupTable(runs, (r) => r.main_skill, mean, { head: 'สกิล' });
+  $('t-sup').innerHTML = groupTable(runs, (r) => { const s = (r.skills || []).find((x) => x.id === r.main_skill); return s ? s.sup : []; }, mean, { head: 'Support' });
+  $('t-ks').innerHTML = groupTable(runs, (r) => r.keystones || [], mean, { head: 'Keystone' });
+  $('t-wpn').innerHTML = groupTable(runs, (r) => r.weapon || 'unarmed', mean, { head: 'อาวุธ' });
+  const dead = runs.filter((r) => r.result === 'dead');
+  const kc = new Map(); for (const r of dead) kc.set(r.killer || 'ไม่ทราบ', (kc.get(r.killer || 'ไม่ทราบ') || 0) + 1);
+  $('t-kill').innerHTML = countTable([...kc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15), 'สาเหตุ');
+  const bins = Array(16).fill(0); for (const r of dead) bins[Math.min(15, Math.floor(r.time_s / 60))]++;
+  const top = Math.max(1, ...bins);
+  $('hist').innerHTML = bins.map((n, i) => `<div style="height:${n / top * 100}%" title="นาที ${i}${i === 15 ? '+' : ''}: ตาย ${n} ครั้ง"></div>`).join('');
+  $('hist-x').innerHTML = bins.map((_, i) => `<span>${i}${i === 15 ? '+' : ''}</span>`).join('');
+}
+load();
+</script>
+</body>
+</html>

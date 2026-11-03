@@ -166,6 +166,8 @@ function openSettings(from) {
     <label class="set-row">Loot Filter <select data-sf="1">${LOOT_FILTERS.map((f, i) => `<option value="${i}"${S.lootFilter === i ? ' selected' : ''}>${f.name}</option>`).join('')}</select></label>
     <div class="muted set-row">${LOOT_FILTERS[S.lootFilter].desc} · ของที่ถูกซ่อนจะย่อยเป็น Shard อัตโนมัติ</div>` +
     check('hlRes', 'ไฮไลต์ไอเทมที่มีค่าต้านทาน (กรอบเขียว)') +
+    (STATS_CONFIG.url ? check('shareStats', '📊 ส่งสถิติการเล่นแบบไม่ระบุตัวตน') +
+      `<div class="muted set-row">ส่งคลาส สกิล Support และผลแพ้/ชนะของแต่ละรอบ เพื่อหาบิวด์ที่แรงหรืออ่อนเกินไป · ไม่ส่งชื่อหรือข้อมูลส่วนตัว · <a href="stats.html" target="_blank" rel="noopener">ดูสถิติรวม</a></div>` : '') +
     `<div class="set-row"><button class="btn btn-small" id="btn-tips-reset">แสดงคำแนะนำ (Tips) อีกครั้ง</button></div>`;
   const root = $('settings');
   root.querySelectorAll('[data-sk]').forEach((el) => { el.onchange = () => { G.settings[el.dataset.sk] = el.checked; applySettings(); saveSettings(); }; });

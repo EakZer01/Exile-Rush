@@ -308,6 +308,7 @@ function init() {
   G.canvas = $('game');
   G.ctx = G.canvas.getContext('2d');
   loadSettings();
+  flushRunStats();       // runs that could not be sent last time
   resize();
   window.addEventListener('resize', resize);
   window.addEventListener('keydown', (e) => onKey(e, true));
