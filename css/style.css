@@ -714,7 +714,7 @@ span.gm-c-anomalous, span.gm-c-divergent, span.gm-c-phantasmal { color: var(--mc
 .craft-row { display: flex; flex-wrap: wrap; gap: 4px; }
 .craft-row .btn-small { margin: 0; }
 /* bag filter chips; items outside the filter dim in place (the grid keeps its layout) */
-.inv-filters { display: flex; gap: 4px; flex-wrap: wrap; margin-left: 8px; }
+.inv-filters { display: flex; gap: 4px; flex-wrap: wrap; }
 .chip-f { font: 600 12px 'Sarabun', sans-serif; padding: 3px 10px; color: var(--dim); background: none; border: 1px solid var(--edge); cursor: pointer; }
 .chip-f:hover { border-color: var(--gold); }
 .chip-f.on { color: var(--ink); background: var(--gold); border-color: var(--gold); }
@@ -728,9 +728,17 @@ span.gm-c-anomalous, span.gm-c-divergent, span.gm-c-phantasmal { color: var(--mc
 @media (min-width: 761px) { .inv-panel .inv-detail, .inv-panel .inv-craft .craft-view { height: clamp(240px, calc(100vh - 480px), 46vh); max-height: none; } }
 .inv-help { padding: 12px; line-height: 1.6; }
 .tiers-row { font-size: 13px; color: var(--dim); }
+/* bag bar in two fixed rows: title + count with the buttons on the right, then the filter chips,
+   so longer button labels never push things onto a different line */
 .inv-bagbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inv-bagbar > .inv-bag-h { order: 1; }
+.inv-bagbar > #inv-count { order: 2; }
+.inv-bagbar > .inv-bag-btns { order: 3; }
+.inv-bagbar > #inv-msg { order: 4; flex-basis: 100%; }
+.inv-bagbar > #inv-msg:empty { display: none; }
+.inv-bagbar > .inv-filters { order: 5; flex-basis: 100%; }
 .inv-bag-h { font: 700 14px 'Cinzel', 'Sarabun', serif; color: var(--gold); letter-spacing: 2px; }
-.inv-bag-btns { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+.inv-bag-btns { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .inv-bag-btns .btn-small { margin: 0; }
 .inv-legend { font-size: 12px; margin-left: 4px; }
 .v-up-t { color: #5aff6a; } .v-down-t { color: #ff5a4a; }
