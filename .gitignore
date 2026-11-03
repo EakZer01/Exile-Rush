@@ -1,3 +1,5 @@
 .claude/settings.local.json
 *.log
 tools/sim/out/
+design_handoff_exile_poe_redesign/
+.zcode/
