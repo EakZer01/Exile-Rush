@@ -9,7 +9,7 @@ function freshMeta() {
   return { v: 2, shards: 0, alloc: {}, unlocked: {}, found: {}, atlas: { maxTier: 1, done: {} }, lastMap: null, life: { runs: 0, wins: 0, kills: 0, bosses: 0, time: 0 },
     stash: [], jewels: {}, atlasAlloc: {}, daily: null, weekly: null,
     scarabs: {}, gems: {}, chal: {}, voids: {}, atlasTiers: {}, winCls: {},
-    quests: {}, heat: {}, heatSel: {}, cos: {}, cosSeen: {}, echoBest: 0 };
+    quests: {}, heat: {}, heatSel: {}, cos: {}, cosSeen: {}, echoBest: 0, startPick: {} };
 }
 
 function loadMeta() {

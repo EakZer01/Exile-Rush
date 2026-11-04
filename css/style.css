@@ -979,3 +979,14 @@ details.bench { margin-top: 6px; }
 .lb-sep { text-align: center; font-size: 11px; padding: 2px 0; }
 .lb-note { padding: 16px; text-align: center; }
 @media (max-width: 699px) { .lb-row { flex-wrap: wrap; } .lb-main { flex-basis: calc(100% - 110px); } }
+
+/* ---- starting gem picker (class preview) ---- */
+.cp-start { margin-top: 12px; text-align: center; }
+.cp-start-h { color: var(--muted); font-size: 13px; letter-spacing: 1px; margin-bottom: 6px; }
+.cp-start-opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.cp-start-opt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; background: #14100b; border: 1px solid #3a2e1e; border-radius: 4px; color: #e8dcc0; font: inherit; font-size: 13px; cursor: pointer; }
+.cp-start-opt img { width: 26px; height: 26px; }
+.cp-start-opt:hover { border-color: #8a6a3a; }
+.cp-start-opt.on { border-color: var(--cc, #e8c870); box-shadow: 0 0 10px color-mix(in srgb, var(--cc, #e8c870) 40%, transparent); }
+.cp-start-opt.mastered span::after { content: ' ◆'; color: #8ab4ff; font-size: 10px; }
+.cp-start-note { color: var(--muted); font-size: 12px; margin-top: 6px; }

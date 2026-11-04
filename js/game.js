@@ -136,7 +136,7 @@ function startGame(cls, map) {
   // Scion's random start must be a skill that deals damage on its own (not a Herald)
   // and that works with the class's starting weapon
   const startW = BASES[START_WEAPON[cls.id] || 'rusted_sword'].w.type;
-  const startId = cls.start || pick(Object.keys(SKILLS).filter((id) => !SKILLS[id].itemOnly && !['tempest_bell','herald_of_plague','magnetic_salvo','shield_crush','shield_throw','holy_relic','lightning_conduit','detonate_dead','volatile_dead','cremation'].includes(id) && !isLocked('gem', id) && SKILLS[id].behavior !== 'herald'
+  const startId = startSkillFor(cls, map) || pick(Object.keys(SKILLS).filter((id) => canStartWith(id)
     && (!SKILLS[id].weapons || SKILLS[id].weapons.includes(startW))));
   P.skills.push(newSkillInstance(startId));
   P.skills[0].level += gemStartBonus(startId);

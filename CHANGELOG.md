@@ -1,5 +1,20 @@
 # Changelog
 
+## Browser build 58 — 2026-11-04
+
+- **เลือกสกิลเริ่มต้นได้**: กดคลาสที่เมนูหลักแล้วเลือก 1 ใน 3 สกิลของคลาสใต้รูปตัวละคร อาวุธเริ่มต้นเปลี่ยนให้เข้ากับสกิลอัตโนมัติ และเกมจำตัวเลือกของแต่ละคลาสไว้
+  - Witch: Fireball / Freezing Pulse / Raise Zombie
+  - Ranger: Split Arrow / Toxic Rain / Galvanic Arrow
+  - Marauder: Cyclone / Earthquake / Boneshatter
+  - Templar: Arc / Smite / Storm Brand
+  - Shadow: Ethereal Knives / Viper Strike / Blade Vortex
+  - Duelist: Blade Vortex / Lacerate / Frost Blades
+- **ปลดสกิลเริ่มต้นเพิ่ม**: เจมที่ฝึกถึง Gem Mastery Lv 3 ที่ Altar ใช้เป็นสกิลเริ่มต้นได้กับคลาสที่มีสีตรงกับเจม (ขึ้นเครื่องหมาย ◆)
+  - Witch = น้ำเงิน, Ranger = เขียว, Marauder = แดง, Templar = แดง/น้ำเงิน, Shadow = เขียว/น้ำเงิน, Duelist = แดง/เขียว
+- Scion ยังเริ่มด้วยสกิลสุ่ม · Daily และ Weekly ใช้สกิลเริ่มต้นดั้งเดิมของคลาสเสมอ เพื่อให้ทุกคนแข่งกันบนพื้นฐานเดียวกัน
+- สกิลที่ใช้คนเดียวไม่ได้ (ต้องมีศพ, Shock, โล่ หรือ Attack ช่วย) ไม่อยู่ในตัวเลือกและไม่ถูกสุ่มให้ Scion
+- ชุดทดสอบ 168 กรณี
+
 ## Browser build 57 — 2026-11-04
 
 - แก้การเทียบอุปกรณ์ของ Forbidden Rite ให้ใช้ Life/ES ของไอเทมที่กำลังเทียบ และให้ข้อจำกัดดาเมจของ Doryani ครอบคลุมแมงมุมจาก Unique ด้วย

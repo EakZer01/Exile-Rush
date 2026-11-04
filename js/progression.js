@@ -70,6 +70,28 @@ const gemLv = (id) => { const g = loadMeta().gems[id]; return g ? g.lv : 0; };
 // mastery of a gem for stat building, or null when it has none yet
 function gemMastery(id) { const g = loadMeta().gems[id]; return g && (g.lv || g.alt) ? g : null; }
 const gemStartBonus = (id) => (gemLv(id) >= GEM_HEAD_START_AT ? 2 : 0);
+// ---------------- Starting skill ----------------
+const canStartWith = (id) => SKILLS[id] && !SKILLS[id].itemOnly && SKILLS[id].behavior !== 'herald' && !NO_SOLO_START.includes(id) && !isLocked('gem', id);
+// the class's three options, then every mastered gem of a matching colour
+function startOptions(cls) {
+  const own = (STARTER_SKILLS[cls.id] || []).filter(canStartWith), cols = CLASS_GEM_COLORS[cls.id] || '';
+  const mastered = Object.keys(SKILLS).filter((id) => !own.includes(id) && cols.includes(SKILLS[id].gem) && gemLv(id) >= STARTER_MASTERY_LV && canStartWith(id));
+  return own.concat(mastered);
+}
+// the gem this class starts with (null = Scion's random pick)
+function startSkillFor(cls, map) {
+  if (!cls.start || (map && (map.daily || map.weekly))) return cls.start;
+  const id = loadMeta().startPick[cls.id];
+  return startOptions(cls).includes(id) ? id : cls.start;
+}
+function setStartPick(cls, id) { if (!startOptions(cls).includes(id)) return false; loadMeta().startPick[cls.id] = id; saveMeta(); return true; }
+// the class's own weapon when the gem allows it, otherwise the first plain weapon the gem can use
+function startWeaponFor(cls, skillId) {
+  const own = START_WEAPON[cls.id] || 'rusted_sword', ws = skillId && SKILLS[skillId].weapons;
+  if (!ws || ws.includes(BASES[own].w.type)) return own;
+  for (const t of ws) { const b = Object.keys(BASES).find((k) => BASES[k].w && BASES[k].w.type === t); if (b) return b; }
+  return own;
+}
 const gemAltsOpen = (id) => Object.keys(GEM_ALT_AT).filter((a) => gemLv(id) >= GEM_ALT_AT[a]);
 function gemAddXp(id, n) {
   const g = gemData(id);

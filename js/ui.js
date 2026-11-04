@@ -39,7 +39,7 @@ function buildMenu() {
   list.innerHTML = '';
   const M = loadMeta(), bestBy = loadClassBest();
   for (const c of CLASSES) {
-    const sk = c.start ? SKILLS[c.start] : null;
+    const sk = c.start ? SKILLS[startSkillFor(c)] : null;
     const lock = isLocked('class', c.id) ? UNLOCKS.find((u) => u.kind === 'class' && u.ref === c.id) : null;
     const el = document.createElement('div');
     el.className = 'class-card' + (lock ? ' locked' : '');
@@ -76,7 +76,7 @@ function buildMenu() {
 let menuPick = { c: null, lock: null };
 function playPicked() { if (!menuPick.c) return; if (menuPick.lock) openAltar(); else openMapDevice(menuPick.c); }
 function renderClassPreview(c, lock) {
-  const box = $('class-preview'), sk = c.start ? SKILLS[c.start] : null;
+  const box = $('class-preview'), sk = c.start ? SKILLS[startSkillFor(c)] : null;
   menuPick = { c, lock };
   $('class-list').querySelectorAll('.class-card').forEach((el) => el.classList.toggle('picked', el.dataset.cls === c.id));
   $('btn-menu-play').innerHTML = lock ? `ปลดล็อก ${c.name}` : `เล่น<span class="play-cls"> · ${c.name}</span>`;
@@ -90,7 +90,26 @@ function renderClassPreview(c, lock) {
     <div class="cp-stats"><span class="cp-life">❤ ชีวิต ${c.life}</span><span class="cp-bonus">${c.bonus}</span>
       ${sk ? `<span class="cp-skill"><img class="cp-skill-ico" src="${skillIconURL(sk.id)}" alt="">${sk.name}</span>` : ''}</div>
     <div class="cp-desc">${c.desc}</div>
+    ${lock ? '' : startPickerHtml(c, sk)}
     ${lock ? `<div class="cp-lock">🔒 ${lock.req}<br><span>หรือปลดล็อกด้วย ${lock.cost} ✦ ที่แท่นบูชา</span></div>` : ''}`;
+  box.querySelectorAll('[data-start]').forEach((el) => {
+    el.onclick = () => {
+      if (!setStartPick(c, el.dataset.start)) return;
+      Sfx.play('select');
+      const card = $('class-list').querySelector(`[data-cls="${c.id}"] .class-skill`);
+      if (card) { card.src = skillIconURL(el.dataset.start); card.title = card.alt = SKILLS[el.dataset.start].name; }
+      renderClassPreview(c, lock);
+    };
+  });
+}
+// starting gem picker in the class preview: the class's three, plus mastered gems of its colour
+function startPickerHtml(c, sk) {
+  if (!c.start) return '<div class="cp-start"><div class="cp-start-h">สกิลเริ่มต้น: สุ่ม 1 อันที่ใช้กับดาบได้</div></div>';
+  const opts = startOptions(c), wpn = BASES[startWeaponFor(c, sk.id)];
+  return `<div class="cp-start"><div class="cp-start-h">เลือกสกิลเริ่มต้น</div><div class="cp-start-opts">` +
+    opts.map((id) => `<button class="cp-start-opt${id === sk.id ? ' on' : ''}${(STARTER_SKILLS[c.id] || []).includes(id) ? '' : ' mastered'}" data-start="${id}" title="${SKILLS[id].desc}">
+      <img src="${skillIconURL(id)}" alt=""><span>${SKILLS[id].name}</span></button>`).join('') +
+    `</div><div class="cp-start-note">อาวุธเริ่มต้น: ${wpn.name} (${WEAPON_TYPE[wpn.w.type]}) · ฝึกเจมถึง Gem Mastery Lv ${STARTER_MASTERY_LV} ที่ Altar เพื่อปลดเป็นสกิลเริ่มต้นของคลาสสีเดียวกัน</div></div>`;
 }
 function loadBest() { try { return JSON.parse(localStorage.getItem('exile_best') || 'null'); } catch (e) { return null; } }
 function loadClassBest() { try { return JSON.parse(localStorage.getItem('exile_best_cls') || '{}') || {}; } catch (e) { return {}; } }

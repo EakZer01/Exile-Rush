@@ -179,7 +179,7 @@ function salvageItem(it) {
 const START_WEAPON = { witch: 'driftwood_wand', ranger: 'short_bow', marauder: 'woodsplitter', templar: 'driftwood_sceptre',
   shadow: 'glass_shank', duelist: 'rusted_sword', scion: 'rusted_sword' };
 function giveStartingGear(P) {
-  P.equip.weapon = makeNormal(START_WEAPON[P.cls.id] || 'rusted_sword');
+  P.equip.weapon = makeNormal(startWeaponFor(P.cls, P.skills[0] && P.skills[0].id));
   P.flasks[0] = makeNormal('life_flask'); P.flasks[0].charges = 45;
   P.flasks[1] = makeNormal('quicksilver'); P.flasks[1].charges = 30;
 }
