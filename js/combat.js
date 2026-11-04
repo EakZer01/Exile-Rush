@@ -221,8 +221,8 @@ function killEnemy(e, inst) {
   const xpv = e.xp * (1 + minute * 0.09) * GAME_PACE * (G.mapFx.xpMul || 1);
   spawnOrb(e.x, e.y, xpv);
   // Minefield mod: some corpses leave an armed proximity mine behind
-  if (G.mapFx.deathMineAdd && e.rarity < 3 && Math.random() < G.mapFx.deathMineAdd && G.hazards.length < 80) {
-    addHazard(e.x, e.y, 80, 1.2, e.dmg * 1.2, '#ff9a3a', 'กับดัก (Minefield)', 'fire', { mine: true, arm: 1.2 });
+  if (G.mapFx.deathMineAdd && e.rarity < 3 && Math.random() < G.mapFx.deathMineAdd) {
+    addMine(e.x, e.y, 80, 1.2, e.dmg * 1.2, 'กับดัก (Minefield)', null);
   }
 
   // loot

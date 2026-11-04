@@ -694,15 +694,21 @@ function hazardPath(ctx, h, k) {
 }
 function drawHazard(ctx, h, p, burst) {
   if (h.mine) {
-    // proximity mine: a blinking pod while arming, a pulsing red disc once armed
-    const armed = h.t >= h.arm, blink = armed && Math.sin(G.time * 12) > 0;
-    ctx.fillStyle = hexA(armed ? '#ff3a2a' : h.color, armed ? (blink ? 0.5 : 0.22) : 0.14);
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (armed ? 0.85 : 0.6), 0, TAU); ctx.fill();
-    ctx.strokeStyle = hexA(armed ? '#ff5a4a' : h.color, armed ? 0.9 : 0.5); ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (armed ? 0.95 : 0.6), 0, TAU); ctx.stroke();
-    ctx.fillStyle = hexA('#2a1008', 0.9);
-    ctx.beginPath(); ctx.arc(h.x, h.y, 5, 0, TAU); ctx.fill();
-    if (!armed) { ctx.fillStyle = hexA('#ffd84a', 0.9); ctx.beginPath(); ctx.arc(h.x, h.y - 8, 2.5, 0, TAU); ctx.fill(); }
+    // proximity mine: a thin ring at its trigger radius and a softly pulsing core, no filled disc.
+    // Mines close to the player stand out as a warning, far ones fade; all fade out before they fizzle.
+    const P = G.player, rr = h.r * 0.9, edge = Math.hypot(P.x - h.x, P.y - h.y) - rr;
+    const near = clamp(1 - (edge - 40) / 260, 0.3, 1), fade = clamp((MINE_LIFE - h.t) / MINE_FADE, 0, 1);
+    const armed = h.t >= h.arm, close = armed && edge < 60, pulse = 0.5 + 0.5 * Math.sin(G.time * 4 + h.x);
+    const col = armed ? '#ff4a3a' : h.color;
+    ctx.save(); ctx.globalAlpha *= fade * near;
+    if (close) { ctx.fillStyle = hexA(col, 0.08 + 0.08 * pulse); ctx.beginPath(); ctx.arc(h.x, h.y, rr, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = hexA(col, armed ? 0.75 : 0.4); ctx.lineWidth = close ? 2 : 1.2;
+    if (!armed) ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.arc(h.x, h.y, rr, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = hexA(armed ? col : '#ffd84a', 0.55 + 0.35 * pulse);
+    ctx.beginPath(); ctx.arc(h.x, h.y, armed ? 3.5 + 1.5 * pulse : 3, 0, TAU); ctx.fill();
+    ctx.restore();
     return;
   }
   ctx.strokeStyle = hexA(h.color, burst ? 0.9 * (1 - p) : 0.85); ctx.lineWidth = h.ghost ? 1.5 : 2.5;

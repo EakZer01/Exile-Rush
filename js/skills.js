@@ -8,7 +8,7 @@ const _q = [];   // shared query buffer
 function nearestEnemy(x, y, maxR, exclude) {
   let best = null, bd = maxR * maxR;
   for (const e of G.enemies) {
-    if (e.dead || (exclude && exclude.has(e.id))) continue;
+    if (e.dead || e.encased || (exclude && exclude.has(e.id))) continue;
     const d = dist2(x, y, e.x, e.y);
     if (d < bd) { bd = d; best = e; }
   }
@@ -553,7 +553,7 @@ function castBrand(inst, s) {
   const taken = new Set(brands.map((b) => b.target && b.target.id));
   let tgt = null, bd = s.range * s.range;
   for (const e of G.enemies) {
-    if (e.dead || taken.has(e.id)) continue;
+    if (e.dead || e.encased || taken.has(e.id)) continue;
     const d = dist2(P.x, P.y, e.x, e.y);
     if (d < bd) { bd = d; tgt = e; }
   }

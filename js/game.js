@@ -172,7 +172,8 @@ function update(dt) {
 
   // spatial hash of live enemies
   G.hash.clear();
-  for (const e of G.enemies) if (!e.dead) G.hash.insert(e);
+  // sealed Essence monsters stay out of the hash: nothing targets or hits them until the seal is opened
+  for (const e of G.enemies) if (!e.dead && !e.encased) G.hash.insert(e);
 
   updateSpawner(dt);
   updateSkills(dt);

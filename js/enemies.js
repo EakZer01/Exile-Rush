@@ -421,9 +421,9 @@ function updateEnemies(dt) {
         // Doom Sapper: plants proximity mines behind itself
         const M = D.mines;
         e.mnT = (e.mnT === undefined ? rand(1, M.cd) : e.mnT) - dt;
-        if (e.mnT <= 0 && d < 500 && G.hazards.length < 80) {
+        if (e.mnT <= 0 && d < 500) {
           e.mnT = M.cd * rand(0.85, 1.15);
-          addHazard(e.x + rand(-18, 18), e.y + rand(-18, 18), M.boomR, M.fuse, e.dmg * 1.5, '#ff9a3a', e.name || D.name, 'fire', { mine: true, arm: M.fuse });
+          addMine(e.x + rand(-18, 18), e.y + rand(-18, 18), M.boomR, M.fuse, e.dmg * 1.5, e.name || D.name, e.id);
         }
       }
     }
@@ -590,6 +590,16 @@ function bossHpMul() { return tierHp(G.map.tier) * G.mapFx.bossHp * (BIOMES[G.ma
 function addHazard(x, y, r, warn, dmg, color, src, elem, shape) {
   G.hazards.push(Object.assign({ x, y, r, warn, t: 0, dmg, color, src, elem: elem || 'physical', shape: 'circle' }, shape));
 }
+// Proximity mines fizzle after MINE_LIFE (fading for the last MINE_FADE) and never pile up:
+// at the cap the oldest one goes. owner = the Doom Sapper that planted it (null for Minefield).
+const MINE_LIFE = 10, MINE_FADE = 2, MINE_MAX = 12, MINE_PER_OWNER = 3;
+function addMine(x, y, r, arm, dmg, src, owner) {
+  const mines = G.hazards.filter((h) => h.mine);
+  const own = owner ? mines.filter((h) => h.owner === owner) : [];
+  const drop = own.length >= MINE_PER_OWNER ? own[0] : mines.length >= MINE_MAX ? mines[0] : null;
+  if (drop) G.hazards.splice(G.hazards.indexOf(drop), 1);
+  addHazard(x, y, r, arm, dmg, '#ff9a3a', src, 'fire', { mine: true, arm, owner: owner || null });
+}
 function inHazard(h, px, py, pr) {
   const dx = px - h.x, dy = py - h.y, d = Math.hypot(dx, dy);
   if (h.shape === 'line') {
@@ -621,6 +631,7 @@ function updateHazards(dt) {
     h.t += dt;
     if (h.mine) {
       // Doom Sapper / Minefield: dormant while arming, then explodes when the player steps in
+      if (h.t >= MINE_LIFE) { G.hazards.splice(i, 1); continue; }
       if (h.t < h.arm) continue;
       const rr = h.r * 0.9;
       if (dist2(h.x, h.y, P.x, P.y) < rr * rr) {

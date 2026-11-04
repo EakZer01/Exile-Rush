@@ -142,3 +142,28 @@ test('victory screen advertises the next Echo milestone', () => {
   g.run('setVictoryButtons()');
   assert.ok(/Echo ถัดไปที่ 5/.test(g.run('$("vic-hint").textContent')), g.run('$("vic-hint").textContent'));
 });
+
+test('normal-map board: wins first, harder wins higher, faster kill breaks ties; one best run per player per tier', () => {
+  const g = game();
+  g.run(`MR = [
+    { player: 'pa000001', name: 'A', cls: 'witch', result: 'dead', time_s: 880, level: 40, tier: 3, heat: 0, echoes: 0 },
+    { player: 'pb000002', name: 'B', cls: 'ranger', result: 'win', time_s: 960, level: 45, tier: 3, heat: 0, echoes: 0 },
+    { player: 'pc000003', name: 'C', cls: 'duelist', result: 'win', time_s: 990, level: 44, tier: 3, heat: 5, echoes: 0 },
+    { player: 'pb000002', name: 'B', cls: 'ranger', result: 'win', time_s: 930, level: 46, tier: 3, heat: 0, echoes: 0 },
+    { player: 'pd000004', name: 'D', cls: 'shadow', result: 'dead', time_s: 400, level: 20, tier: 7, heat: 0, echoes: 0 },
+    { player: 'pa000001', name: 'A', cls: 'witch', result: 'dead', time_s: 600, level: 30, tier: 7, heat: 0, echoes: 0 },
+  ].sort(lbMapCmp);`);
+  // tier 3: C (Corruption 5) > B's faster win (930) > B's slower win (960) > A who died
+  assert.deepEqual(Array.from(g.run(`MR.filter((r) => r.tier === 3).map((r) => r.name + r.time_s)`)), ['C990', 'B930', 'B960', 'A880']);
+  assert.deepEqual(Array.from(g.run(`lbBestPerPlayer(MR.filter((r) => r.tier === 3)).map((r) => r.name)`)), ['C', 'B', 'A']);
+  // overview: one champion per tier, highest tier first, rank column shows the tier
+  g.run(`lbCat = 'maps'; lbTier = 0; statsPlayerId = () => 'pnobody';`);
+  const champs = g.run('lbMapsHtml(MR)');
+  assert.ok(champs.indexOf('T7</span>') < champs.indexOf('T3</span>'), champs);
+  assert.ok(champs.includes('<b>A</b>') && champs.includes('<b>C</b>') && !champs.includes('<b>B</b>'));
+  assert.ok(champs.includes('data-lbt="3"') && champs.includes('data-lbt="7"'));
+  // one tier: each player once
+  g.run('lbTier = 3;');
+  assert.equal((g.run('lbMapsHtml(MR)').match(/<b>B<\/b>/g) || []).length, 1);
+  assert.ok(g.run('leaderboardHtml()').includes('data-lb="maps"'));
+});

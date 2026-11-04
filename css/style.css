@@ -966,6 +966,8 @@ details.bench { margin-top: 6px; }
 .lb-cats { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px; }
 .lb-cats .btn.lb-on { border-color: var(--gold-hi); color: var(--gold-hi); box-shadow: 0 0 10px rgba(240, 216, 144, .35); }
 .lb-sub { text-align: center; margin-bottom: 10px; font-size: 13px; }
+.lb-tiers { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px; }
+.lb-tiers .btn.lb-on { border-color: var(--gold-hi); color: var(--gold-hi); }
 .lb-body { max-height: min(58vh, 560px); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .lb-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--box, #17120e); border: 1px solid var(--line, #3a2e1e); }
 .lb-row.me { border-color: var(--gold); box-shadow: 0 0 10px rgba(200, 168, 96, .3); }

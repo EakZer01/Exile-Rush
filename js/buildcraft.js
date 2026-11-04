@@ -147,7 +147,7 @@ function buildcraftMinion(m,s,dt){
  if(m.craftPhantasm){if(m.atkCd<=0){const e=nearestEnemy(m.x,m.y,450);if(e){const ss={...craftSecondary(s,0.3),explode:false,split:0,fuseArrow:false,speedFinal:400,lifeFinal:1.2,pierce:0,chain:0,fork:false,returning:false};craftProjectile(m.inst,ss,m.x,m.y,angleTo(m.x,m.y,e.x,e.y));m.atkCd=0.8;}}return true;}
  if(s.unstable||s.infernalLegion)m.t-=dt;
  if(s.infernalLegion){m.burnT=(m.burnT||0)-dt;if(m.burnT<=0){m.burnT=0.5;for(const e of enemiesInRadius(m.x,m.y,65,[]))dotDamage(e,s.hitTotal*0.3*s.burnMore*s.dotMul*(1-Math.max(-0.5,e.res.fire)),m.inst,'#ff9855');addEffect({kind:'ring',x:m.x,y:m.y,r:65,t:0,dur:0.25,color:'#ff9855'});}}
- if(s.predator){let best=null;for(const e of G.enemies)if(!e.dead&&dist2(e.x,e.y,m.x,m.y)<520**2&&(!best||e.rarity>best.rarity))best=e;if(best){m.target=best;m.retarget=Math.max(m.retarget,0.1);}}
+ if(s.predator){let best=null;for(const e of G.enemies)if(!e.dead&&!e.encased&&dist2(e.x,e.y,m.x,m.y)<520**2&&(!best||e.rarity>best.rarity))best=e;if(best){m.target=best;m.retarget=Math.max(m.retarget,0.1);}}
  if(s.meatShield&&!nearestEnemy(G.player.x,G.player.y,140)&&dist2(m.x,m.y,G.player.x,G.player.y)<=110**2)return true;
  if(s.meatShield&&dist2(m.x,m.y,G.player.x,G.player.y)>110**2){const a=angleTo(m.x,m.y,G.player.x,G.player.y);m.x+=Math.cos(a)*s.speed*dt*2;m.y+=Math.sin(a)*s.speed*dt*2;m.target=nearestEnemy(G.player.x,G.player.y,140);return true;}
  if(s.reaper&&G.time>=(m.feedAt||0)){const food=G.minions.find(t=>t!==m&&!t.craftPhantasm&&t.inst.id!=='summon_reaper');if(food){food.t=0;m.feedAt=G.time+3;m.fedUntil=G.time+2;}}
