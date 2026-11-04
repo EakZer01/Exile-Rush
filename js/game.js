@@ -38,7 +38,7 @@ function advanceGame(ts) {
   const elapsed = Math.max(0, (ts - G.lastTs) / 1000);
   G.lastTs = Math.max(G.lastTs, ts);
   if (G.state !== 'play') { G.simDebt = 0; return; }
-  G.simDebt += elapsed;
+  G.simDebt += elapsed * (G.speed || 1);   // ×1.5 / ×2 run more steps per real second
   const started = performance.now();
   // Keep delayed ticks as debt; replay small physics steps without blocking the page.
   for (let n = 0; G.simDebt + 1e-9 >= SIM_STEP && G.state === 'play' && n < 240; n++) {
@@ -109,6 +109,8 @@ function startGame(cls, map) {
   G.hc = !!(map && map.hc); G.daily = (map && map.daily) || 0; G.weekly = (map && map.weekly) || 0; G.runScarabs = []; G.vault = null;
   if (!G.daily && !G.weekly) restoreRandom();
   G.mapFx = mapFx(G.map);
+  G.speedOk = speedAllowed({ tier: G.map.tier, daily: G.daily, weekly: G.weekly });
+  G.speed = G.speedOk && GAME_SPEEDS.includes(G.settings.gameSpeed) ? G.settings.gameSpeed : 1;
   G.atlasFx = atlasFx();
   applyMapBonuses(G.atlasFx, G.mapFx, G.map);
   G.heat = applyCorruption(G.atlasFx, G.mapFx, G.map.heat);
@@ -251,6 +253,7 @@ function onKey(e, down) {
   else if (G.state === 'play' && /^Digit[1-5]$/.test(e.code)) G.input['flask' + (+e.code.slice(5) - 1)] = true;
   else if (e.code === 'AltLeft' || e.code === 'AltRight') { if (G.state === 'inventory') { G.showTiers = !G.showTiers; renderInvDetail(); e.preventDefault(); } }
   else if (e.code === 'KeyV') G.input.vaal = true;
+  else if (e.code === 'KeyG' && !e.repeat && G.state === 'play') cycleGameSpeed();
   else if (e.code === 'KeyI') { if (G.state === 'play' || G.state === 'paused') openInventory(); else if (G.state === 'inventory') closeInventory(); }
   else if (e.code === 'KeyU') G.input.levelUp = true;
   else if (e.code === 'KeyZ') toggleSetting('minimap');
@@ -371,6 +374,17 @@ function init() {
 window.addEventListener('load', init);
 
 // retrying a bought / dropped map sends you back to the Map Device (maps are consumed)
+// G cycles ×1 → ×1.5 → ×2 during a run on a tier already cleared; the choice is remembered
+function cycleGameSpeed() {
+  if (!G.speedOk) { announce('ความเร็วเกม', `ผ่าน Tier ${G.map.tier} ให้ได้ก่อน${G.daily || G.weekly ? ' · ใช้ใน Daily / Weekly ไม่ได้' : ''}`, '#c8a860'); return; }
+  setGameSpeed(GAME_SPEEDS[(GAME_SPEEDS.indexOf(G.speed) + 1) % GAME_SPEEDS.length]);
+  announce('ความเร็วเกม ×' + G.speed, G.speed > 1 ? 'เกมเดินเร็วขึ้น · ทุกอย่างในรอบเท่าเดิม' : 'กลับสู่ความเร็วปกติ', '#e8c870');
+}
+function setGameSpeed(v) {
+  if (!GAME_SPEEDS.includes(v)) return;
+  G.settings.gameSpeed = v; saveSettings();
+  if (G.state === 'play' || G.state === 'paused') G.speed = G.speedOk ? v : 1;
+}
 function retryRun() {
   hide('gameover');
   if (G.daily) startDaily();

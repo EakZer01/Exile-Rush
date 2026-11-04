@@ -992,3 +992,8 @@ details.bench { margin-top: 6px; }
 .cp-start-opt.on { border-color: var(--cc, #e8c870); box-shadow: 0 0 10px color-mix(in srgb, var(--cc, #e8c870) 40%, transparent); }
 .cp-start-opt.mastered span::after { content: ' ◆'; color: #8ab4ff; font-size: 10px; }
 .cp-start-note { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+/* ---- game speed picker (Map Device) ---- */
+.map-speed { margin: 8px 0; font-size: 13px; }
+.map-speed-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.map-speed-row .btn.on { border-color: var(--gold-hi); color: var(--gold-hi); box-shadow: 0 0 8px rgba(240, 216, 144, .3); }

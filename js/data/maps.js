@@ -9,6 +9,8 @@
 const MAX_MAP_TIER = 15;
 const ARENA = 2200;                   // the map is a square from -ARENA to +ARENA
 const ATLAS_POINT_CAP = 20;           // max bonus Legacy Tree points from the Atlas
+// game speed: a tier unlocks faster play once it has been cleared once (any area); never in Daily / Weekly
+const GAME_SPEEDS = [1, 1.5, 2];
 const MAP_REROLL_COST = 15;           // Ancient Shards to reroll mods
 
 // tint: multiplied over ground/props · dark: colour of the night layer

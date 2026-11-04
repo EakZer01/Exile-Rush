@@ -1164,7 +1164,7 @@ function drawHUD(ctx, W, H, P) {
     // centre: time + kills · tier
     ctx.textAlign = 'center'; ctx.font = '600 28px Cinzel, serif'; hudText(ctx, fmtTime(G.time), W / 2, top + 24, HUD.time);
     ctx.font = '600 11px Sarabun, sans-serif';
-    hudRun(ctx, [[kills + ' · ', HUD.faint], ['T' + G.map.tier, biome.color]], W / 2, top + 40, 'center');
+    hudRun(ctx, [[kills + ' · ', HUD.faint], ['T' + G.map.tier, biome.color]].concat(G.speed > 1 ? [[' · ⏩×' + G.speed, HUD.goldHi]] : []), W / 2, top + 40, 'center');
     rightY = drawLedger(ctx, P, W, top, true);
     centerY = top + 64;
     if (boss) centerY = drawBossBar(ctx, boss, 16, centerY + 12, W - 32, true) + 12;
@@ -1185,6 +1185,7 @@ function drawHUD(ctx, W, H, P) {
     ctx.font = '600 13px Sarabun, sans-serif';
     const parts = [[`สังหาร ${kills} · `, HUD.faint], [mapLabel(G.map), biome.color]];
     if (G.map.mods.length) parts.push([` · ${G.map.mods.length} mods`, HUD.faint]);
+    if (G.speed > 1) parts.push([` · ⏩ ×${G.speed}`, HUD.goldHi]);
     hudRun(ctx, parts, W / 2, 20 + 50, 'center');
     centerY = 20 + 62;
     if (boss) { const bw = Math.min(600, W - 2 * 250); centerY = drawBossBar(ctx, boss, (W - bw) / 2, centerY + 22, bw, false) + 22; }

@@ -6,7 +6,7 @@
 <title>Exile Survivors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=61">
+<link rel="stylesheet" href="css/style.css?v=62">
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -45,7 +45,7 @@
       <div id="menu-goals" class="menu-goals"></div>
       <div class="controls-help">
         <b>WASD / ลูกศร</b> เดิน · <b>Space</b> Flame Dash · <b>Q</b> Life Flask · <b>E</b> Quicksilver Flask ·
-        <b>V</b> ท่าไม้ตาย Vaal · <b>T</b> เปิด/พัก Flicker · <b>U</b> เลือกการ์ดที่เก็บไว้ · <b>I</b> กระเป๋า · <b>C / Tab</b> หน้าสถิติ · <b>Esc</b> หยุดเกม · <b>Z</b> มินิแมพ · <b>M</b> ปิดเสียง · <b>L</b> เปิด/ปิดแสงเงา · <b>F</b> เปิด/ปิดเอฟเฟกต์
+        <b>V</b> ท่าไม้ตาย Vaal · <b>G</b> ความเร็วเกม · <b>T</b> เปิด/พัก Flicker · <b>U</b> เลือกการ์ดที่เก็บไว้ · <b>I</b> กระเป๋า · <b>C / Tab</b> หน้าสถิติ · <b>Esc</b> หยุดเกม · <b>Z</b> มินิแมพ · <b>M</b> ปิดเสียง · <b>L</b> เปิด/ปิดแสงเงา · <b>F</b> เปิด/ปิดเอฟเฟกต์
       </div>
     </div>
   </main>
@@ -103,6 +103,7 @@
           <label class="set-row"><input type="checkbox" id="map-hc"> ☠ <b>Hardcore</b></label>
           <div class="muted">ตาย = เสีย Shard และ Jewel ของรอบนั้น และเก็บของเข้า Stash ไม่ได้ · ชนะ = Shard ×1.5 และเก็บของได้ +2 ชิ้น</div>
         </div>
+        <div id="map-speed" class="map-speed"></div>
         <button id="btn-map-start" class="btn btn-primary map-start">เปิดแผนที่</button>
         <div class="map-side-actions">
           <button id="btn-map-atlas" class="btn btn-dim">Atlas Tree</button>
@@ -306,58 +307,58 @@
 <div id="tip" class="tip hidden"></div>
 <div id="tooltip" class="tooltip hidden"></div>
 
-<script src="js/util.js?v=61"></script>
-<script src="js/stats-config.js?v=61"></script>
-<script src="js/data/skills.js?v=61"></script>
-<script src="js/data/supports.js?v=61"></script>
-<script src="js/data/passives.js?v=61"></script>
-<script src="js/data/runtree.js?v=61"></script>
-<script src="js/data/monsters.js?v=61"></script>
-<script src="js/data/classes.js?v=61"></script>
-<script src="js/data/ascendancy.js?v=61"></script>
-<script src="js/data/evolutions.js?v=61"></script>
-<script src="js/data/meta.js?v=61"></script>
-<script src="js/data/items.js?v=61"></script>
-<script src="js/data/maps.js?v=61"></script>
-<script src="js/data/endgame.js?v=61"></script>
-<script src="js/data/goals.js?v=61"></script>
-<script src="js/data/expansion.js?v=61"></script>
-<script src="js/data/bows.js?v=61"></script>
-<script src="js/data/specialists.js?v=61"></script>
-<script src="js/data/buildcraft.js?v=61"></script>
-<script src="js/data/archetypes.js?v=61"></script>
-<script src="js/data/reactions.js?v=61"></script>
-<script src="js/data/sprite_art.js?v=61"></script>
-<script src="js/stats.js?v=61"></script>
-<script src="js/fx.js?v=61"></script>
-<script src="js/combat.js?v=61"></script>
-<script src="js/skills.js?v=61"></script>
-<script src="js/enemies.js?v=61"></script>
-<script src="js/player.js?v=61"></script>
-<script src="js/settings.js?v=61"></script>
-<script src="js/meta.js?v=61"></script>
-<script src="js/items.js?v=61"></script>
-<script src="js/breach.js?v=61"></script>
-<script src="js/lighting.js?v=61"></script>
-<script src="js/world.js?v=61"></script>
-<script src="js/icons.js?v=61"></script>
-<script src="js/sprites.js?v=61"></script>
-<script src="js/render.js?v=61"></script>
-<script src="js/ui.js?v=61"></script>
-<script src="js/compare.js?v=61"></script>
-<script src="js/leagues.js?v=61"></script>
-<script src="js/stash.js?v=61"></script>
-<script src="js/progression.js?v=61"></script>
-<script src="js/goals.js?v=61"></script>
-<script src="js/codex.js?v=61"></script>
-<script src="js/expansion-ui.js?v=61"></script>
-<script src="js/bows.js?v=61"></script>
-<script src="js/specialists.js?v=61"></script>
-<script src="js/buildcraft.js?v=61"></script>
-<script src="js/reactions.js?v=61"></script>
-<script src="js/archetypes.js?v=61"></script>
-<script src="js/telemetry.js?v=61"></script>
-<script src="js/leaderboard.js?v=61"></script>
-<script src="js/game.js?v=61"></script>
+<script src="js/util.js?v=62"></script>
+<script src="js/stats-config.js?v=62"></script>
+<script src="js/data/skills.js?v=62"></script>
+<script src="js/data/supports.js?v=62"></script>
+<script src="js/data/passives.js?v=62"></script>
+<script src="js/data/runtree.js?v=62"></script>
+<script src="js/data/monsters.js?v=62"></script>
+<script src="js/data/classes.js?v=62"></script>
+<script src="js/data/ascendancy.js?v=62"></script>
+<script src="js/data/evolutions.js?v=62"></script>
+<script src="js/data/meta.js?v=62"></script>
+<script src="js/data/items.js?v=62"></script>
+<script src="js/data/maps.js?v=62"></script>
+<script src="js/data/endgame.js?v=62"></script>
+<script src="js/data/goals.js?v=62"></script>
+<script src="js/data/expansion.js?v=62"></script>
+<script src="js/data/bows.js?v=62"></script>
+<script src="js/data/specialists.js?v=62"></script>
+<script src="js/data/buildcraft.js?v=62"></script>
+<script src="js/data/archetypes.js?v=62"></script>
+<script src="js/data/reactions.js?v=62"></script>
+<script src="js/data/sprite_art.js?v=62"></script>
+<script src="js/stats.js?v=62"></script>
+<script src="js/fx.js?v=62"></script>
+<script src="js/combat.js?v=62"></script>
+<script src="js/skills.js?v=62"></script>
+<script src="js/enemies.js?v=62"></script>
+<script src="js/player.js?v=62"></script>
+<script src="js/settings.js?v=62"></script>
+<script src="js/meta.js?v=62"></script>
+<script src="js/items.js?v=62"></script>
+<script src="js/breach.js?v=62"></script>
+<script src="js/lighting.js?v=62"></script>
+<script src="js/world.js?v=62"></script>
+<script src="js/icons.js?v=62"></script>
+<script src="js/sprites.js?v=62"></script>
+<script src="js/render.js?v=62"></script>
+<script src="js/ui.js?v=62"></script>
+<script src="js/compare.js?v=62"></script>
+<script src="js/leagues.js?v=62"></script>
+<script src="js/stash.js?v=62"></script>
+<script src="js/progression.js?v=62"></script>
+<script src="js/goals.js?v=62"></script>
+<script src="js/codex.js?v=62"></script>
+<script src="js/expansion-ui.js?v=62"></script>
+<script src="js/bows.js?v=62"></script>
+<script src="js/specialists.js?v=62"></script>
+<script src="js/buildcraft.js?v=62"></script>
+<script src="js/reactions.js?v=62"></script>
+<script src="js/archetypes.js?v=62"></script>
+<script src="js/telemetry.js?v=62"></script>
+<script src="js/leaderboard.js?v=62"></script>
+<script src="js/game.js?v=62"></script>
 </body>
 </html>

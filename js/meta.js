@@ -250,6 +250,9 @@ function settleRun(r) {
 function unlockLabel(u) { return u.kind === 'class' ? CLASSES.find((c) => c.id === u.ref).name : SKILLS[u.ref].name; }
 
 // ---- Atlas ----
+// cleared this tier at least once, in any area (Atlas keys are biome_tier)
+const tierCleared = (t) => Object.keys(atlasData().done).some((k) => k.endsWith('_' + t));
+const speedAllowed = (map) => !(map.daily || map.weekly) && tierCleared(map.tier || 1);
 function atlasData() { const M = loadMeta(); if (!M.atlas) M.atlas = { maxTier: 1, done: {} }; return M.atlas; }
 const atlasDoneCount = () => Object.keys(atlasData().done).length;
 function atlasBonusPoints() { return Math.min(ATLAS_POINT_CAP, atlasDoneCount()); }

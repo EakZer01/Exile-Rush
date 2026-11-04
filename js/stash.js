@@ -98,6 +98,11 @@ function renderMapExtras() {
     el.onclick = () => { const i = +el.dataset.lo; if (mapLoadout.has(i)) mapLoadout.delete(i); else if (mapLoadout.size < lim) mapLoadout.add(i); openMapDevice(); };
     el.title = M.stash[+el.dataset.lo].name + ` (${LOADOUT_COST[M.stash[+el.dataset.lo].rarity]} ✦)`;
   });
+  // game speed: only on a tier this save has cleared before
+  const sp = G.settings.gameSpeed || 1, spOk = tierCleared(mapCfg.tier);
+  $('map-speed').innerHTML = `<div class="map-speed-row">⏩ ความเร็วเกม ${GAME_SPEEDS.map((v) => `<button class="btn btn-small${spOk && sp === v ? ' on' : ''}" data-speed="${v}" ${spOk ? '' : 'disabled'}>×${v}</button>`).join('')}</div>
+    <div class="muted">${spOk ? 'เร่งทั้งเกม (มอนสเตอร์ XP ดรอป บอส และรางวัลเท่าเดิม แค่ใช้เวลาจริงน้อยลง) · กด G ระหว่างเล่นเพื่อสลับ' : `ผ่าน Tier ${mapCfg.tier} ให้ได้สักครั้งก่อน (พื้นที่ใดก็ได้) จึงเร่งความเร็วได้`}</div>`;
+  $('map-speed').querySelectorAll('[data-speed]').forEach((b) => { b.onclick = () => { setGameSpeed(+b.dataset.speed); openMapDevice(); }; });
   $('map-hc').checked = mapHC;
   $('map-hc').onchange = () => { mapHC = $('map-hc').checked; openMapDevice(); };
   if (mapHC && [...mapLoadout].some((i) => M.stash[i] && M.stash[i].heir)) $('map-loadout-n').textContent += ' · ⚠ Hardcore: ตายแล้ว Heirloom หาย';
