@@ -95,7 +95,7 @@ const SCARABS = {
   hunted:    { name: 'Scarab of the Hunted', th: 'บอสสุดท้ายดรอป Unique ประจำพื้นที่แน่นอน', color: '#ff4a4a', w: 2, rare: true, a(f) { f.srcBossSure = true; } },
   vault:     { name: 'Vault Scarab', th: 'ห้องรางวัลหลังชนะ: การ์ด +1 · ระดับตำนานบ่อยขึ้น', color: '#fff0a0', w: 3, rare: true, a(f) { f.vaultExtra += 1; f.vaultLuck += 0.15; } },
 };
-const SCARAB_PRICE = 45;                      // Shards for a random scarab at the Map Device
+const SCARAB_PRICE = 100;                     // Shards for a random scarab at the Map Device
 const randomScarab = () => weightedSample(Object.keys(SCARABS), 1, (k) => SCARABS[k].w)[0];
 
 // ---------------- Gem Mastery: every gem levels up across runs ----------------
@@ -142,7 +142,7 @@ function applyAltQuality(s, alt, id) {
 
 // ---------------- Heirlooms: stash items that grow every time they come home ----------------
 const HEIR_XP = [2, 5, 9, 14, 20];           // total xp for heirloom level 1..5
-const HEIR_BIND_COST = 80;
+const HEIR_BIND_COST = 250;
 const HEIR_MAX = 4;                           // heirlooms you can own at once
 const heirLevel = (xp) => HEIR_XP.filter((n) => xp >= n).length;
 

@@ -60,7 +60,7 @@ test('Vault rewards land in the save and Heirlooms come home stronger', () => {
   run(`const M = loadMeta(); M.shards = 0; startGame(CLASSES[0], { biome: 'graveyard', tier: 2, mods: [] }); G.time = 900;`);
   run(`claimVault(vaultCard('shards', 'rare'))`);
   assert.equal(run('loadMeta().shards'), 180);
-  run(`const M2 = loadMeta(); M2.shards = 100; M2.stash = [makeItem('rare', 'boots', 100, 2)]; heirBind(0);
+  run(`const M2 = loadMeta(); M2.shards = HEIR_BIND_COST; M2.stash = [makeItem('rare', 'boots', 100, 2)]; heirBind(0);
     startGame(CLASSES[0], { biome: 'graveyard', tier: 3, mods: [], loadout: [M2.stash.splice(0, 1)[0]] }); G.time = 900;`);
   assert.equal(run('runItems().some(it => it.heir)'), false);
   run('settleProgression(true, 0)');

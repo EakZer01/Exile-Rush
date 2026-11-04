@@ -117,10 +117,10 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
 - **อาวุธกำหนดสกิล**: เจมธนู (Split/Caustic/Lightning Arrow, Tornado Shot, Toxic Rain) ต้องถือธนู · เจม Melee ต้องถืออาวุธประชิดตามชนิด (เช่น Earthquake ใช้กระบอง/คทา/ขวาน/คทายาว) · Kinetic Blast ใช้ไม้กายสิทธิ์ · เจมเวทยิงกระสุน (Fireball, Arc, Spark ฯลฯ) ใช้กับไม้กายสิทธิ์/คทายาว/คทา/มีดสั้น · **ใช้ได้ทุกอาวุธ**: Ice Nova, Shock Nova, Contagion, Righteous Fire, Herald of Ice / Ash / Thunder, Brand, Minion, Firestorm · ถืออาวุธไม่ตรง สกิลจะหยุดทำงาน (กากบาทแดงบนแถบสกิล) · ดูได้ในการ์ด, Codex และ tooltip อาวุธ
 - **Passive Tree ระหว่างรอบ + Mastery**: Passive แบ่งเป็น 7 สาย — Projectile, Critical, Ailment, Defence, Caster, Warfare, Minion · ลงครบ 6 ระดับ (Defence 8) แล้ว **Milestone** ถัดไปจะให้เลือก Mastery 1 ใน 2 เช่น Projectile: Boomerang (กระสุนย้อนกลับ) หรือ Close Quarters (ใกล้แรง ไกลอ่อน) · Critical: Assassin's Edge หรือ Lucky Strikes · ดูความคืบหน้าในหน้าบิว (C) และ Codex
 - **Unique เฉพาะแหล่ง**: Unique บางชิ้นดรอปเฉพาะบอสประจำพื้นที่, Pinnacle, Echo, Breach, Ritual, Delirium หรือ Strongbox (ดูใน Codex → Unique ตัวกรองตามแหล่ง) · Unique ที่เปลี่ยนสกิล เช่น Stormheart Fang (Flicker → สายฟ้า), Eye of the Gale (Tornado Shot แนวแคบ), The Pale Engine (Fireball → น้ำแข็ง), Earthbreaker Maul, Voidweave Coil (Arc → เคออส), Crown of the Hollow King (Keystone +1)
-- **Scarab**: ใส่ที่ Map Device ก่อนเปิดแผนที่ (เริ่ม 2 ช่อง) ใช้แล้วหมด — Breach / Strongbox / Essence / Ritual / Delirium / Cartography / Gilded / Elites / Reliquary / Hunted / Vault · ดรอปจากบอส, Rare, league content, ห้องรางวัล หรือซื้อสุ่ม 45 ✦
+- **Scarab**: ใส่ที่ Map Device ก่อนเปิดแผนที่ (เริ่ม 2 ช่อง) ใช้แล้วหมด — Breach / Strongbox / Essence / Ritual / Delirium / Cartography / Gilded / Elites / Reliquary / Hunted / Vault · ดรอปจากบอส, Rare, league content, ห้องรางวัล หรือซื้อสุ่ม 100 ✦
 - **ห้องรางวัล (Vault)**: โค่นบอสสุดท้ายแล้วเลือกรางวัลถาวร 1 จาก 3 การ์ด (ธรรมดา / หายาก / ตำนาน — Tier และ mod สูงยิ่งได้ตำนานบ่อย)
 - **Gem Mastery** (Altar → Gem Mastery): เจมที่ใช้ได้ XP ข้ามรอบ · +2% ดาเมจต่อเลเวล (หลัง Lv 20 +0.5% ไม่จำกัด) · Lv 3/6/10 ปลด Alternate Quality Anomalous / Divergent / Phantasmal · Lv 15 ได้เจมนี้เริ่ม +2 เลเวล · เติม XP ด้วย Shards ได้ไม่จำกัด
-- **Heirloom**: ใน Stash กด "ผูกเป็น Heirloom" (80 ✦, สูงสุด 4 ชิ้น) · พกเข้ารอบแล้วกลับเข้า Stash เอง · ได้ XP ทุกรอบ (ชนะได้มากกว่า) · Lv 1–5: +3% ดาเมจและชีวิตต่อเลเวล, Lv 5 +1 เลเวลเจม · ตายใน Hardcore = หาย
+- **Heirloom**: ใน Stash กด "ผูกเป็น Heirloom" (250 ✦, สูงสุด 4 ชิ้น) · พกเข้ารอบแล้วกลับเข้า Stash เอง · ได้ XP ทุกรอบ (ชนะได้มากกว่า) · Lv 1–5: +3% ดาเมจและชีวิตต่อเลเวล, Lv 5 +1 เลเวลเจม · ตายใน Hardcore = หาย
 - **Challenges 24 ข้อ** (Altar → Challenges): ทำสำเร็จได้ Shards · ทุก 4 ข้อได้โบนัสถาวร (ช่อง Scarab, Stash +1, Shards +10%, การ์ดห้องรางวัล +1, ดาเมจ/ชีวิต, Unique บ่อยขึ้น)
 - **Unique Collection**: ค้นพบครบ 5/10/15/20/25/30/40 ชิ้นได้โบนัสถาวร
 - **Voidstone 4 อัน**: โค่น The Hollow Crown, ผ่านครบทุกพื้นที่ใน Tier 6+, โค่น Echo รวม 10 ตัว, ชนะ Tier 8+ ใน Hardcore · แต่ละอันทำให้แผนที่ Tier 6 ขึ้นไปมอนสเตอร์แข็งขึ้นแต่ไอเทม/Unique/Shards/Scarab เพิ่มขึ้น · **Atlas Completion**: ผ่านครบทุกพื้นที่ใน Tier เดียวกัน = +1 แต้ม Atlas Tree + 2 Scarab
@@ -133,9 +133,9 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
 - **Atlas / Map Device**: หลังเลือกคลาสจะเข้าหน้า Map Device เพื่อเลือกแผนที่
   - **5 พื้นที่**: Cursed Graveyard, Ashen Wastes (Volatile/Brute), Frozen Hollow (Frost Wraith, ปลดล็อกที่ Tier 2), Toxic Marsh (ซากศพ/Cultist, Tier 3), Void Sanctum (มอนสเตอร์แข็งขึ้น 15%, Tier 5) แต่ละพื้นที่มีสีพื้น แสง และชนิดมอนสเตอร์ต่างกัน
   - **Tier 1–10**: Tier 1 คือเกมปกติ ทุก Tier เพิ่มชีวิตมอนสเตอร์ +25% ดาเมจ +8% และรางวัล Shards +15% ชนะแผนที่เพื่อปลดล็อก Tier ถัดไป
-  - **Map Mods 16 แบบ** เช่น Hardened, Elite, Burning Ground, Withering Air, Lightless กด Alchemy เพื่อสุ่ม mod ฟรี (3–5 อันตาม Tier) หรือสุ่มใหม่ด้วย 3 ✦ ทุก mod เพิ่ม Item Quantity และโบนัส Shards
+  - **Map Mods 16 แบบ** เช่น Hardened, Elite, Burning Ground, Withering Air, Lightless กด Alchemy เพื่อสุ่ม mod ฟรี (3–5 อันตาม Tier) หรือสุ่มใหม่ด้วย 15 ✦ ทุก mod เพิ่ม Item Quantity และโบนัส Shards
   - ผ่านแผนที่ใหม่แต่ละอัน (พื้นที่+Tier) ได้ **+1 แต้ม Legacy Tree** ถาวร (สูงสุด +15)
-  - **แผนที่เป็นไอเทม**: ดรอปจากบอส (บอสสุดท้ายให้แผนที่ Tier ถัดไปแน่นอน), Rare, Strongbox, Ritual, Delirium เก็บไว้ในคลังแผนที่ (40 ใบ) · Tier 1 เล่นฟรี · Tier สูงกว่าต้องใช้แผนที่ หรือซื้อด้วย Shards (8 ✦ × Tier)
+  - **แผนที่เป็นไอเทม**: ดรอปจากบอส (บอสสุดท้ายให้แผนที่ Tier ถัดไปแน่นอน), Rare, Strongbox, Ritual, Delirium เก็บไว้ในคลังแผนที่ (40 ใบ) · Tier 1 เล่นฟรี · Tier สูงกว่าต้องใช้แผนที่ หรือซื้อด้วย Shards (20 ✦ × Tier)
   - **Atlas Passive Tree**: 6 สาย (Strongbox, Essence, Ritual, Delirium, Breach, Cartography) ปรับว่า league content ไหนเกิดบ่อย/ให้ของมาก แต้ม = แผนที่ที่ผ่าน + บอสสะสมทุก 8 ตัว คืนแต้มฟรี
   - **☠ Hardcore**: ตาย = เสีย Shard แผนที่ Jewel ของรอบนั้น และเก็บของเข้า Stash ไม่ได้ · ชนะ = Shard ×1.5 และเก็บของได้ +2 ชิ้น
 - **📅 Daily Challenge**: ทุกวันได้คลาส แผนที่ Tier และ mod ชุดเดียวกัน (สุ่มแบบ seed ตามวันที่) บันทึกสถิติดีที่สุดของวัน
@@ -143,8 +143,9 @@ Build 42 เพิ่มเนื้อหาที่ [js/data/expansion.js](js
 - **🏆 Leaderboard**: แท็บใหม่ในหน้าสถิติ (ปุ่ม 🏆 บนเมนู) ดูอันดับ Daily วันนี้ / Weekly สัปดาห์นี้ / Endgame ที่ลึกที่สุด ตั้งชื่อบนกระดานได้ที่ ⚙ ตั้งค่า (ไม่ตั้ง = ไม่ระบุตัวตน)
 - **∞ Endgame Echo milestone**: โค่น Echo บอสใน Endgame ให้ครบ 5 / 10 / 15 / 20 ตัวในรอบเดียว เพื่อออร่า "เสียงก้อง", ฉายา "ผู้ข้ามห้วง", Unique เสียงก้องแห่งจักรพรรดิ (การันตีดรอป) และฉายา "ราชาห้วงว่าง" + Shards ถาวร +10%
 - **Meta-progression**: จบทุกรอบจะได้ **Ancient Shards ✦** (ตามเวลารอด, จำนวนฆ่า, บอส, เลเวล, ชนะ +100) เอาไปใช้ที่ **Altar of Legacy** ในเมนูหลัก
-  - **Legacy Tree** แบบ passive tree ของ PoE มี 66 โหนด แบ่งเป็น 6 สาย: Arcane (เวท/ธาตุ), Shadow (คริ/เคออส), Hunt (Projectile/ความเร็ว), Bastion (ชีวิต/ป้องกัน/ฟลาสก์), Warfare (Attack/กายภาพ/AoE), Occult (มินเนียน/เผาไหม้/XP)
+  - **Legacy Tree** แบบ passive tree ของ PoE มี 103 โหนด แบ่งเป็น 6 สาย: Arcane (เวท/ธาตุ), Shadow (คริ/เคออส), Hunt (Projectile/ความเร็ว), Bastion (ชีวิต/ป้องกัน/ฟลาสก์), Warfare (Attack/กายภาพ/AoE), Occult (มินเนียน/เผาไหม้/XP)
   - แต่ละสายมีโหนดเล็ก, Notable 3 อัน และ **Keystone** ที่เปลี่ยนแนวบิวที่ปลายสาย ได้แก่ Specialist, Glass Cannon, Collector, Born Ascendant, Gem Savant, Minion Lord มีโหนดเชื่อมระหว่างสายเป็นวงใน ทำให้เดินได้หลายเส้นทาง
+  - **6 ภูมิภาคขอบนอก** เชื่อมสองสายข้างเคียง (เข้าได้จาก Notable ปลายแขนของทั้งสองสาย) แต่ละภูมิภาคมี Notable ผสมและ Keystone ของตัวเอง: Spellblade → Spellweaver, Venom Archer → Wind Dancer, Trailblazer → Unbreakable, Juggernaut → Heavy Hitter, Bonecrusher → Vampiric Pact, Sage → Scholar
   - จัดสรรได้เฉพาะโหนดที่ติดกับโหนดที่มีอยู่แล้ว สูงสุด **40 แต้ม** จึงต้องเลือกทิศทาง ราคาโหนดเพิ่มขึ้นตามจำนวนที่จัดสรรแล้ว
   - คืนแต้มฟรี: คลิกโหนดปลายทางเพื่อคืนทีละโหนด หรือกด "คืนแต้มทั้งหมด"
   - คลาส Templar / Shadow / Duelist / Scion และเจม Caustic Arrow / Raging Spirit / Firestorm / Righteous Fire เริ่มแบบล็อก ปลดล็อกได้ด้วยการทำเงื่อนไขในเกม หรือซื้อด้วย Shards

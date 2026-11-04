@@ -9,7 +9,7 @@
 const MAX_MAP_TIER = 15;
 const ARENA = 2200;                   // the map is a square from -ARENA to +ARENA
 const ATLAS_POINT_CAP = 20;           // max bonus Legacy Tree points from the Atlas
-const MAP_REROLL_COST = 3;            // Ancient Shards to reroll mods
+const MAP_REROLL_COST = 15;           // Ancient Shards to reroll mods
 
 // tint: multiplied over ground/props · dark: colour of the night layer
 // mult: monster weight multipliers · add: extra monsters from minute 1.5
@@ -112,7 +112,7 @@ function mapRewardMult(cfg) { return tierReward(cfg.tier) * (1 + mapQuantity(cfg
 function mapLabel(cfg) { return `${BIOMES[cfg.biome].name} · T${cfg.tier}`; }
 
 // the cost to make a map without owning one (only tiers you've reached)
-const mapBuyCost = (tier) => (tier <= 1 ? 0 : 8 * tier);
+const mapBuyCost = (tier) => (tier <= 1 ? 0 : 20 * tier);
 
 // ---------------- Atlas passive tree: steer which league content shows up ----------------
 // each branch is a chain: take nodes in order. Points = maps cleared + 1 per 8 bosses killed.

@@ -1,5 +1,24 @@
 # Changelog
 
+## Browser build 61 — 2026-11-04
+
+- **Legacy Tree ขยาย 73 → 103 โหนด**: 6 ภูมิภาคใหม่ที่ขอบนอก แต่ละภูมิภาคเชื่อมสองสายข้างเคียงเข้าด้วยกัน เข้าได้จาก Notable ปลายแขนของทั้งสองสาย มี 3 โหนดเล็กที่ผสมสองค่า, 1 Notable ผสม และ 1 Keystone ใหม่ที่มีข้อแลกเปลี่ยน
+  - **Spellblade** (Arcane × Shadow) — Arcane Assassin · Keystone **Spellweaver**: Spell ร่ายเร็วขึ้น 20% · ดาเมจ Attack -40%
+  - **Venom Archer** (Shadow × Hunt) — Toxic Volley · Keystone **Wind Dancer**: หลบ 15% · เคลื่อนที่ +10% · รับดาเมจ 10% more
+  - **Trailblazer** (Hunt × Bastion) — Ranger's Endurance · Keystone **Unbreakable**: รับดาเมจ 15% less · เคลื่อนที่ 10% less
+  - **Juggernaut** (Bastion × Warfare) — Iron Skin · Keystone **Heavy Hitter**: ดาเมจกายภาพ 35% more · ความเร็ว -15%
+  - **Bonecrusher** (Warfare × Occult) — Blood Rite · Keystone **Vampiric Pact**: ดูดเลือด 2% · ฟลาสก์ได้ชาร์จ 50% less
+  - **Sage** (Occult × Arcane) — Soul Siphon · Keystone **Scholar**: XP +25% · การ์ดเลเวลอัป +1 ใบ · ดาเมจ 10% less
+- Keystone รวม 12 (เดิม 6) · Notable รวม 24 (เดิม 18) · แต้มสูงสุดยังเป็น 40 (+ Atlas) เพื่อให้ต้องเลือกทางมากขึ้น · แต้มที่จัดสรรไว้เดิมอยู่ครบ
+- **ราคา Ancient Shards ปรับใหม่** (จากรอบจริงได้เฉลี่ย ~530 ✦/รอบ เดิมใช้ ~3 รอบก็อัป Legacy Tree เต็ม และเหลือ Shards ไม่มีที่ใช้):
+  - Legacy Tree: ราคาฐาน เล็ก 12 → 24 · Notable 35 → 70 · Keystone 70 → 140 · Jewel 25 → 50 · ทุกโหนดที่จัดสรรแล้วทำให้โหนดถัดไปแพงขึ้น 5 (เดิม 1) — 10 แต้มแรกยังได้ในรอบแรก เต็ม 40 แต้มใช้ราว 11 รอบ
+  - ผูก Heirloom 80 → 250 ✦
+  - ซื้อ Scarab สุ่ม 45 → 100 ✦
+  - เข้าแผนที่ 8 → 20 ✦ ต่อ Tier (T1 ยังฟรี)
+  - สุ่ม Map mod ใหม่ 3 → 15 ✦
+  - พกไอเทมเข้ารอบ 1 / 2 / 5 / 10 → 5 / 10 / 25 / 50 ✦ (Normal / Magic / Rare / Unique)
+  - ไม่เปลี่ยน: ปลดล็อกคลาส/เจม และเติม XP Gem Mastery · ของที่ซื้อไปแล้วอยู่ครบ ราคาใหม่มีผลกับการซื้อครั้งถัดไป
+
 ## Browser build 60 — 2026-11-04
 
 - ปลดสกิลเริ่มต้นเพิ่มด้วย Gem Mastery ต้องถึง **Lv 10** (เดิม Lv 3) · จากรอบจริง Lv 3 ได้ในครึ่งรอบ ชนะครั้งเดียวก็ปลดแล้ว ตอนนี้ใช้ราว 3–4 รอบ ตรงกับจุดปลด Phantasmal และขึ้นบอกไว้ที่ Altar → Gem Mastery

@@ -4,14 +4,16 @@
 //  Ancient Shards are earned at the end of every run and spent at the
 //  Altar of Legacy on the Legacy Tree: a passive web where you can
 //  only take nodes next to ones you already own, with a point cap so
-//  every build has to choose a direction. Some classes and skill gems
+//  every build has to choose a direction. Six branches radiate from the centre;
+//  six outer regions join each neighbouring pair and end in their own keystone. Some classes and skill gems
 //  start locked: each unlocks by an achievement, or can be bought.
 // ============================================================
 const META_KEY = 'exile_meta';
 const TREE_POINTS = 40;                                   // max nodes allocated (start node is free)
-const TREE_COST = { small: 12, notable: 35, keystone: 70, jewel: 25 };
-// a node costs its base price + 1 per node already allocated
-const treeNodeCost = (n, allocated) => TREE_COST[n.kind] + allocated;
+const TREE_COST = { small: 24, notable: 70, keystone: 140, jewel: 50 };
+const TREE_COST_STEP = 5;   // each node already allocated makes the next one dearer
+// the first ~10 points fit in one run; all 40 take about 11 runs at ~530 Shards a run
+const treeNodeCost = (n, allocated) => TREE_COST[n.kind] + TREE_COST_STEP * allocated;
 
 // ---- node helpers: apply(m) mutates player mods, start(P) runs at run start ----
 const tSmall = (desc, apply, start) => ({ kind: 'small', desc, apply, start });
@@ -73,6 +75,48 @@ const TREE_BRANCHES = [
     key: tKey('Minion Lord', 'จ้าวแห่งวิญญาณ', 'มินเนียนสูงสุด +1 · มินเนียนทำดาเมจ 30% more · สกิลที่ไม่ใช่มินเนียนทำดาเมจ 20% less', (m) => { m.minionCount += 1; m.moreMinion *= 1.3; m.nonMinionMore *= 0.8; }) },
 ];
 
+// Outer regions: one between each pair of neighbouring branches (TREE_BRANCHES[i] → [i + 1]).
+// Each reaches in from both branches' arm notables (xa from the first, xb from the second),
+// meets at a hybrid notable and leads out to a keystone with a real trade-off.
+const TREE_OUTER = [
+  { id: 'spellblade', name: 'Spellblade', th: 'สายดาบเวท', color: '#8a9cff', icon: '✦',
+    xa: tSmall('+6% ดาเมจ Spell · +0.3% โอกาสคริ (base)', (m) => { m.incSpell += 0.06; m.critAdd += 0.003; }),
+    xb: tSmall('+10% ตัวคูณคริ · +3% ดาเมจ Spell', (m) => { m.critMulti += 0.1; m.incSpell += 0.03; }),
+    not: tNotable('Arcane Assassin', 'นักฆ่าอาคม', '+1% โอกาสคริ (base) · +15% ดาเมจ Spell · +15% ตัวคูณคริ', (m) => { m.critAdd += 0.01; m.incSpell += 0.15; m.critMulti += 0.15; }),
+    xk: tSmall('Spell ร่ายเร็วขึ้น 4%', (m) => { m.spellSpeed += 0.04; }),
+    key: tKey('Spellweaver', 'ผู้ถักทอเวท', 'Spell ร่ายเร็วขึ้น 20% · ดาเมจ Attack -40%', (m) => { m.spellSpeed += 0.2; m.incAttack -= 0.4; }) },
+  { id: 'venom', name: 'Venom Archer', th: 'สายนักธนูพิษ', color: '#52cb95', icon: '☣',
+    xa: tSmall('โอกาส Poison +5% ทุกสกิล · +5% ดาเมจ Projectile', (m) => { m.poisonAdd += 0.05; m.incProj += 0.05; }),
+    xb: tSmall('+3% ความเร็วเคลื่อนที่ · หลบการโจมตี 2%', (m) => { m.moveInc += 0.03; m.evade += 0.02; }),
+    not: tNotable('Toxic Volley', 'ห่าศรพิษ', '+12% ดาเมจ Projectile · +12% ดาเมจเคออส · โอกาส Poison +8% ทุกสกิล', (m) => { m.incProj += 0.12; m.incChaos += 0.12; m.poisonAdd += 0.08; }),
+    xk: tSmall('+4% ความเร็วเคลื่อนที่', (m) => { m.moveInc += 0.04; }),
+    key: tKey('Wind Dancer', 'นักเต้นสายลม', 'หลบการโจมตี 15% · +10% ความเร็วเคลื่อนที่ · รับดาเมจ 10% more', (m) => { m.evade += 0.15; m.moveInc += 0.1; m.dmgTaken *= 1.1; }) },
+  { id: 'trailblazer', name: 'Trailblazer', th: 'สายนักบุกเบิก', color: '#a6b65a', icon: '⛰',
+    xa: tSmall('+4% ชีวิตสูงสุด · +2% ความเร็วเคลื่อนที่', (m) => { m.lifeInc += 0.04; m.moveInc += 0.02; }),
+    xb: tSmall('ฟลาสก์ได้ชาร์จ +8% · +3% ชีวิตสูงสุด', (m) => { m.flaskCharge += 0.08; m.lifeInc += 0.03; }),
+    not: tNotable("Ranger's Endurance", 'ความอึดของพราน', '+8% ชีวิตสูงสุด · +6% ความเร็วเคลื่อนที่ · ฟื้นชีวิต 0.2% ทุกครั้งที่ฆ่า', (m) => { m.lifeInc += 0.08; m.moveInc += 0.06; m.lifeOnKill += 0.002; }),
+    xk: tSmall('รับดาเมจ 2% less', (m) => { m.dmgTaken *= 0.98; }),
+    key: tKey('Unbreakable', 'ไม่มีวันแตกหัก', 'รับดาเมจ 15% less · ความเร็วเคลื่อนที่ 10% less', (m) => { m.dmgTaken *= 0.85; m.moveMore *= 0.9; }) },
+  { id: 'juggernaut', name: 'Juggernaut', th: 'สายยักษ์เหล็ก', color: '#e07d4d', icon: '⛨',
+    xa: tSmall('+150 Armour · +3% ชีวิตสูงสุด', (m) => { m.armour += 150; m.lifeInc += 0.03; }),
+    xb: tSmall('+6% ดาเมจกายภาพ · +3% ดาเมจ Attack', (m) => { m.incPhys += 0.06; m.incAttack += 0.03; }),
+    not: tNotable('Iron Skin', 'หนังเหล็ก', '+300 Armour · +12% ดาเมจกายภาพ · โอกาส Bleed +6% (Attack)', (m) => { m.armour += 300; m.incPhys += 0.12; m.bleedAdd += 0.06; }),
+    xk: tSmall('+8% ดาเมจกายภาพ', (m) => { m.incPhys += 0.08; }),
+    key: tKey('Heavy Hitter', 'หมัดหนัก', 'ดาเมจกายภาพ 35% more · ความเร็วร่าย/โจมตี -15%', (m) => { m.physMore *= 1.35; m.speedInc -= 0.15; }) },
+  { id: 'bonecrusher', name: 'Bonecrusher', th: 'สายทุบกระดูก', color: '#ca8690', icon: '☗',
+    xa: tSmall('+5% ดาเมจ Attack · +5% ดาเมจมินเนียน', (m) => { m.incAttack += 0.05; m.incMinion += 0.05; }),
+    xb: tSmall('+6% ดาเมจมินเนียน · +4% พื้นที่', (m) => { m.incMinion += 0.06; m.areaInc += 0.04; }),
+    not: tNotable('Blood Rite', 'พิธีเลือด', 'ดูดเลือด 1% ของดาเมจทุกสกิล · +10% ดาเมจ Attack · +10% ดาเมจมินเนียน', (m) => { m.leech += 0.01; m.incAttack += 0.1; m.incMinion += 0.1; }),
+    xk: tSmall('มินเนียนดูดเลือด 1% ของดาเมจ', (m) => { m.minionLeech += 0.01; }),
+    key: tKey('Vampiric Pact', 'สัญญาแวมไพร์', 'ดูดเลือด 2% ของดาเมจทุกสกิล · ฟลาสก์ได้ชาร์จ 50% less', (m) => { m.leech += 0.02; m.flaskGainMore *= 0.5; }) },
+  { id: 'sage', name: 'Sage', th: 'สายปราชญ์', color: '#907cff', icon: '❖',
+    xa: tSmall('+5% ค่าประสบการณ์ · +4% ดาเมจ DoT', (m) => { m.xpInc += 0.05; m.incDot += 0.04; }),
+    xb: tSmall('+5% ดาเมจ Spell · +5% ระยะเวลาสกิล', (m) => { m.incSpell += 0.05; m.durInc += 0.05; }),
+    not: tNotable('Soul Siphon', 'ดูดวิญญาณ', '+12% ดาเมจ DoT · +10% ดาเมจ Spell · ฟื้นชีวิต 0.2% ทุกครั้งที่ฆ่า', (m) => { m.incDot += 0.12; m.incSpell += 0.1; m.lifeOnKill += 0.002; }),
+    xk: tSmall('+6% ค่าประสบการณ์', (m) => { m.xpInc += 0.06; }),
+    key: tKey('Scholar', 'ผู้รอบรู้', '+25% ค่าประสบการณ์ · การ์ดเลเวลอัป +1 ใบ · ทุกสกิลทำดาเมจ 10% less', (m) => { m.xpInc += 0.25; m.extraChoices += 1; m.moreAll *= 0.9; }) },
+];
+
 // ---- build the graph: ids, positions (SVG units), links ----
 const TREE_NODES = {};
 const TREE_START = 'origin';
@@ -106,6 +150,14 @@ const TREE_START = 'origin';
     const id = add('bridge_' + B.id, tSmall('+4% ดาเมจ Spell / Attack / มินเนียน · +3% ชีวิตสูงสุด', (m) => {
       m.incSpell += 0.04; m.incAttack += 0.04; m.incMinion += 0.04; m.lifeInc += 0.03; }), 215, B.angle + 30, null);
     link(B.id + '_hub', id); link(id, C.id + '_hub');
+  });
+  // outer regions: reached from both neighbouring branches, keystone at the rim
+  TREE_OUTER.forEach((O, i) => {
+    const B = TREE_BRANCHES[i], C = TREE_BRANCHES[(i + 1) % TREE_BRANCHES.length], t = B.angle;
+    const xa = add(O.id + '_xa', O.xa, 430, t + 20, O), xb = add(O.id + '_xb', O.xb, 430, t + 40, O);
+    const nt = add(O.id + '_n', O.not, 480, t + 30, O), xk = add(O.id + '_xk', O.xk, 528, t + 30, O);
+    add(O.id + '_key', O.key, 580, t + 30, O);
+    link(B.id + '_nb', xa); link(xa, nt); link(C.id + '_na', xb); link(xb, nt); link(nt, xk); link(xk, O.id + '_key');
   });
   for (const id in TREE_NODES) { const n = TREE_NODES[id]; n.icon = n.kind === 'start' ? '✦' : n.kind === 'jewel' ? '⬡' : n.branch ? n.branch.icon : '◇'; n.color = n.branch ? n.branch.color : '#c8a860'; }
 })();

@@ -142,7 +142,7 @@ function unsocketJewel(nodeId) {
 // how many items a finished run may keep / a new run may bring
 function stashKeepLimit(r) { const AF = atlasFx(); return r.hc && !r.win ? 0 : (r.win ? 4 : 2) + (r.hc ? 2 : 0) + AF.stashAdd; }
 const loadoutLimit = () => 2 + atlasFx().stashAdd;
-const LOADOUT_COST = { normal: 1, magic: 2, rare: 5, unique: 10 };
+const LOADOUT_COST = { normal: 5, magic: 10, rare: 25, unique: 50 };
 
 // ---- Atlas passive tree ----
 function atlasPoints() { const M = loadMeta(); return atlasDoneCount() + Math.floor(M.life.bosses / 8) + Object.keys(M.atlasTiers).length; }
