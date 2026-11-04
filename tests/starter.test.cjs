@@ -38,9 +38,11 @@ test('Daily and Weekly ignore the pick; unknown or locked picks fall back to the
   assert.equal(run(`startSkillFor(${cls('witch')})`), 'fireball');
 });
 
-test('a gem mastered to Lv 3 joins the options of classes that share its colour', () => {
+test('a gem mastered to Lv 10 joins the options of classes that share its colour', () => {
   const { run } = game();
-  assert.equal(run(`startOptions(${cls('witch')}).includes('ice_spear')`), false);
+  assert.equal(run('STARTER_MASTERY_LV'), 10);
+  run(`gemData('ice_spear').lv = STARTER_MASTERY_LV - 1;`);
+  assert.equal(run(`startOptions(${cls('witch')}).includes('ice_spear')`), false);   // Lv 9 is not enough
   run(`gemData('ice_spear').lv = STARTER_MASTERY_LV;`);
   assert.equal(run(`startOptions(${cls('witch')}).includes('ice_spear')`), true);     // blue gem, Witch is blue
   assert.equal(run(`startOptions(${cls('marauder')}).includes('ice_spear')`), false); // Marauder is red

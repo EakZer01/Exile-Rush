@@ -377,7 +377,7 @@ function gemMasteryHtml() {
     <div class="gm-legend">
       <div class="gm-leg gm-c-step"><span class="gm-leg-dot">+${step}%</span><div><b>ทุกเลเวล</b><span>ดาเมจ +${step}% ต่อเลเวล · หลัง Lv 20 +${late}%</span></div></div>
       ${marks.map((m) => `<div class="gm-leg gm-c-${m.key}"><span class="gm-leg-dot">${m.at}</span><div><b>Lv ${m.at} ${m.name}</b><span>${m.key === 'head'
-        ? 'ได้เจมนี้ในรอบ เริ่มสูงกว่าปกติ' : `${ALT_QUALITY[m.key].th} · Alternate Quality`}</span></div></div>`).join('')}
+        ? 'ได้เจมนี้ในรอบ เริ่มสูงกว่าปกติ' : `${ALT_QUALITY[m.key].th} · Alternate Quality`}${m.at === STARTER_MASTERY_LV ? ' · ใช้เป็นสกิลเริ่มต้นของคลาสสีเดียวกันได้' : ''}</span></div></div>`).join('')}
     </div><div class="gm-body"><div class="gm-list">`;
   for (const id of ids) {
     const g = M.gems[id] || { xp: 0, lv: 0, alt: null }, req = GEM_XP_REQ(g.lv), cost = gemInfuseCost(g.lv);

@@ -1,5 +1,9 @@
 # Changelog
 
+## Browser build 60 — 2026-11-04
+
+- ปลดสกิลเริ่มต้นเพิ่มด้วย Gem Mastery ต้องถึง **Lv 10** (เดิม Lv 3) · จากรอบจริง Lv 3 ได้ในครึ่งรอบ ชนะครั้งเดียวก็ปลดแล้ว ตอนนี้ใช้ราว 3–4 รอบ ตรงกับจุดปลด Phantasmal และขึ้นบอกไว้ที่ Altar → Gem Mastery
+
 ## Browser build 59 — 2026-11-04
 
 - **กับดักระเบิดไม่รกจออีก** (Map mod Minefield และ Doom Sapper):

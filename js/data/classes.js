@@ -32,7 +32,7 @@ const STARTER_SKILLS = {
   duelist: ['blade_vortex', 'lacerate', 'frost_blades'],
 };
 // a gem mastered to this level at the Altar can also start any class that shares its colour
-const STARTER_MASTERY_LV = 3;
+const STARTER_MASTERY_LV = 10;
 const CLASS_GEM_COLORS = { witch: 'b', ranger: 'g', marauder: 'r', templar: 'rb', shadow: 'gb', duelist: 'rg' };
 // gems that do nothing on their own (need corpses, Shock, a shield, an Attack...) never start a run
 const NO_SOLO_START = ['tempest_bell', 'herald_of_plague', 'magnetic_salvo', 'shield_crush', 'shield_throw', 'holy_relic',
